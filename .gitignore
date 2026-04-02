@@ -1,0 +1,28 @@
+# 编译输出
+*.o
+*.exe
+*.dll
+*.so
+*.dylib
+build/
+out/
+
+# 编辑器
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 日志与临时
+*.log
+temp/
+tmp/
+
+# 测试文件
+demo.c
+demo.txt
+test.*
+
+/*.py
+/*.yaml
