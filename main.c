@@ -1,10 +1,16 @@
-#include "core/include/core.h"
+#include <stdio.h>
+#include "include/module_def.h"
+#include "kernel/micro_kernel.h"
 
-int main() {
-    printf("=== 全模块化 AI 引擎（Core + Base + Biz）===\n");
-    core_init();
-    core_load_modules("modules.conf");
-    core_run_agent("scan -> read -> edit");
-    printf("=== 运行结束 ===\n");
+static MicroKernel kernel;
+
+int main(void)
+{
+    printf("idcu/agent hard real-time microkernel start...\n");
+
+    kernel_init(&kernel);
+    kernel_start_modules(&kernel);
+    kernel_run(&kernel);
+
     return 0;
 }

@@ -1,0 +1,8 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define CONFIG_MAX_MODULES 16
+#define CONFIG_MAX_MSG 64
+#define CONFIG_STACK_CTX_SIZE 256
+
+#endif
