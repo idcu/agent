@@ -18,6 +18,7 @@ int msg_send(MessageBus *bus, uint32_t mod_id, const StackContext *ctx)
 
 int msg_recv(MessageBus *bus, uint32_t mod_id, StackContext *ctx)
 {
+    (void)mod_id;
     if (bus->head == bus->tail) return -1;
 
     *ctx = bus->queue[bus->head];

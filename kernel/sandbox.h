@@ -2,6 +2,7 @@
 #define SANDBOX_H
 
 #include "context.h"
+#include "include/config.h"
 
 #define PERM_SEND    (1U << 0)
 #define PERM_RECV    (1U << 1)

@@ -1,5 +1,19 @@
 #include "micro_kernel.h"
 #include <stdio.h>
+#include <string.h>
+
+// 为避免 Windows/MinGW 链接问题，我们手动声明几个模块
+// 在实际项目中，您可以使用其他方式处理模块加载
+extern const ModuleInterface __module_base_log;
+extern const ModuleInterface __module_biz_collect;
+extern const ModuleInterface __module_core_module;
+
+static const ModuleInterface* modules[] = {
+    &__module_base_log,
+    &__module_biz_collect,
+    &__module_core_module,
+    NULL
+};
 
 void kernel_init(MicroKernel *k)
 {
@@ -8,22 +22,17 @@ void kernel_init(MicroKernel *k)
     ctx_init(&k->global, 0, 0);
 }
 
-extern const ModuleInterface __start_modules[];
-extern const ModuleInterface __stop_modules[];
-
 void kernel_start_modules(MicroKernel *k)
 {
-    const ModuleInterface **mod = (const ModuleInterface**)&__start_modules;
     uint32_t cnt = 0;
+    const ModuleInterface** mod = modules;
 
-    while (mod < (const ModuleInterface**)&__stop_modules && cnt < 16) {
-        if (*mod) {
-            printf("[kernel] module %s init\n", (*mod)->name);
-            (*mod)->init();
-            k->sandbox[cnt].module_id = cnt;
-            k->sandbox[cnt].perm = PERM_SEND | PERM_RECV | PERM_RUN;
-            cnt++;
-        }
+    while (*mod && cnt < 16) {
+        printf("[kernel] module %s init\n", (*mod)->name);
+        (*mod)->init();
+        k->sandbox[cnt].module_id = cnt;
+        k->sandbox[cnt].perm = PERM_SEND | PERM_RECV | PERM_RUN;
+        cnt++;
         mod++;
     }
     k->sb_cnt = cnt;

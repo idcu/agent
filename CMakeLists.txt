@@ -3,7 +3,7 @@ project(idcu_agent C)
 set(CMAKE_C_STANDARD 99)
 add_compile_options(-O2 -Wall -Wextra -fno-stack-protector -ffunction-sections -fdata-sections)
 
-include_directories(include kernel modules)
+include_directories(${PROJECT_SOURCE_DIR} include kernel modules)
 
 file(GLOB_RECURSE SRCS
     main.c

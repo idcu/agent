@@ -1,15 +1,26 @@
+# 构建目录
 build/
 out/
+# 编译产物
 *.o
 *.exe
 *.dll
 *.so
 *.dylib
+*.a
+# 日志和临时文件
 *.log
 temp/
 tmp/
+# IDE/编辑器配置
 .vscode/
 .vs/
 .idea/
 *.swp
 *.swo
+.DS_Store
+# 配置备份
+*.cfg.bak
+# 调试文件
+*.gdb
+core
