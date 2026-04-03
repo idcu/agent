@@ -23,7 +23,7 @@ jobs:
       uses: lukka/get-cmake@latest
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
 
     - name: Build
       run: cmake --build build --config Release
@@ -33,6 +33,32 @@ jobs:
       with:
         name: idcu-agent-${{ matrix.os }}
         path: out/
+
+  test:
+    name: Run Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
+
+    - name: Build Tests
+      run: cmake --build build --config Debug
+
+    - name: Run CTests
+      working-directory: build
+      run: ctest --output-on-failure --verbose
 
   lint:
     name: Code Quality Checks
@@ -45,7 +71,7 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y clang-tidy
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_CLANG_TIDY=ON
 
     - name: Build with Clang-Tidy
       run: cmake --build build --config Debug
