@@ -42,6 +42,17 @@ int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry)
         return ret;
     }
 #endif
+    
+    ret = idcu_module_registry_build_dependency_graph(registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    ret = idcu_module_registry_topological_sort(registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
     return IDCU_ERR_SUCCESS;
 }
 
@@ -56,6 +67,7 @@ int idcu_module_registry_init(idcu_ModuleRegistry* registry)
         return ret;
     }
     registry->next_id = 1;
+    registry->topological_valid = 0;
     return IDCU_ERR_SUCCESS;
 }
 
@@ -94,7 +106,10 @@ int idcu_module_registry_register(idcu_ModuleRegistry* registry, const idcu_Modu
     mod->state = IDCU_MOD_STATE_UNINIT;
     mod->priority = priority;
     mod->user_data = NULL;
+    mod->in_degree = 0;
+    mod->adjacency_count = 0;
     registry->count++;
+    registry->topological_valid = 0;
     idcu_mutex_unlock(&registry->lock);
     return IDCU_ERR_SUCCESS;
 }
@@ -128,6 +143,7 @@ int idcu_module_registry_unregister(idcu_ModuleRegistry* registry, uint32_t modu
                 (registry->count - found_idx - 1) * sizeof(idcu_RegisteredModule));
     }
     registry->count--;
+    registry->topological_valid = 0;
     idcu_mutex_unlock(&registry->lock);
     return IDCU_ERR_SUCCESS;
 }
@@ -323,18 +339,150 @@ int idcu_module_registry_stop_module(idcu_ModuleRegistry* registry, uint32_t mod
     return result;
 }
 
+int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry)
+{
+    if (!registry) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    for (uint32_t i = 0; i < registry->count; i++) {
+        registry->modules[i].in_degree = 0;
+        registry->modules[i].adjacency_count = 0;
+    }
+    
+    for (uint32_t i = 0; i < registry->count; i++) {
+        idcu_RegisteredModule* mod = &registry->modules[i];
+        
+        if (!mod->iface->dependencies || mod->iface->dependency_count == 0) {
+            continue;
+        }
+        
+        for (int d = 0; d < mod->iface->dependency_count; d++) {
+            const char* dep_name = mod->iface->dependencies[d].dependency_name;
+            int dep_found = 0;
+            
+            for (uint32_t j = 0; j < registry->count; j++) {
+                if (strcmp(registry->modules[j].iface->name, dep_name) == 0) {
+                    idcu_RegisteredModule* dep_mod = &registry->modules[j];
+                    
+                    if (dep_mod->adjacency_count < IDCU_MAX_REGISTERED_MODULES) {
+                        dep_mod->adjacency[dep_mod->adjacency_count++] = i;
+                    }
+                    
+                    mod->in_degree++;
+                    dep_found = 1;
+                    break;
+                }
+            }
+            
+            if (!dep_found) {
+                idcu_mutex_unlock(&registry->lock);
+                return IDCU_ERR_NOT_FOUND;
+            }
+        }
+    }
+    
+    idcu_mutex_unlock(&registry->lock);
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry)
+{
+    if (!registry) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    uint32_t temp_in_degree[IDCU_MAX_REGISTERED_MODULES];
+    for (uint32_t i = 0; i < registry->count; i++) {
+        temp_in_degree[i] = registry->modules[i].in_degree;
+    }
+    
+    uint32_t queue[IDCU_MAX_REGISTERED_MODULES];
+    uint32_t queue_front = 0;
+    uint32_t queue_back = 0;
+    
+    for (uint32_t i = 0; i < registry->count; i++) {
+        if (temp_in_degree[i] == 0) {
+            queue[queue_back++] = i;
+        }
+    }
+    
+    uint32_t topological_idx = 0;
+    
+    while (queue_front < queue_back) {
+        uint32_t u = queue[queue_front++];
+        registry->topological_order[topological_idx++] = registry->modules[u].module_id;
+        
+        idcu_RegisteredModule* mod = &registry->modules[u];
+        for (uint32_t i = 0; i < mod->adjacency_count; i++) {
+            uint32_t v = mod->adjacency[i];
+            temp_in_degree[v]--;
+            
+            if (temp_in_degree[v] == 0) {
+                queue[queue_back++] = v;
+            }
+        }
+    }
+    
+    if (topological_idx != registry->count) {
+        idcu_mutex_unlock(&registry->lock);
+        return IDCU_ERR_CIRCULAR_DEP;
+    }
+    
+    registry->topological_count = topological_idx;
+    registry->topological_valid = 1;
+    
+    idcu_mutex_unlock(&registry->lock);
+    return IDCU_ERR_SUCCESS;
+}
+
 int idcu_module_registry_init_all(idcu_ModuleRegistry* registry)
 {
     if (!registry) {
         return IDCU_ERR_INVALID_PARAM;
     }
-    for (uint32_t i = 0; i < registry->count; i++) {
-        idcu_RegisteredModule* mod = &registry->modules[i];
-        int ret = idcu_module_registry_init_module(registry, mod->module_id);
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    if (!registry->topological_valid) {
+        idcu_mutex_unlock(&registry->lock);
+        ret = idcu_module_registry_build_dependency_graph(registry);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
+        }
+        ret = idcu_module_registry_topological_sort(registry);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
+        }
+        ret = idcu_mutex_lock(&registry->lock);
         if (ret != IDCU_ERR_SUCCESS) {
             return ret;
         }
     }
+    
+    idcu_mutex_unlock(&registry->lock);
+    
+    for (uint32_t i = 0; i < registry->topological_count; i++) {
+        uint32_t module_id = registry->topological_order[i];
+        int init_ret = idcu_module_registry_init_module(registry, module_id);
+        if (init_ret != IDCU_ERR_SUCCESS) {
+            return init_ret;
+        }
+    }
+    
     return IDCU_ERR_SUCCESS;
 }
 
@@ -343,17 +491,38 @@ int idcu_module_registry_run_all(idcu_ModuleRegistry* registry)
     if (!registry) {
         return IDCU_ERR_INVALID_PARAM;
     }
-    for (int prio = IDCU_MOD_PRIO_REALTIME; prio >= IDCU_MOD_PRIO_LOW; prio--) {
-        for (uint32_t i = 0; i < registry->count; i++) {
-            idcu_RegisteredModule* mod = &registry->modules[i];
-            if (mod->priority == (idcu_ModulePrio)prio) {
-                int ret = idcu_module_registry_run_module(registry, mod->module_id);
-                if (ret != IDCU_ERR_SUCCESS) {
-                    return ret;
-                }
-            }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    if (!registry->topological_valid) {
+        idcu_mutex_unlock(&registry->lock);
+        ret = idcu_module_registry_build_dependency_graph(registry);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
+        }
+        ret = idcu_module_registry_topological_sort(registry);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
+        }
+        ret = idcu_mutex_lock(&registry->lock);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
         }
     }
+    
+    idcu_mutex_unlock(&registry->lock);
+    
+    for (uint32_t i = 0; i < registry->topological_count; i++) {
+        uint32_t module_id = registry->topological_order[i];
+        int run_ret = idcu_module_registry_run_module(registry, module_id);
+        if (run_ret != IDCU_ERR_SUCCESS) {
+            return run_ret;
+        }
+    }
+    
     return IDCU_ERR_SUCCESS;
 }
 
@@ -362,13 +531,34 @@ int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry)
     if (!registry) {
         return IDCU_ERR_INVALID_PARAM;
     }
-    for (int prio = IDCU_MOD_PRIO_LOW; prio <= IDCU_MOD_PRIO_REALTIME; prio++) {
-        for (uint32_t i = 0; i < registry->count; i++) {
-            idcu_RegisteredModule* mod = &registry->modules[i];
-            if (mod->priority == (idcu_ModulePrio)prio && mod->state == IDCU_MOD_STATE_RUNNING) {
-                idcu_module_registry_stop_module(registry, mod->module_id);
-            }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    if (!registry->topological_valid) {
+        idcu_mutex_unlock(&registry->lock);
+        ret = idcu_module_registry_build_dependency_graph(registry);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
+        }
+        ret = idcu_module_registry_topological_sort(registry);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
+        }
+        ret = idcu_mutex_lock(&registry->lock);
+        if (ret != IDCU_ERR_SUCCESS) {
+            return ret;
         }
     }
+    
+    idcu_mutex_unlock(&registry->lock);
+    
+    for (int i = (int)registry->topological_count - 1; i >= 0; i--) {
+        uint32_t module_id = registry->topological_order[i];
+        idcu_module_registry_stop_module(registry, module_id);
+    }
+    
     return IDCU_ERR_SUCCESS;
 }

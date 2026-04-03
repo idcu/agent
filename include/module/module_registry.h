@@ -18,6 +18,9 @@ typedef struct {
     idcu_ModuleState state;
     idcu_ModulePrio priority;
     void* user_data;
+    uint32_t in_degree;
+    uint32_t adjacency[IDCU_MAX_REGISTERED_MODULES];
+    uint32_t adjacency_count;
 } idcu_RegisteredModule;
 
 typedef struct {
@@ -25,6 +28,9 @@ typedef struct {
     uint32_t count;
     uint32_t next_id;
     idcu_Mutex lock;
+    uint32_t topological_order[IDCU_MAX_REGISTERED_MODULES];
+    uint32_t topological_count;
+    int topological_valid;
 } idcu_ModuleRegistry;
 
 int idcu_module_registry_init(idcu_ModuleRegistry* registry);
@@ -43,6 +49,8 @@ int idcu_module_registry_run_all(idcu_ModuleRegistry* registry);
 int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry);
 
 int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry);
+int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry);
+int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry);
 
 #ifdef __cplusplus
 }
