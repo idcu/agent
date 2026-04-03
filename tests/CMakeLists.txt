@@ -203,9 +203,20 @@ if(NOT WIN32)
 endif()
 add_test(NAME test_micro_kernel_integration COMMAND test_micro_kernel_integration)
 
+add_executable(test_distributed_integration
+    integration/test_distributed_integration.c
+)
+target_link_libraries(test_distributed_integration idcu_core)
+if(NOT WIN32)
+    target_link_libraries(test_distributed_integration pthread)
+else()
+    target_link_libraries(test_distributed_integration ws2_32)
+endif()
+add_test(NAME test_distributed_integration COMMAND test_distributed_integration)
+
 # 设置集成测试输出目录
 set_target_properties(
-    test_module_comm test_error_recovery test_module_load test_micro_kernel_integration
+    test_module_comm test_error_recovery test_module_load test_micro_kernel_integration test_distributed_integration
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out/tests
 )
