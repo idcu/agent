@@ -194,9 +194,18 @@ if(NOT WIN32)
 endif()
 add_test(NAME test_module_load COMMAND test_module_load)
 
+add_executable(test_micro_kernel_integration
+    integration/test_micro_kernel_integration.c
+)
+target_link_libraries(test_micro_kernel_integration idcu_core)
+if(NOT WIN32)
+    target_link_libraries(test_micro_kernel_integration pthread)
+endif()
+add_test(NAME test_micro_kernel_integration COMMAND test_micro_kernel_integration)
+
 # 设置集成测试输出目录
 set_target_properties(
-    test_module_comm test_error_recovery test_module_load
+    test_module_comm test_error_recovery test_module_load test_micro_kernel_integration
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out/tests
 )
