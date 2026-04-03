@@ -46,7 +46,13 @@ void idcu_kernel_init(idcu_MicroKernel *k)
     idcu_msg_bus_init(&k->msg);
     idcu_ctx_init(&k->global, 0, 0);
     
-    int ret = idcu_module_registry_init(&g_module_registry);
+    int ret = idcu_dynamic_loader_init(&k->dynamic_loader, NULL);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("failed to init dynamic loader, error code: %d (%s)", ret, idcu_err_to_str(ret));
+        return;
+    }
+    
+    ret = idcu_module_registry_init(&g_module_registry);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("failed to init module registry, error code: %d (%s)", ret, idcu_err_to_str(ret));
         return;
@@ -120,7 +126,104 @@ void idcu_kernel_stop(idcu_MicroKernel *k)
         tracked->state = IDCU_MOD_STATE_STOPPED;
     }
     
+    idcu_dynamic_loader_destroy(&k->dynamic_loader);
+    
     IDCU_LOG_INFO("all modules stopped");
+}
+
+int idcu_kernel_hotplug_load(idcu_MicroKernel *k, const char* name, const char* path)
+{
+    if (!k || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    IDCU_LOG_INFO("Kernel hotplug loading module: %s", name);
+    
+    int ret = idcu_dynamic_loader_hotplug_load(&k->dynamic_loader, name, path);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    idcu_DynamicModule* mod = idcu_dynamic_loader_find_module(&k->dynamic_loader, name);
+    if (!mod) {
+        return IDCU_ERR_GENERAL;
+    }
+    
+    if (k->tracked_cnt >= 16) {
+        IDCU_LOG_WARN("No space left in tracked modules");
+        return IDCU_ERR_QUEUE_FULL;
+    }
+    
+    uint32_t idx = k->tracked_cnt;
+    k->tracked_modules[idx].iface = mod->iface;
+    k->tracked_modules[idx].state = mod->state;
+    k->tracked_modules[idx].is_dynamic = 1;
+    
+    k->sandbox[idx].module_id = idx;
+    k->sandbox[idx].perm = IDCU_PERM_SEND | IDCU_PERM_RECV | IDCU_PERM_RUN;
+    
+    k->tracked_cnt++;
+    k->sb_cnt++;
+    
+    IDCU_LOG_INFO("Dynamic module %s added to kernel tracking", name);
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_kernel_hotplug_unload(idcu_MicroKernel *k, const char* name)
+{
+    if (!k || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    IDCU_LOG_INFO("Kernel hotplug unloading module: %s", name);
+    
+    int found_idx = -1;
+    for (uint32_t i = 0; i < k->tracked_cnt; i++) {
+        if (k->tracked_modules[i].is_dynamic && 
+            strcmp(k->tracked_modules[i].iface->name, name) == 0) {
+            found_idx = (int)i;
+            break;
+        }
+    }
+    
+    if (found_idx >= 0) {
+        k->tracked_modules[found_idx].state = IDCU_MOD_STATE_STOPPED;
+        
+        if ((uint32_t)found_idx < k->tracked_cnt - 1) {
+            memmove(&k->tracked_modules[found_idx], &k->tracked_modules[found_idx + 1],
+                    (k->tracked_cnt - found_idx - 1) * sizeof(idcu_TrackedModule));
+            memmove(&k->sandbox[found_idx], &k->sandbox[found_idx + 1],
+                    (k->sb_cnt - found_idx - 1) * sizeof(idcu_Sandbox));
+        }
+        k->tracked_cnt--;
+        k->sb_cnt--;
+    }
+    
+    return idcu_dynamic_loader_hotplug_unload(&k->dynamic_loader, name);
+}
+
+int idcu_kernel_hotplug_restart(idcu_MicroKernel *k, const char* name)
+{
+    if (!k || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    IDCU_LOG_INFO("Kernel hotplug restarting module: %s", name);
+    
+    int ret = idcu_dynamic_module_restart(&k->dynamic_loader, name);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    idcu_DynamicModule* mod = idcu_dynamic_loader_find_module(&k->dynamic_loader, name);
+    if (mod) {
+        for (uint32_t i = 0; i < k->tracked_cnt; i++) {
+            if (k->tracked_modules[i].is_dynamic && 
+                strcmp(k->tracked_modules[i].iface->name, name) == 0) {
+                k->tracked_modules[i].state = mod->state;
+                break;
+            }
+        }
+    }
+    
+    return IDCU_ERR_SUCCESS;
 }
 
 void idcu_kernel_run(idcu_MicroKernel *k)

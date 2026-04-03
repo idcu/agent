@@ -47,6 +47,10 @@ int idcu_dynamic_loader_get_count(idcu_DynamicLoader* loader);
 int idcu_dynamic_module_init(idcu_DynamicModule* mod);
 int idcu_dynamic_module_run(idcu_DynamicModule* mod);
 int idcu_dynamic_module_stop(idcu_DynamicModule* mod);
+int idcu_dynamic_module_restart(idcu_DynamicLoader* loader, const char* name);
+int idcu_dynamic_module_reload(idcu_DynamicLoader* loader, const char* name, const char* path);
+int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* name, const char* path);
+int idcu_dynamic_loader_hotplug_unload(idcu_DynamicLoader* loader, const char* name);
 
 #ifdef __cplusplus
 }

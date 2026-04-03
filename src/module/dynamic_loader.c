@@ -281,3 +281,108 @@ int idcu_dynamic_module_stop(idcu_DynamicModule* mod)
     mod->state = IDCU_MOD_STATE_STOPPED;
     return ret;
 }
+
+int idcu_dynamic_module_restart(idcu_DynamicLoader* loader, const char* name)
+{
+    if (!loader || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    int ret = idcu_mutex_lock(&loader->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    idcu_DynamicModule* mod = NULL;
+    for (uint32_t i = 0; i < loader->count; i++) {
+        if (strcmp(loader->modules[i].name, name) == 0) {
+            mod = &loader->modules[i];
+            break;
+        }
+    }
+    if (!mod) {
+        idcu_mutex_unlock(&loader->lock);
+        return IDCU_ERR_NOT_FOUND;
+    }
+    ret = idcu_dynamic_module_stop(mod);
+    if (ret != IDCU_ERR_SUCCESS) {
+        idcu_mutex_unlock(&loader->lock);
+        return ret;
+    }
+    mod->state = IDCU_MOD_STATE_UNINIT;
+    ret = idcu_dynamic_module_init(mod);
+    if (ret != IDCU_ERR_SUCCESS) {
+        idcu_mutex_unlock(&loader->lock);
+        return ret;
+    }
+    ret = idcu_dynamic_module_run(mod);
+    idcu_mutex_unlock(&loader->lock);
+    return ret;
+}
+
+int idcu_dynamic_module_reload(idcu_DynamicLoader* loader, const char* name, const char* path)
+{
+    if (!loader || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    int ret = idcu_dynamic_loader_unload_module(loader, name);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_NOT_FOUND) {
+        return ret;
+    }
+    return idcu_dynamic_loader_load_module(loader, name, path);
+}
+
+int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* name, const char* path)
+{
+    IDCU_LOG_INFO("Hotplug loading module: %s", name);
+    int ret = idcu_dynamic_loader_load_module(loader, name, path);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("Failed to hotplug load module %s: %d", name, ret);
+        return ret;
+    }
+    idcu_DynamicModule* mod = idcu_dynamic_loader_find_module(loader, name);
+    if (!mod) {
+        return IDCU_ERR_GENERAL;
+    }
+    ret = idcu_dynamic_module_init(mod);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("Failed to init hotplug module %s: %d", name, ret);
+        return ret;
+    }
+    ret = idcu_dynamic_module_run(mod);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("Failed to run hotplug module %s: %d", name, ret);
+        return ret;
+    }
+    IDCU_LOG_INFO("Hotplug module %s loaded and running", name);
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_dynamic_loader_hotplug_unload(idcu_DynamicLoader* loader, const char* name)
+{
+    IDCU_LOG_INFO("Hotplug unloading module: %s", name);
+    int ret = idcu_mutex_lock(&loader->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    idcu_DynamicModule* mod = NULL;
+    for (uint32_t i = 0; i < loader->count; i++) {
+        if (strcmp(loader->modules[i].name, name) == 0) {
+            mod = &loader->modules[i];
+            break;
+        }
+    }
+    if (!mod) {
+        idcu_mutex_unlock(&loader->lock);
+        return IDCU_ERR_NOT_FOUND;
+    }
+    if (mod->state == IDCU_MOD_STATE_RUNNING) {
+        idcu_dynamic_module_stop(mod);
+    }
+    idcu_mutex_unlock(&loader->lock);
+    ret = idcu_dynamic_loader_unload_module(loader, name);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("Failed to hotplug unload module %s: %d", name, ret);
+        return ret;
+    }
+    IDCU_LOG_INFO("Hotplug module %s unloaded", name);
+    return IDCU_ERR_SUCCESS;
+}
