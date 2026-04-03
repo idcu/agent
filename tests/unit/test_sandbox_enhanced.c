@@ -390,6 +390,105 @@ static void test_enhanced_sandbox_inactive(void) {
     IDCU_TEST_PASS();
 }
 
+static void test_enhanced_sandbox_memory_allocator(void) {
+    idcu_EnhancedSandbox sb;
+    idcu_enhanced_sandbox_init(&sb, 1, 0);
+    
+    idcu_enhanced_sandbox_set_memory_limit(&sb, 10240);
+    
+    void* ptr1 = idcu_enhanced_sandbox_malloc(&sb, 1024);
+    IDCU_TEST_ASSERT(ptr1 != NULL, "malloc should succeed");
+    IDCU_TEST_ASSERT(idcu_enhanced_sandbox_get_memory_usage(&sb) == 1024, "Memory usage should be 1024");
+    
+    void* ptr2 = idcu_enhanced_sandbox_calloc(&sb, 10, 100);
+    IDCU_TEST_ASSERT(ptr2 != NULL, "calloc should succeed");
+    IDCU_TEST_ASSERT(idcu_enhanced_sandbox_get_memory_usage(&sb) == 2024, "Memory usage should be 2024");
+    
+    void* ptr3 = idcu_enhanced_sandbox_realloc(&sb, ptr1, 2048);
+    IDCU_TEST_ASSERT(ptr3 != NULL, "realloc should succeed");
+    IDCU_TEST_ASSERT(idcu_enhanced_sandbox_get_memory_usage(&sb) == 3048, "Memory usage should be 3048");
+    
+    idcu_enhanced_sandbox_free(&sb, ptr2);
+    IDCU_TEST_ASSERT(idcu_enhanced_sandbox_get_memory_usage(&sb) == 2048, "Memory usage should be 2048 after free");
+    
+    idcu_enhanced_sandbox_free(&sb, ptr3);
+    IDCU_TEST_ASSERT(idcu_enhanced_sandbox_get_memory_usage(&sb) == 0, "Memory usage should be 0 after all freed");
+    
+    idcu_enhanced_sandbox_destroy(&sb);
+    IDCU_TEST_PASS();
+}
+
+static void test_enhanced_sandbox_memory_limit(void) {
+    idcu_EnhancedSandbox sb;
+    idcu_enhanced_sandbox_init(&sb, 1, 0);
+    
+    idcu_enhanced_sandbox_set_memory_limit(&sb, 1000);
+    
+    void* ptr1 = idcu_enhanced_sandbox_malloc(&sb, 500);
+    IDCU_TEST_ASSERT(ptr1 != NULL, "malloc 500 should succeed");
+    
+    void* ptr2 = idcu_enhanced_sandbox_malloc(&sb, 600);
+    IDCU_TEST_ASSERT(ptr2 == NULL, "malloc 600 should fail due to limit");
+    
+    idcu_enhanced_sandbox_free(&sb, ptr1);
+    
+    idcu_enhanced_sandbox_destroy(&sb);
+    IDCU_TEST_PASS();
+}
+
+static void test_enhanced_sandbox_registry(void) {
+    idcu_EnhancedSandbox sb1, sb2;
+    
+    int ret = idcu_enhanced_sandbox_registry_init();
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Registry init should succeed");
+    
+    idcu_enhanced_sandbox_init(&sb1, 100, 0);
+    idcu_enhanced_sandbox_init(&sb2, 200, 0);
+    
+    ret = idcu_enhanced_sandbox_registry_add(&sb1);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Add sb1 should succeed");
+    
+    ret = idcu_enhanced_sandbox_registry_add(&sb2);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Add sb2 should succeed");
+    
+    idcu_EnhancedSandbox* sb = idcu_enhanced_sandbox_registry_get(100);
+    IDCU_TEST_ASSERT(sb == &sb1, "Get sb1 should return correct pointer");
+    
+    ret = idcu_enhanced_sandbox_registry_remove(100);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Remove sb1 should succeed");
+    
+    sb = idcu_enhanced_sandbox_registry_get(100);
+    IDCU_TEST_ASSERT(sb == NULL, "sb1 should not be found after remove");
+    
+    idcu_enhanced_sandbox_registry_destroy();
+    IDCU_TEST_PASS();
+}
+
+static void test_enhanced_sandbox_access_macros(void) {
+    idcu_EnhancedSandbox sb;
+    idcu_enhanced_sandbox_init(&sb, 1, 0);
+    
+    void* test_addr = malloc(1024);
+    
+    idcu_enhanced_sandbox_add_memory_region(&sb, test_addr, 1024, IDCU_MEM_REGION_READ);
+    
+    int ret = IDCU_SANDBOX_CHECK_READ(&sb, test_addr, 512);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Read check should succeed");
+    
+    ret = IDCU_SANDBOX_CHECK_WRITE(&sb, test_addr, 512);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_PERM_DENIED, "Write check should fail");
+    
+    idcu_enhanced_sandbox_remove_memory_region(&sb, test_addr);
+    idcu_enhanced_sandbox_add_memory_region(&sb, test_addr, 1024, IDCU_MEM_REGION_READ | IDCU_MEM_REGION_WRITE);
+    
+    ret = IDCU_SANDBOX_CHECK_READ_WRITE(&sb, test_addr, 512);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Read-write check should succeed");
+    
+    free(test_addr);
+    idcu_enhanced_sandbox_destroy(&sb);
+    IDCU_TEST_PASS();
+}
+
 int main(void) {
     idcu_log_init(NULL, IDCU_LOG_INFO);
     
@@ -412,6 +511,10 @@ int main(void) {
     idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_fd_limit_exceeded", test_enhanced_sandbox_fd_limit_exceeded);
     idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_zero_limits", test_enhanced_sandbox_zero_limits);
     idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_inactive", test_enhanced_sandbox_inactive);
+    idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_memory_allocator", test_enhanced_sandbox_memory_allocator);
+    idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_memory_limit", test_enhanced_sandbox_memory_limit);
+    idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_registry", test_enhanced_sandbox_registry);
+    idcu_test_suite_add_test(&g_suite, "enhanced_sandbox_access_macros", test_enhanced_sandbox_access_macros);
     
     idcu_test_suite_run(&g_suite);
     idcu_test_suite_print_summary(&g_suite);
