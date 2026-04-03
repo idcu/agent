@@ -12,10 +12,13 @@ typedef struct {
     idcu_Sandbox       sandbox[16];
     uint32_t           sb_cnt;
     idcu_StackContext  global;
+    volatile int       should_exit;
 } idcu_MicroKernel;
 
 void idcu_kernel_init(idcu_MicroKernel *k);
 void idcu_kernel_start_modules(idcu_MicroKernel *k);
 void idcu_kernel_run(idcu_MicroKernel *k);
+void idcu_kernel_stop(idcu_MicroKernel *k);
+void idcu_kernel_set_signal_handler(idcu_MicroKernel *k);
 
 #endif // IDCU_KERNEL_MICRO_KERNEL_H

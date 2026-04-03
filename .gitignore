@@ -43,10 +43,9 @@ cmake_install.cmake
 Makefile
 *.cmake
 
-# 备份目录
-modules_demo_backup/
-modules_example_backup/
-
 # 性能测试数据
 *.prof
 *.out
+
+# 开发过程中的临时文档
+DEVELOPMENT_PLAN.md
