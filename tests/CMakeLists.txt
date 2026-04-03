@@ -146,13 +146,22 @@ else()
 endif()
 add_test(NAME test_dynamic_loader COMMAND test_dynamic_loader)
 
+add_executable(test_micro_kernel
+    unit/test_micro_kernel.c
+)
+target_link_libraries(test_micro_kernel idcu_core)
+if(NOT WIN32)
+    target_link_libraries(test_micro_kernel pthread)
+endif()
+add_test(NAME test_micro_kernel COMMAND test_micro_kernel)
+
 # 设置单元测试输出目录
 set_target_properties(
     test_config_manager test_msg_bus test_coroutine test_registry
     test_sandbox test_sandbox_enhanced test_distributed_node
     test_plugin_ecosystem test_memory_pool test_json_parser
     test_health_check test_metrics test_network_layer
-    test_node_discovery test_dynamic_loader
+    test_node_discovery test_dynamic_loader test_micro_kernel
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out/tests
 )
