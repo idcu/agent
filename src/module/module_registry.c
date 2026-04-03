@@ -1,6 +1,50 @@
 #include "module/module_registry.h"
 #include <string.h>
 
+#if defined(__GNUC__) && !defined(__MINGW32__)
+extern const idcu_ModuleInterface __start_modules;
+extern const idcu_ModuleInterface __stop_modules;
+#endif
+
+extern const idcu_ModuleInterface __idcu_module_base_log;
+extern const idcu_ModuleInterface __idcu_module_biz_collect;
+extern const idcu_ModuleInterface __idcu_module_core_module;
+
+int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry)
+{
+    if (!registry) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    int ret;
+#if defined(__GNUC__) && !defined(__MINGW32__)
+    const idcu_ModuleInterface* mod = &__start_modules;
+    while (mod < &__stop_modules) {
+        if (mod->name != NULL) {
+            ret = idcu_module_registry_register(registry, mod, IDCU_MOD_PRIO_NORMAL);
+            if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+                return ret;
+            }
+        }
+        mod++;
+    }
+#else
+    ret = idcu_module_registry_register(registry, &__idcu_module_base_log, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_biz_collect, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_core_module, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+#endif
+    return IDCU_ERR_SUCCESS;
+}
+
 int idcu_module_registry_init(idcu_ModuleRegistry* registry)
 {
     if (!registry) {

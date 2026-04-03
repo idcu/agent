@@ -9,6 +9,8 @@ set(IDCU_VERSION "${IDCU_VERSION_MAJOR}.${IDCU_VERSION_MINOR}.${IDCU_VERSION_PAT
 
 if(MSVC)
     add_compile_options(/W4)
+elseif(MINGW)
+    add_compile_options(-O2 -Wall -Wextra)
 else()
     add_compile_options(-O2 -Wall -Wextra)
 endif()
@@ -44,10 +46,15 @@ set_target_properties(idcu_agent PROPERTIES
 target_link_libraries(idcu_agent PRIVATE idcu_core)
 
 if(WIN32)
-    target_link_libraries(idcu_agent PRIVATE)
+    if(MSVC)
+    elseif(MINGW)
+    endif()
 else()
     target_link_libraries(idcu_agent PRIVATE pthread)
     target_link_libraries(idcu_core PRIVATE pthread)
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        target_link_options(idcu_agent PRIVATE -Wl,--whole-archive idcu_core -Wl,--no-whole-archive)
+    endif()
 endif()
 
 option(BUILD_TESTS "Build tests" OFF)

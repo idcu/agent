@@ -1,4 +1,5 @@
 #include "kernel/micro_kernel.h"
+#include "module/module_registry.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -10,19 +11,7 @@
 #endif
 
 static idcu_MicroKernel *g_kernel = NULL;
-
-// 为避免 Windows/MinGW 链接问题，我们手动声明几个模块
-// 在实际项目中，您可以使用其他方式处理模块加载
-extern const idcu_ModuleInterface __idcu_module_base_log;
-extern const idcu_ModuleInterface __idcu_module_biz_collect;
-extern const idcu_ModuleInterface __idcu_module_core_module;
-
-static const idcu_ModuleInterface* modules[] = {
-    &__idcu_module_base_log,
-    &__idcu_module_biz_collect,
-    &__idcu_module_core_module,
-    NULL
-};
+static idcu_ModuleRegistry g_module_registry;
 
 #ifdef _WIN32
 static BOOL WINAPI windows_signal_handler(DWORD fdwCtrlType)
@@ -53,31 +42,38 @@ void idcu_kernel_init(idcu_MicroKernel *k)
     memset(k, 0, sizeof(idcu_MicroKernel));
     idcu_msg_bus_init(&k->msg);
     idcu_ctx_init(&k->global, 0, 0);
+    idcu_module_registry_init(&g_module_registry);
+    idcu_module_registry_discover_modules(&g_module_registry);
     g_kernel = k;
 }
 
 void idcu_kernel_start_modules(idcu_MicroKernel *k)
 {
     uint32_t cnt = 0;
-    const idcu_ModuleInterface** mod = modules;
+    int module_count = idcu_module_registry_get_count(&g_module_registry);
 
-    while (*mod && cnt < 16) {
-        printf("[kernel] module %s init\n", (*mod)->name);
-        if ((*mod)->init) {
-            int ret = (*mod)->init();
+    for (int i = 0; i < module_count && cnt < 16; i++) {
+        const idcu_RegisteredModule* reg_mod = idcu_module_registry_get_at(&g_module_registry, i);
+        if (!reg_mod) {
+            continue;
+        }
+        
+        const idcu_ModuleInterface* mod = reg_mod->iface;
+        printf("[kernel] module %s init\n", mod->name);
+        if (mod->init) {
+            int ret = mod->init();
             if (ret != 0) {
-                printf("[kernel] warning: module %s init failed with code %d\n", (*mod)->name, ret);
+                printf("[kernel] warning: module %s init failed with code %d\n", mod->name, ret);
             }
         }
         
         k->sandbox[cnt].module_id = cnt;
         k->sandbox[cnt].perm = IDCU_PERM_SEND | IDCU_PERM_RECV | IDCU_PERM_RUN;
         
-        k->tracked_modules[cnt].iface = *mod;
+        k->tracked_modules[cnt].iface = mod;
         k->tracked_modules[cnt].state = IDCU_MOD_STATE_RUNNING;
         
         cnt++;
-        mod++;
     }
     k->sb_cnt = cnt;
     k->tracked_cnt = cnt;

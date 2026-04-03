@@ -31,10 +31,25 @@ typedef struct {
     int (*stop)(void);                  // 停止
 } idcu_ModuleInterface;
 
+// 跨平台 section 宏定义
+#ifdef __GNUC__
 #define IDCU_REGISTER_MODULE(name, init_fn, run_fn, stop_fn) \
     const idcu_ModuleInterface __idcu_module_##name \
-        __attribute__((section(".modules"))) = { \
+        __attribute__((section(".modules"), used)) = { \
             #name, init_fn, run_fn, stop_fn \
         }
+#elif defined(_MSC_VER)
+#define IDCU_REGISTER_MODULE(name, init_fn, run_fn, stop_fn) \
+    __pragma(section(".modules", read)) \
+    __declspec(allocate(".modules")) \
+    const idcu_ModuleInterface __idcu_module_##name = { \
+        #name, init_fn, run_fn, stop_fn \
+    }
+#else
+#define IDCU_REGISTER_MODULE(name, init_fn, run_fn, stop_fn) \
+    const idcu_ModuleInterface __idcu_module_##name = { \
+        #name, init_fn, run_fn, stop_fn \
+    }
+#endif
 
 #endif // IDCU_MODULE_MODULE_DEF_H

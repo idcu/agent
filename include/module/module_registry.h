@@ -42,6 +42,8 @@ int idcu_module_registry_init_all(idcu_ModuleRegistry* registry);
 int idcu_module_registry_run_all(idcu_ModuleRegistry* registry);
 int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry);
 
+int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry);
+
 #ifdef __cplusplus
 }
 #endif // IDCU_MODULE_MODULE_REGISTRY_H
