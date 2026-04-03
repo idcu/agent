@@ -2,6 +2,9 @@
 #include "utils/log.h"
 #include <string.h>
 #include <stdio.h>
+#ifndef _WIN32
+#include <fcntl.h>
+#endif
 
 #ifdef _WIN32
 static int g_winsock_initialized = 0;
@@ -55,6 +58,15 @@ int idcu_network_socket_create(idcu_NetworkSocket* sock, int protocol) {
 #endif
         return IDCU_ERR_NETWORK_INIT;
     }
+    
+    // Set non-blocking mode
+#ifdef _WIN32
+    u_long mode = 1;
+    ioctlsocket(sock->fd, FIONBIO, &mode);
+#else
+    int flags = fcntl(sock->fd, F_GETFL, 0);
+    fcntl(sock->fd, F_SETFL, flags | O_NONBLOCK);
+#endif
     
     return IDCU_ERR_OK;
 }
