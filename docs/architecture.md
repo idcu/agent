@@ -55,7 +55,7 @@ IDCU Agent 采用微内核架构设计，核心只负责基本的调度和通信
 - 批量消息处理
 
 ### 4. 沙箱安全 (Sandbox)
-**文件位置**: 
+**文件位置**:
 - `include/security/sandbox.h` / `src/security/sandbox.c`
 - `include/security/sandbox_enhanced.h` / `src/security/sandbox_enhanced.c`
 
@@ -105,7 +105,7 @@ IDCU Agent 采用微内核架构设计，核心只负责基本的调度和通信
 ```
 idcu-agent/
 ├── include/              # 公共头文件
-│   ├── common/           # 通用工具 (atomic, lock, config, error_code)
+│   ├── common/           # 通用工具 (atomic, lock, error_code, config)
 │   ├── utils/            # 工具模块 (log, memory_pool, json_parser, config_manager)
 │   ├── scheduler/        # 调度相关 (coroutine, msg_bus, context)
 │   ├── module/           # 模块系统 (module_def, module_registry, dynamic_module)
@@ -131,23 +131,23 @@ idcu-agent/
 1. **模块启动流程**:
    ```
    main() 
-     → kernel_init() 
+     → idcu_kernel_init() 
        → 初始化协程调度器
        → 初始化消息总线
        → 初始化沙箱
-     → kernel_start_modules()
+     → idcu_kernel_start_modules()
        → 加载并初始化所有模块
-     → kernel_run()
+     → idcu_kernel_run()
        → 主循环：调度协程 + 处理消息
    ```
 
 2. **模块间通信**:
    ```
    模块A 
-     → msg_send() 
+     → idcu_msg_send() 
        → 消息总线队列
      → 模块B 
-       → msg_recv() 
+       → idcu_msg_recv() 
          → 处理消息
    ```
 
@@ -161,13 +161,24 @@ idcu-agent/
      → 切换到下一个协程
    ```
 
+## 前缀命名空间
+
+为了避免命名冲突，本项目所有公共符号都使用 `idcu_` 前缀：
+
+| 符号类型 | 规则 | 示例 |
+|---------|------|------|
+| 类型定义 | `idcu_TypeName` | `idcu_Mutex`, `idcu_ErrorCode` |
+| 函数名 | `idcu_function_name()` | `idcu_kernel_init()` |
+| 宏定义 | `IDCU_MACRO_NAME` | `IDCU_ERR_OK`, `IDCU_CONFIG_MAX_MODULES` |
+| 枚举值 | `IDCU_ENUM_VALUE` | `IDCU_MOD_STATE_INITED` |
+
 ## 扩展指南
 
 ### 添加新功能模块
 
 1. 在 `modules/` 目录下创建模块文件
-2. 实现 `ModuleInterface` 接口
-3. 使用 `REGISTER_MODULE` 宏注册模块
+2. 实现 `idcu_ModuleInterface` 接口
+3. 使用 `IDCU_REGISTER_MODULE` 宏注册模块
 4. 在微内核中添加模块引用
 
 ### 添加新的核心组件

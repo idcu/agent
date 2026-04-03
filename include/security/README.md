@@ -10,7 +10,7 @@
 - 权限位定义 (SEND, RECV, RUN, HW 等)
 - 配额管理
 - 栈上下文保存
-- 权限检查函数 `sandbox_perm_check()`
+- 权限检查函数 `idcu_sandbox_perm_check()`
 
 ### sandbox_enhanced.h/c - 增强沙箱
 更强大的安全控制机制：
@@ -26,14 +26,14 @@
 
 | 权限位 | 说明 |
 |--------|------|
-| PERM_SEND | 允许发送消息 |
-| PERM_RECV | 允许接收消息 |
-| PERM_RUN | 允许运行代码 |
-| PERM_HW | 允许访问硬件 |
-| PERM_CONFIG | 允许修改配置 |
-| PERM_LOG | 允许访问日志 |
-| PERM_DEBUG | 允许调试操作 |
-| PERM_MODULE_MGR | 允许管理模块 |
+| IDCU_PERM_SEND | 允许发送消息 |
+| IDCU_PERM_RECV | 允许接收消息 |
+| IDCU_PERM_RUN | 允许运行代码 |
+| IDCU_PERM_HW | 允许访问硬件 |
+| IDCU_PERM_CONFIG | 允许修改配置 |
+| IDCU_PERM_LOG | 允许访问日志 |
+| IDCU_PERM_DEBUG | 允许调试操作 |
+| IDCU_PERM_MODULE_MGR | 允许管理模块 |
 
 ## 使用示例
 
@@ -41,13 +41,13 @@
 ```c
 #include "security/sandbox.h"
 
-Sandbox sb;
+idcu_Sandbox sb;
 sb.module_id = 1;
-sb.perm = PERM_SEND | PERM_RECV | PERM_RUN;
+sb.perm = IDCU_PERM_SEND | IDCU_PERM_RECV | IDCU_PERM_RUN;
 sb.quota = 1000;
 
 // 检查权限
-if (sandbox_perm_check(&sb, PERM_SEND) == 0) {
+if (idcu_sandbox_perm_check(&sb, IDCU_PERM_SEND) == 0) {
     // 有权限发送消息
 }
 ```
@@ -56,26 +56,26 @@ if (sandbox_perm_check(&sb, PERM_SEND) == 0) {
 ```c
 #include "security/sandbox_enhanced.h"
 
-EnhancedSandbox sb;
-enhanced_sandbox_init(&sb, 1, PERM_RUN);
+idcu_EnhancedSandbox sb;
+idcu_enhanced_sandbox_init(&sb, 1, IDCU_PERM_RUN);
 
 // 添加内存区域
-enhanced_sandbox_add_memory_region(&sb, buffer, size, 
-    MEM_REGION_READ | MEM_REGION_WRITE);
+idcu_enhanced_sandbox_add_memory_region(&sb, buffer, size, 
+    IDCU_MEM_REGION_READ | IDCU_MEM_REGION_WRITE);
 
 // 添加允许的系统调用
-enhanced_sandbox_add_syscall(&sb, SYS_read, "read");
-enhanced_sandbox_add_syscall(&sb, SYS_write, "write");
+idcu_enhanced_sandbox_add_syscall(&sb, IDCU_SYS_read, "read");
+idcu_enhanced_sandbox_add_syscall(&sb, IDCU_SYS_write, "write");
 
 // 设置资源限制
-enhanced_sandbox_set_cpu_limit(&sb, 1000);  // 1秒
-enhanced_sandbox_set_memory_limit(&sb, 1024*1024);  // 1MB
+idcu_enhanced_sandbox_set_cpu_limit(&sb, 1000);  // 1秒
+idcu_enhanced_sandbox_set_memory_limit(&sb, 1024*1024);  // 1MB
 
 // 检查内存访问
-enhanced_sandbox_check_memory_access(&sb, ptr, size, MEM_REGION_READ);
+idcu_enhanced_sandbox_check_memory_access(&sb, ptr, size, IDCU_MEM_REGION_READ);
 
 // 检查系统调用
-enhanced_sandbox_check_syscall(&sb, SYS_read);
+idcu_enhanced_sandbox_check_syscall(&sb, IDCU_SYS_read);
 
-enhanced_sandbox_destroy(&sb);
+idcu_enhanced_sandbox_destroy(&sb);
 ```

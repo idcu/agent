@@ -6,9 +6,9 @@
 #include <stdlib.h>
 
 static FILE* log_file = NULL;
-static LogLevel log_level = LOG_INFO;
+static idcu_LogLevel log_level = IDCU_LOG_INFO;
 
-const char* err_to_str(int err_code) {
+const char* idcu_err_to_str(int err_code) {
     switch (err_code) {
         case 0: return "Success";
         case -1: return "General error";
@@ -46,17 +46,17 @@ const char* err_to_str(int err_code) {
     }
 }
 
-int log_init(const char* filename, LogLevel level) {
+int idcu_log_init(const char* filename, idcu_LogLevel level) {
     log_level = level;
     if (filename) {
         log_file = fopen(filename, "a");
-        if (!log_file) return ERR_GENERAL;
+        if (!log_file) return IDCU_ERR_GENERAL;
         setbuf(log_file, NULL);
     }
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-void log_printf(LogLevel level, const char* file, int line, const char* fmt, ...) {
+void idcu_log_printf(idcu_LogLevel level, const char* file, int line, const char* fmt, ...) {
     if (level < log_level) return;
     time_t now = time(NULL);
     struct tm* tm = localtime(&now);
@@ -77,5 +77,5 @@ void log_printf(LogLevel level, const char* file, int line, const char* fmt, ...
 
     printf("%s%s\n", header, content);
     if (log_file) fprintf(log_file, "%s%s\n", header, content);
-    if (level == LOG_FATAL) exit(1);
+    if (level == IDCU_LOG_FATAL) exit(1);
 }

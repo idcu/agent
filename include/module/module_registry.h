@@ -10,37 +10,37 @@
 extern "C" {
 #endif // IDCU_MODULE_MODULE_REGISTRY_H
 
-#define MAX_REGISTERED_MODULES 64
+#define IDCU_MAX_REGISTERED_MODULES 64
 
 typedef struct {
-    const ModuleInterface* iface;
+    const idcu_ModuleInterface* iface;
     uint32_t module_id;
-    ModuleState state;
-    ModulePrio priority;
+    idcu_ModuleState state;
+    idcu_ModulePrio priority;
     void* user_data;
-} RegisteredModule;
+} idcu_RegisteredModule;
 
 typedef struct {
-    RegisteredModule modules[MAX_REGISTERED_MODULES];
+    idcu_RegisteredModule modules[IDCU_MAX_REGISTERED_MODULES];
     uint32_t count;
     uint32_t next_id;
-    Mutex lock;
-} ModuleRegistry;
+    idcu_Mutex lock;
+} idcu_ModuleRegistry;
 
-int module_registry_init(ModuleRegistry* registry);
-void module_registry_destroy(ModuleRegistry* registry);
-int module_registry_register(ModuleRegistry* registry, const ModuleInterface* iface, ModulePrio priority);
-int module_registry_unregister(ModuleRegistry* registry, uint32_t module_id);
-const RegisteredModule* module_registry_find_by_id(ModuleRegistry* registry, uint32_t module_id);
-const RegisteredModule* module_registry_find_by_name(ModuleRegistry* registry, const char* name);
-int module_registry_get_count(ModuleRegistry* registry);
-const RegisteredModule* module_registry_get_at(ModuleRegistry* registry, uint32_t index);
-int module_registry_init_module(ModuleRegistry* registry, uint32_t module_id);
-int module_registry_run_module(ModuleRegistry* registry, uint32_t module_id);
-int module_registry_stop_module(ModuleRegistry* registry, uint32_t module_id);
-int module_registry_init_all(ModuleRegistry* registry);
-int module_registry_run_all(ModuleRegistry* registry);
-int module_registry_stop_all(ModuleRegistry* registry);
+int idcu_module_registry_init(idcu_ModuleRegistry* registry);
+void idcu_module_registry_destroy(idcu_ModuleRegistry* registry);
+int idcu_module_registry_register(idcu_ModuleRegistry* registry, const idcu_ModuleInterface* iface, idcu_ModulePrio priority);
+int idcu_module_registry_unregister(idcu_ModuleRegistry* registry, uint32_t module_id);
+const idcu_RegisteredModule* idcu_module_registry_find_by_id(idcu_ModuleRegistry* registry, uint32_t module_id);
+const idcu_RegisteredModule* idcu_module_registry_find_by_name(idcu_ModuleRegistry* registry, const char* name);
+int idcu_module_registry_get_count(idcu_ModuleRegistry* registry);
+const idcu_RegisteredModule* idcu_module_registry_get_at(idcu_ModuleRegistry* registry, uint32_t index);
+int idcu_module_registry_init_module(idcu_ModuleRegistry* registry, uint32_t module_id);
+int idcu_module_registry_run_module(idcu_ModuleRegistry* registry, uint32_t module_id);
+int idcu_module_registry_stop_module(idcu_ModuleRegistry* registry, uint32_t module_id);
+int idcu_module_registry_init_all(idcu_ModuleRegistry* registry);
+int idcu_module_registry_run_all(idcu_ModuleRegistry* registry);
+int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry);
 
 #ifdef __cplusplus
 }

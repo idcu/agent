@@ -21,64 +21,75 @@ IDCU Agent 是一个可以在后台运行的程序，它像一个"小管家"一�
 
 ```
 idcu-agent/
-├── main.c              # 程序入口
-├── include/            # 头文件
-│   ├── atomic.h
-│   ├── config.h
-│   ├── config_manager.h
-│   ├── distributed_node.h
-│   ├── dynamic_module.h
-│   ├── error_code.h
-│   ├── health_check.h
-│   ├── json_parser.h
-│   ├── lock.h
-│   ├── log.h
-│   ├── memory_pool.h
-│   ├── metrics.h
-│   ├── module_def.h
-│   ├── module_registry.h
-│   ├── network_layer.h
-│   ├── node_discovery.h
-│   ├── plugin_ecosystem.h
-│   ├── sandbox_enhanced.h
-│   └── test_framework.h
-├── kernel/             # 微内核核心代码
-│   ├── atomic.c
-│   ├── config_manager.c
-│   ├── context.c
-│   ├── coroutine.c
-│   ├── distributed_node.c
-│   ├── dynamic_loader.c
-│   ├── health_check.c
-│   ├── json_parser.c
-│   ├── lock.c
-│   ├── log.c
-│   ├── memory_pool.c
-│   ├── metrics.c
-│   ├── micro_kernel.c
-│   ├── module_registry.c
-│   ├── msg_bus.c
-│   ├── network_layer.c
-│   ├── node_discovery.c
-│   ├── plugin_ecosystem.c
-│   ├── sandbox.c
-│   ├── sandbox_enhanced.c
-│   └── test_framework.c
-├── modules/            # 功能模块
-│   ├── base/           # 基础模块
+├── main.c                    # 程序入口
+├── include/                  # 头文件目录
+│   ├── common/              # 通用工具
+│   │   ├── atomic.h
+│   │   ├── config.h
+│   │   ├── error_code.h
+│   │   └── lock.h
+│   ├── kernel/              # 内核核心
+│   │   └── micro_kernel.h
+│   ├── module/              # 模块系统
+│   │   ├── dynamic_module.h
+│   │   ├── module_def.h
+│   │   ├── module_registry.h
+│   │   └── module_manager.h
+│   ├── monitor/             # 监控系统
+│   │   ├── health_check.h
+│   │   └── metrics.h
+│   ├── network/             # 网络相关
+│   │   ├── distributed_node.h
+│   │   ├── network_layer.h
+│   │   └── node_discovery.h
+│   ├── plugin/              # 插件系统
+│   │   └── plugin_ecosystem.h
+│   ├── scheduler/           # 调度相关
+│   │   ├── context.h
+│   │   ├── coroutine.h
+│   │   └── msg_bus.h
+│   ├── security/            # 安全相关
+│   │   ├── sandbox.h
+│   │   └── sandbox_enhanced.h
+│   ├── test/                # 测试框架
+│   │   └── test_framework.h
+│   └── utils/               # 工具模块
+│       ├── config_manager.h
+│       ├── json_parser.h
+│       ├── log.h
+│       └── memory_pool.h
+├── src/                     # 源代码实现
+│   └── (与 include 对应)
+├── modules/                 # 功能模块
+│   ├── base/                # 基础模块
+│   │   ├── core_module.c
 │   │   └── log.c
-│   └── biz/            # 业务模块
+│   └── biz/                 # 业务模块
 │       └── collect.c
-├── config/             # 配置文件
+├── config/                  # 配置文件
 │   └── agent.cfg
-├── tests/              # 测试用例
-│   ├── unit/           # 单元测试
-│   └── integration/    # 集成测试
-├── CMakeLists.txt      # CMake 构建脚本
-├── build.bat           # Windows 编译脚本
-├── build.sh            # Linux 编译脚本
-└── benchmark.c         # 性能基准测试
+├── tests/                   # 测试用例
+│   ├── unit/                # 单元测试
+│   └── integration/         # 集成测试
+├── docs/                    # 文档目录
+│   ├── architecture.md      # 架构设计文档
+│   └── module_loader_design.md
+├── CMakeLists.txt           # CMake 构建脚本
+├── build.bat                # Windows 编译脚本
+├── build.sh                 # Linux 编译脚本
+└── benchmark.c              # 性能基准测试
 ```
+
+## 前缀命名空间说明
+
+为了避免命名冲突，本项目所有公共符号都使用 `idcu_` 前缀：
+
+- **类型**: `idcu_TypeName` (例如: `idcu_Mutex`, `idcu_ErrorCode`)
+- **函数**: `idcu_function_name()` (例如: `idcu_mutex_init()`)
+- **宏**: `IDCU_MACRO_NAME` (例如: `IDCU_ERR_OK`, `IDCU_CONFIG_MAX_MODULES`)
+- **枚举值**: `IDCU_ENUM_VALUE` (例如: `IDCU_MOD_STATE_INITED`)
+
+同时保留了兼容性宏，旧代码无需修改即可继续编译。
 
 ## 快速开始
 

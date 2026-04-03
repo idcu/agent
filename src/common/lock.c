@@ -1,23 +1,23 @@
 #include "common/lock.h"
 
-int mutex_init(Mutex* lock)
+int idcu_mutex_init(idcu_Mutex* lock)
 {
     if (!lock) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
 #ifdef _WIN32
     InitializeCriticalSection(&lock->cs);
 #else
     if (pthread_mutex_init(&lock->mutex, NULL) != 0) {
-        return ERR_GENERAL;
+        return IDCU_ERR_GENERAL;
     }
 #endif
     lock->initialized = 1;
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-void mutex_destroy(Mutex* lock)
+void idcu_mutex_destroy(idcu_Mutex* lock)
 {
     if (!lock || !lock->initialized) {
         return;
@@ -31,56 +31,56 @@ void mutex_destroy(Mutex* lock)
     lock->initialized = 0;
 }
 
-int mutex_lock(Mutex* lock)
+int idcu_mutex_lock(idcu_Mutex* lock)
 {
     if (!lock || !lock->initialized) {
-        return ERR_NOT_INITIALIZED;
+        return IDCU_ERR_NOT_INITIALIZED;
     }
 
 #ifdef _WIN32
     EnterCriticalSection(&lock->cs);
 #else
     if (pthread_mutex_lock(&lock->mutex) != 0) {
-        return ERR_LOCK_FAILED;
+        return IDCU_ERR_LOCK_FAILED;
     }
 #endif
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-int mutex_unlock(Mutex* lock)
+int idcu_mutex_unlock(idcu_Mutex* lock)
 {
     if (!lock || !lock->initialized) {
-        return ERR_NOT_INITIALIZED;
+        return IDCU_ERR_NOT_INITIALIZED;
     }
 
 #ifdef _WIN32
     LeaveCriticalSection(&lock->cs);
 #else
     if (pthread_mutex_unlock(&lock->mutex) != 0) {
-        return ERR_UNLOCK_FAILED;
+        return IDCU_ERR_UNLOCK_FAILED;
     }
 #endif
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-int rwlock_init(RwLock* lock)
+int idcu_rwlock_init(idcu_RwLock* lock)
 {
     if (!lock) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
 #ifdef _WIN32
     InitializeSRWLock(&lock->rwlock);
 #else
     if (pthread_rwlock_init(&lock->rwlock, NULL) != 0) {
-        return ERR_GENERAL;
+        return IDCU_ERR_GENERAL;
     }
 #endif
     lock->initialized = 1;
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-void rwlock_destroy(RwLock* lock)
+void idcu_rwlock_destroy(idcu_RwLock* lock)
 {
     if (!lock || !lock->initialized) {
         return;
@@ -92,50 +92,50 @@ void rwlock_destroy(RwLock* lock)
     lock->initialized = 0;
 }
 
-int rwlock_rdlock(RwLock* lock)
+int idcu_rwlock_rdlock(idcu_RwLock* lock)
 {
     if (!lock || !lock->initialized) {
-        return ERR_NOT_INITIALIZED;
+        return IDCU_ERR_NOT_INITIALIZED;
     }
 
 #ifdef _WIN32
     AcquireSRWLockShared(&lock->rwlock);
 #else
     if (pthread_rwlock_rdlock(&lock->rwlock) != 0) {
-        return ERR_LOCK_FAILED;
+        return IDCU_ERR_LOCK_FAILED;
     }
 #endif
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-int rwlock_wrlock(RwLock* lock)
+int idcu_rwlock_wrlock(idcu_RwLock* lock)
 {
     if (!lock || !lock->initialized) {
-        return ERR_NOT_INITIALIZED;
+        return IDCU_ERR_NOT_INITIALIZED;
     }
 
 #ifdef _WIN32
     AcquireSRWLockExclusive(&lock->rwlock);
 #else
     if (pthread_rwlock_wrlock(&lock->rwlock) != 0) {
-        return ERR_LOCK_FAILED;
+        return IDCU_ERR_LOCK_FAILED;
     }
 #endif
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }
 
-int rwlock_unlock(RwLock* lock)
+int idcu_rwlock_unlock(idcu_RwLock* lock)
 {
     if (!lock || !lock->initialized) {
-        return ERR_NOT_INITIALIZED;
+        return IDCU_ERR_NOT_INITIALIZED;
     }
 
 #ifdef _WIN32
     ReleaseSRWLockExclusive(&lock->rwlock);
 #else
     if (pthread_rwlock_unlock(&lock->rwlock) != 0) {
-        return ERR_UNLOCK_FAILED;
+        return IDCU_ERR_UNLOCK_FAILED;
     }
 #endif
-    return ERR_SUCCESS;
+    return IDCU_ERR_SUCCESS;
 }

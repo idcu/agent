@@ -34,33 +34,33 @@
 ```c
 #include "scheduler/coroutine.h"
 
-CoroScheduler sched;
-coro_sched_init(&sched);
+idcu_CoroScheduler sched;
+idcu_coro_sched_init(&sched);
 
-CoroState my_coro_func(Coroutine* coro) {
+idcu_CoroState my_coro_func(idcu_Coroutine* coro) {
     // 协程逻辑
-    return CORO_FINISHED;
+    return IDCU_CORO_FINISHED;
 }
 
-int coro_id = coro_create(&sched, my_coro_func, 0, 10, NULL);
-coro_sched_run(&sched);
+int coro_id = idcu_coro_create(&sched, my_coro_func, 0, 10, NULL);
+idcu_coro_sched_run(&sched);
 
-coro_sched_destroy(&sched);
+idcu_coro_sched_destroy(&sched);
 ```
 
 ### 使用消息总线
 ```c
 #include "scheduler/msg_bus.h"
 
-MessageBus bus;
-msg_bus_init(&bus);
+idcu_MessageBus bus;
+idcu_msg_bus_init(&bus);
 
-StackContext ctx;
-ctx_init(&ctx, module_a_id, msg_id);
-msg_send(&bus, module_a_id, module_b_id, MSG_PRIO_NORMAL, &ctx);
+idcu_StackContext ctx;
+idcu_ctx_init(&ctx, module_a_id, msg_id);
+idcu_msg_send(&bus, module_a_id, module_b_id, IDCU_MSG_PRIO_NORMAL, &ctx);
 
-Message msg;
-msg_recv(&bus, module_b_id, &msg);
+idcu_Message msg;
+idcu_msg_recv(&bus, module_b_id, &msg);
 
-msg_bus_destroy(&bus);
+idcu_msg_bus_destroy(&bus);
 ```

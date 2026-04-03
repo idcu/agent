@@ -5,21 +5,21 @@
 
 static int g_current_test_passed = 1;
 
-void test_suite_init(TestSuite* suite, const char* name)
+void idcu_test_suite_init(idcu_TestSuite* suite, const char* name)
 {
     if (!suite) {
         return;
     }
-    memset(suite, 0, sizeof(TestSuite));
+    memset(suite, 0, sizeof(idcu_TestSuite));
     suite->name = name;
     suite->capacity = 32;
-    suite->tests = (TestCase*)malloc(suite->capacity * sizeof(TestCase));
+    suite->tests = (idcu_TestCase*)malloc(suite->capacity * sizeof(idcu_TestCase));
     if (!suite->tests) {
         suite->capacity = 0;
     }
 }
 
-void test_suite_destroy(TestSuite* suite)
+void idcu_test_suite_destroy(idcu_TestSuite* suite)
 {
     if (!suite) {
         return;
@@ -28,24 +28,24 @@ void test_suite_destroy(TestSuite* suite)
         free(suite->tests);
         suite->tests = NULL;
     }
-    memset(suite, 0, sizeof(TestSuite));
+    memset(suite, 0, sizeof(idcu_TestSuite));
 }
 
-int test_suite_add_test(TestSuite* suite, const char* name, TestFunc func)
+int idcu_test_suite_add_test(idcu_TestSuite* suite, const char* name, idcu_TestFunc func)
 {
     if (!suite || !name || !func || !suite->tests) {
         return -1;
     }
     if (suite->count >= suite->capacity) {
         size_t new_cap = suite->capacity * 2;
-        TestCase* new_tests = (TestCase*)realloc(suite->tests, new_cap * sizeof(TestCase));
+        idcu_TestCase* new_tests = (idcu_TestCase*)realloc(suite->tests, new_cap * sizeof(idcu_TestCase));
         if (!new_tests) {
             return -1;
         }
         suite->tests = new_tests;
         suite->capacity = new_cap;
     }
-    TestCase* tc = &suite->tests[suite->count];
+    idcu_TestCase* tc = &suite->tests[suite->count];
     tc->name = name;
     tc->func = func;
     tc->passed = 0;
@@ -54,14 +54,14 @@ int test_suite_add_test(TestSuite* suite, const char* name, TestFunc func)
     return 0;
 }
 
-void test_suite_run(TestSuite* suite)
+void idcu_test_suite_run(idcu_TestSuite* suite)
 {
     if (!suite || !suite->tests) {
         return;
     }
     printf("\n=== Test Suite: %s ===\n", suite->name);
     for (size_t i = 0; i < suite->count; i++) {
-        TestCase* tc = &suite->tests[i];
+        idcu_TestCase* tc = &suite->tests[i];
         printf("  Running: %s... ", tc->name);
         fflush(stdout);
         g_current_test_passed = 1;
@@ -78,7 +78,7 @@ void test_suite_run(TestSuite* suite)
     }
 }
 
-void test_suite_print_summary(TestSuite* suite)
+void idcu_test_suite_print_summary(idcu_TestSuite* suite)
 {
     if (!suite) {
         return;
@@ -89,7 +89,7 @@ void test_suite_print_summary(TestSuite* suite)
     printf("  Failed: %d\n", suite->total_failed);
 }
 
-int test_suite_get_failures(TestSuite* suite)
+int idcu_test_suite_get_failures(idcu_TestSuite* suite)
 {
     if (!suite) {
         return 0;
@@ -97,12 +97,12 @@ int test_suite_get_failures(TestSuite* suite)
     return suite->total_failed;
 }
 
-void test_pass(void)
+void idcu_test_pass(void)
 {
     g_current_test_passed = 1;
 }
 
-void test_fail(const char* file, int line, const char* msg)
+void idcu_test_fail(const char* file, int line, const char* msg)
 {
     g_current_test_passed = 0;
     if (msg) {
@@ -112,9 +112,9 @@ void test_fail(const char* file, int line, const char* msg)
     }
 }
 
-void test_assert(int condition, const char* msg)
+void idcu_test_assert(int condition, const char* msg)
 {
     if (!condition) {
-        test_fail(__FILE__, __LINE__, msg);
+        idcu_test_fail(__FILE__, __LINE__, msg);
     }
 }

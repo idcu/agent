@@ -6,10 +6,10 @@
 
 ### module_def.h - 模块接口定义
 定义模块的标准接口和注册机制：
-- `ModuleInterface` 结构体：定义模块的生命周期函数
-- `ModuleState` 枚举：模块状态 (UNINIT, INITED, RUNNING, STOPPED, ERROR)
-- `ModulePrio` 枚举：模块优先级 (LOW, NORMAL, HIGH, REALTIME)
-- `REGISTER_MODULE` 宏：用于注册静态模块
+- `idcu_ModuleInterface` 结构体：定义模块的生命周期函数
+- `idcu_ModuleState` 枚举：模块状态 (UNINIT, INITED, RUNNING, STOPPED, ERROR)
+- `idcu_ModulePrio` 枚举：模块优先级 (LOW, NORMAL, HIGH, REALTIME)
+- `IDCU_REGISTER_MODULE` 宏：用于注册静态模块
 
 ### module_registry.h/c - 模块注册表
 管理已注册模块的生命周期：
@@ -48,42 +48,42 @@ static int my_module_stop(void) {
     return 0;
 }
 
-REGISTER_MODULE(my_module, my_module_init, my_module_run, my_module_stop);
+IDCU_REGISTER_MODULE(my_module, my_module_init, my_module_run, my_module_stop);
 ```
 
 ### 使用模块注册表
 ```c
 #include "module/module_registry.h"
 
-ModuleRegistry registry;
-module_registry_init(&registry);
+idcu_ModuleRegistry registry;
+idcu_module_registry_init(&registry);
 
 // 注册模块
-module_registry_register(&registry, &__module_my_module, MOD_PRIO_NORMAL);
+idcu_module_registry_register(&registry, &__idcu_module_my_module, IDCU_MOD_PRIO_NORMAL);
 
 // 初始化和运行模块
-module_registry_init_module(&registry, module_id);
-module_registry_run_module(&registry, module_id);
+idcu_module_registry_init_module(&registry, module_id);
+idcu_module_registry_run_module(&registry, module_id);
 
-module_registry_destroy(&registry);
+idcu_module_registry_destroy(&registry);
 ```
 
 ### 动态加载模块
 ```c
 #include "module/dynamic_module.h"
 
-DynamicLoader loader;
-dynamic_loader_init(&loader, "./modules");
+idcu_DynamicLoader loader;
+idcu_dynamic_loader_init(&loader, "./modules");
 
 // 加载模块
-dynamic_loader_load_module(&loader, "my_plugin", "./plugins/my_plugin.dll");
+idcu_dynamic_loader_load_module(&loader, "my_plugin", "./plugins/my_plugin.dll");
 
 // 获取和使用模块
-DynamicModule* mod = dynamic_loader_find_module(&loader, "my_plugin");
+idcu_DynamicModule* mod = idcu_dynamic_loader_find_module(&loader, "my_plugin");
 if (mod) {
-    dynamic_module_init(mod);
-    dynamic_module_run(mod);
+    idcu_dynamic_module_init(mod);
+    idcu_dynamic_module_run(mod);
 }
 
-dynamic_loader_destroy(&loader);
+idcu_dynamic_loader_destroy(&loader);
 ```

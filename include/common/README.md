@@ -13,8 +13,8 @@
 
 ### lock.h/c - 锁机制
 提供跨平台的互斥锁和读写锁：
-- Mutex: 互斥锁
-- RwLock: 读写锁 (多读单写)
+- idcu_Mutex: 互斥锁
+- idcu_RwLock: 读写锁 (多读单写)
 
 ### config.h - 配置常量
 定义项目的全局配置常量：
@@ -29,7 +29,7 @@
 - 基础错误码 (成功、通用错误、参数无效等)
 - 模块相关错误码
 - 网络相关错误码
-- `err_to_str()` 函数将错误码转换为字符串
+- `idcu_err_to_str()` 函数将错误码转换为字符串
 
 ## 使用示例
 
@@ -38,19 +38,19 @@
 #include "common/atomic.h"
 
 volatile int32_t counter = 0;
-atomic_fetch_add_int32(&counter, 1);
+idcu_atomic_fetch_add_int32(&counter, 1);
 ```
 
 ### 使用互斥锁
 ```c
 #include "common/lock.h"
 
-Mutex lock;
-mutex_init(&lock);
-mutex_lock(&lock);
+idcu_Mutex lock;
+idcu_mutex_init(&lock);
+idcu_mutex_lock(&lock);
 // 临界区代码
-mutex_unlock(&lock);
-mutex_destroy(&lock);
+idcu_mutex_unlock(&lock);
+idcu_mutex_destroy(&lock);
 ```
 
 ### 使用错误码
@@ -58,7 +58,7 @@ mutex_destroy(&lock);
 #include "common/error_code.h"
 
 int result = some_function();
-if (result != ERR_OK) {
-    printf("Error: %s\n", err_to_str(result));
+if (result != IDCU_ERR_OK) {
+    printf("Error: %s\n", idcu_err_to_str(result));
 }
 ```

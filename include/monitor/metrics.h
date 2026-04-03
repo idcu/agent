@@ -10,39 +10,39 @@ extern "C" {
 #endif // IDCU_MONITOR_METRICS_H
 
 typedef enum {
-    METRIC_COUNTER = 0,
-    METRIC_GAUGE,
-    METRIC_HISTOGRAM
-} MetricType;
+    IDCU_METRIC_COUNTER = 0,
+    IDCU_METRIC_GAUGE,
+    IDCU_METRIC_HISTOGRAM
+} idcu_MetricType;
 
 typedef struct {
     char name[64];
     char desc[128];
-    MetricType type;
+    idcu_MetricType type;
     uint64_t value;
     uint64_t min;
     uint64_t max;
     uint64_t sum;
     uint64_t count;
-} Metric;
+} idcu_Metric;
 
-#define MAX_METRICS 64
+#define IDCU_MAX_METRICS 64
 
 typedef struct {
-    Metric metrics[MAX_METRICS];
+    idcu_Metric metrics[IDCU_MAX_METRICS];
     uint32_t count;
-    Mutex lock;
-} MetricsCollector;
+    idcu_Mutex lock;
+} idcu_MetricsCollector;
 
-int metrics_init(MetricsCollector* collector);
-void metrics_destroy(MetricsCollector* collector);
-int metrics_register(MetricsCollector* collector, const char* name, const char* desc, MetricType type);
-int metrics_inc(MetricsCollector* collector, const char* name, uint64_t value);
-int metrics_set(MetricsCollector* collector, const char* name, uint64_t value);
-int metrics_observe(MetricsCollector* collector, const char* name, uint64_t value);
-uint64_t metrics_get(MetricsCollector* collector, const char* name);
-int metrics_export_text(MetricsCollector* collector, char* buffer, size_t buffer_size);
-int metrics_export_prometheus(MetricsCollector* collector, char* buffer, size_t buffer_size);
+int idcu_metrics_init(idcu_MetricsCollector* collector);
+void idcu_metrics_destroy(idcu_MetricsCollector* collector);
+int idcu_metrics_register(idcu_MetricsCollector* collector, const char* name, const char* desc, idcu_MetricType type);
+int idcu_metrics_inc(idcu_MetricsCollector* collector, const char* name, uint64_t value);
+int idcu_metrics_set(idcu_MetricsCollector* collector, const char* name, uint64_t value);
+int idcu_metrics_observe(idcu_MetricsCollector* collector, const char* name, uint64_t value);
+uint64_t idcu_metrics_get(idcu_MetricsCollector* collector, const char* name);
+int idcu_metrics_export_text(idcu_MetricsCollector* collector, char* buffer, size_t buffer_size);
+int idcu_metrics_export_prometheus(idcu_MetricsCollector* collector, char* buffer, size_t buffer_size);
 
 #ifdef __cplusplus
 }

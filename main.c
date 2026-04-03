@@ -2,15 +2,15 @@
 #include "module/module_def.h"
 #include "kernel/micro_kernel.h"
 
-static MicroKernel kernel;
+static idcu_MicroKernel kernel;
 
 int main(void)
 {
     printf("idcu/agent hard real-time microkernel start...\n");
 
-    kernel_init(&kernel);
-    kernel_start_modules(&kernel);
-    kernel_run(&kernel);
+    idcu_kernel_init(&kernel);
+    idcu_kernel_start_modules(&kernel);
+    idcu_kernel_run(&kernel);
 
     return 0;
 }

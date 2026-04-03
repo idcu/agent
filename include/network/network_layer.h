@@ -5,31 +5,31 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#define NET_PROTO_TCP 0
-#define NET_PROTO_UDP 1
-#define ADDR_MAX 64
+#define IDCU_NET_PROTO_TCP 0
+#define IDCU_NET_PROTO_UDP 1
+#define IDCU_ADDR_MAX 64
 
 typedef struct {
     int protocol;
     int fd;
-    char local_addr[ADDR_MAX];
+    char local_addr[IDCU_ADDR_MAX];
     uint16_t local_port;
-    char remote_addr[ADDR_MAX];
+    char remote_addr[IDCU_ADDR_MAX];
     uint16_t remote_port;
     int connected;
-} NetworkSocket;
+} idcu_NetworkSocket;
 
 typedef struct {
     int protocol;
     int fd;
-    char bind_address[ADDR_MAX];
+    char bind_address[IDCU_ADDR_MAX];
     uint16_t bind_port;
     int listening;
-} NetworkServer;
+} idcu_NetworkServer;
 
-int network_socket_create(NetworkSocket* sock, int protocol);
-void network_socket_destroy(NetworkSocket* sock);
-int network_server_create(NetworkServer* server, int protocol, const char* address, uint16_t port);
-void network_server_destroy(NetworkServer* server);
+int idcu_network_socket_create(idcu_NetworkSocket* sock, int protocol);
+void idcu_network_socket_destroy(idcu_NetworkSocket* sock);
+int idcu_network_server_create(idcu_NetworkServer* server, int protocol, const char* address, uint16_t port);
+void idcu_network_server_destroy(idcu_NetworkServer* server);
 
 #endif // IDCU_NETWORK_NETWORK_LAYER_H

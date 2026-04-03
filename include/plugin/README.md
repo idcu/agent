@@ -17,44 +17,44 @@
 
 | 状态 | 说明 |
 |------|------|
-| PLUGIN_STATUS_AVAILABLE | 插件可用但未安装 |
-| PLUGIN_STATUS_INSTALLED | 插件已安装但未激活 |
-| PLUGIN_STATUS_ACTIVE | 插件正在运行 |
-| PLUGIN_STATUS_ERROR | 插件出错 |
+| IDCU_PLUGIN_STATUS_AVAILABLE | 插件可用但未安装 |
+| IDCU_PLUGIN_STATUS_INSTALLED | 插件已安装但未激活 |
+| IDCU_PLUGIN_STATUS_ACTIVE | 插件正在运行 |
+| IDCU_PLUGIN_STATUS_ERROR | 插件出错 |
 
 ## 使用示例
 
 ```c
 #include "plugin/plugin_ecosystem.h"
 
-PluginEcosystem eco;
-plugin_ecosystem_init(&eco);
+idcu_PluginEcosystem eco;
+idcu_plugin_ecosystem_init(&eco);
 
 // 添加插件
-plugin_ecosystem_add_plugin(&eco, "my_plugin", "1.0.0", "我的测试插件");
+idcu_plugin_ecosystem_add_plugin(&eco, "my_plugin", "1.0.0", "我的测试插件");
 
 // 安装和激活插件
-plugin_ecosystem_install_plugin(&eco, "my_plugin");
-plugin_ecosystem_activate_plugin(&eco, "my_plugin");
+idcu_plugin_ecosystem_install_plugin(&eco, "my_plugin");
+idcu_plugin_ecosystem_activate_plugin(&eco, "my_plugin");
 
 // 设置插件依赖
-PluginDependency deps[] = {
+idcu_PluginDependency deps[] = {
     {"dependency_a", "2.0.0", 2, 0, 0},
     {"dependency_b", "1.5.0", 1, 5, 0}
 };
-plugin_ecosystem_set_dependencies(&eco, "my_plugin", deps, 2);
+idcu_plugin_ecosystem_set_dependencies(&eco, "my_plugin", deps, 2);
 
 // 检查版本兼容性
-plugin_ecosystem_check_compatibility(&eco, "my_plugin", ">=1.0.0");
+idcu_plugin_ecosystem_check_compatibility(&eco, "my_plugin", ">=1.0.0");
 
 // 给插件评分
-plugin_ecosystem_rate_plugin(&eco, "my_plugin", 4.5f);
+idcu_plugin_ecosystem_rate_plugin(&eco, "my_plugin", 4.5f);
 
 // 查找插件
-PluginInfo* info = plugin_ecosystem_find_plugin(&eco, "my_plugin");
+idcu_PluginInfo* info = idcu_plugin_ecosystem_find_plugin(&eco, "my_plugin");
 if (info) {
     printf("插件: %s, 版本: %s\n", info->name, info->version);
 }
 
-plugin_ecosystem_destroy(&eco);
+idcu_plugin_ecosystem_destroy(&eco);
 ```

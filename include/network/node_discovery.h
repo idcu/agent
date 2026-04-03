@@ -4,20 +4,20 @@
 #include "network/distributed_node.h"
 #include "common/error_code.h"
 
-typedef void (*NodeDiscoveredHandler)(void* user_data, NodeInfo* node);
-typedef void (*NodeLostHandler)(void* user_data, NodeInfo* node);
+typedef void (*idcu_NodeDiscoveredHandler)(void* user_data, idcu_NodeInfo* node);
+typedef void (*idcu_NodeLostHandler)(void* user_data, idcu_NodeInfo* node);
 
 typedef struct {
-    DistributedNode* dist_node;
-    NodeDiscoveredHandler discovered_handler;
+    idcu_DistributedNode* dist_node;
+    idcu_NodeDiscoveredHandler discovered_handler;
     void* discovered_user_data;
-    NodeLostHandler lost_handler;
+    idcu_NodeLostHandler lost_handler;
     void* lost_user_data;
-} NodeDiscovery;
+} idcu_NodeDiscovery;
 
-int node_discovery_init(NodeDiscovery* disc, DistributedNode* dist_node);
-void node_discovery_destroy(NodeDiscovery* disc);
-int node_discovery_set_discovered_handler(NodeDiscovery* disc, NodeDiscoveredHandler handler, void* user_data);
-int node_discovery_set_lost_handler(NodeDiscovery* disc, NodeLostHandler handler, void* user_data);
+int idcu_node_discovery_init(idcu_NodeDiscovery* disc, idcu_DistributedNode* dist_node);
+void idcu_node_discovery_destroy(idcu_NodeDiscovery* disc);
+int idcu_node_discovery_set_discovered_handler(idcu_NodeDiscovery* disc, idcu_NodeDiscoveredHandler handler, void* user_data);
+int idcu_node_discovery_set_lost_handler(idcu_NodeDiscovery* disc, idcu_NodeLostHandler handler, void* user_data);
 
 #endif // IDCU_NETWORK_NODE_DISCOVERY_H

@@ -20,7 +20,7 @@ typedef struct {
     pthread_mutex_t mutex;
 #endif // IDCU_COMMON_LOCK_H
     int initialized;
-} Mutex;
+} idcu_Mutex;
 
 typedef struct {
 #ifdef _WIN32
@@ -29,18 +29,18 @@ typedef struct {
     pthread_rwlock_t rwlock;
 #endif // IDCU_COMMON_LOCK_H
     int initialized;
-} RwLock;
+} idcu_RwLock;
 
-int mutex_init(Mutex* lock);
-void mutex_destroy(Mutex* lock);
-int mutex_lock(Mutex* lock);
-int mutex_unlock(Mutex* lock);
+int idcu_mutex_init(idcu_Mutex* lock);
+void idcu_mutex_destroy(idcu_Mutex* lock);
+int idcu_mutex_lock(idcu_Mutex* lock);
+int idcu_mutex_unlock(idcu_Mutex* lock);
 
-int rwlock_init(RwLock* lock);
-void rwlock_destroy(RwLock* lock);
-int rwlock_rdlock(RwLock* lock);
-int rwlock_wrlock(RwLock* lock);
-int rwlock_unlock(RwLock* lock);
+int idcu_rwlock_init(idcu_RwLock* lock);
+void idcu_rwlock_destroy(idcu_RwLock* lock);
+int idcu_rwlock_rdlock(idcu_RwLock* lock);
+int idcu_rwlock_wrlock(idcu_RwLock* lock);
+int idcu_rwlock_unlock(idcu_RwLock* lock);
 
 #ifdef __cplusplus
 }

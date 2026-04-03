@@ -39,31 +39,31 @@ INI 格式配置文件管理：
 ```c
 #include "utils/log.h"
 
-log_init("agent.log", LOG_INFO);
-LOG_INFO("系统启动，版本: %s", "1.0.0");
-LOG_DEBUG("调试信息");
-LOG_ERROR("发生错误: %d", error_code);
+idcu_log_init("agent.log", IDCU_LOG_INFO);
+IDCU_LOG_INFO("系统启动，版本: %s", "1.0.0");
+IDCU_LOG_DEBUG("调试信息");
+IDCU_LOG_ERROR("发生错误: %d", error_code);
 ```
 
 ### 使用内存池
 ```c
 #include "utils/memory_pool.h"
 
-MemoryPool pool;
-mem_pool_init(&pool);
+idcu_MemoryPool pool;
+idcu_mem_pool_init(&pool);
 
-void* ptr = mem_pool_alloc(&pool, 128);
-mem_pool_free(&pool, ptr);
+void* ptr = idcu_mem_pool_alloc(&pool, 128);
+idcu_mem_pool_free(&pool, ptr);
 
-mem_pool_destroy(&pool);
+idcu_mem_pool_destroy(&pool);
 ```
 
 ### 使用配置管理器
 ```c
 #include "utils/config_manager.h"
 
-config_init("config/agent.cfg");
-const char* log_level = config_get_string("general", "log_level", "info");
-int max_modules = config_get_int("general", "max_modules", 32);
-config_shutdown();
+idcu_config_init("config/agent.cfg");
+const char* log_level = idcu_config_get_string("general", "log_level", "info");
+int max_modules = idcu_config_get_int("general", "max_modules", 32);
+idcu_config_shutdown();
 ```

@@ -7,15 +7,15 @@
 #include "module/module_def.h"
 
 typedef struct {
-    CoroScheduler coro;
-    MessageBus    msg;
-    Sandbox       sandbox[16];
-    uint32_t      sb_cnt;
-    StackContext  global;
-} MicroKernel;
+    idcu_CoroScheduler coro;
+    idcu_MessageBus    msg;
+    idcu_Sandbox       sandbox[16];
+    uint32_t           sb_cnt;
+    idcu_StackContext  global;
+} idcu_MicroKernel;
 
-void kernel_init(MicroKernel *k);
-void kernel_start_modules(MicroKernel *k);
-void kernel_run(MicroKernel *k);
+void idcu_kernel_init(idcu_MicroKernel *k);
+void idcu_kernel_start_modules(idcu_MicroKernel *k);
+void idcu_kernel_run(idcu_MicroKernel *k);
 
 #endif // IDCU_KERNEL_MICRO_KERNEL_H

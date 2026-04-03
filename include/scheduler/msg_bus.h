@@ -5,61 +5,61 @@
 #include "common/config.h"
 #include "common/lock.h"
 
-#define MSG_BATCH_MAX 32
-#define MSG_ZEROCOPY_POOL_SIZE 256
+#define IDCU_MSG_BATCH_MAX 32
+#define IDCU_MSG_ZEROCOPY_POOL_SIZE 256
 
 typedef enum {
-    MSG_PRIO_LOW = 0,
-    MSG_PRIO_NORMAL,
-    MSG_PRIO_HIGH,
-    MSG_PRIO_REALTIME,
-    MSG_PRIO_COUNT
-} MsgPriority;
+    IDCU_MSG_PRIO_LOW = 0,
+    IDCU_MSG_PRIO_NORMAL,
+    IDCU_MSG_PRIO_HIGH,
+    IDCU_MSG_PRIO_REALTIME,
+    IDCU_MSG_PRIO_COUNT
+} idcu_MsgPriority;
 
 typedef struct {
     uint8_t *data;
     uint32_t size;
     uint32_t ref_count;
-} ZeroCopyPayload;
+} idcu_ZeroCopyPayload;
 
 typedef struct {
-    StackContext data;
-    ZeroCopyPayload *payload;
+    idcu_StackContext data;
+    idcu_ZeroCopyPayload *payload;
     uint32_t target_mod_id;
     uint32_t source_mod_id;
-    MsgPriority priority;
+    idcu_MsgPriority priority;
     uint64_t timestamp;
     uint32_t retry_count;
-} Message;
+} idcu_Message;
 
 typedef struct {
-    Message msgs[MSG_BATCH_MAX];
+    idcu_Message msgs[IDCU_MSG_BATCH_MAX];
     uint32_t count;
-} MessageBatch;
+} idcu_MessageBatch;
 
-#define MSG_QUEUE_SIZE CONFIG_MAX_MSG
+#define IDCU_MSG_QUEUE_SIZE IDCU_CONFIG_MAX_MSG
 
 typedef struct {
-    Message queue[MSG_PRIO_COUNT][MSG_QUEUE_SIZE];
-    uint32_t head[MSG_PRIO_COUNT];
-    uint32_t tail[MSG_PRIO_COUNT];
+    idcu_Message queue[IDCU_MSG_PRIO_COUNT][IDCU_MSG_QUEUE_SIZE];
+    uint32_t head[IDCU_MSG_PRIO_COUNT];
+    uint32_t tail[IDCU_MSG_PRIO_COUNT];
     uint32_t subs[16];
-    Mutex lock;
-    ZeroCopyPayload payload_pool[MSG_ZEROCOPY_POOL_SIZE];
-    uint8_t payload_in_use[MSG_ZEROCOPY_POOL_SIZE];
-    Mutex payload_lock;
-} MessageBus;
+    idcu_Mutex lock;
+    idcu_ZeroCopyPayload payload_pool[IDCU_MSG_ZEROCOPY_POOL_SIZE];
+    uint8_t payload_in_use[IDCU_MSG_ZEROCOPY_POOL_SIZE];
+    idcu_Mutex payload_lock;
+} idcu_MessageBus;
 
-void msg_bus_init(MessageBus *bus);
-void msg_bus_destroy(MessageBus *bus);
-int msg_send(MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, MsgPriority prio, const StackContext *ctx);
-int msg_recv(MessageBus *bus, uint32_t mod_id, Message *msg);
-int msg_broadcast(MessageBus *bus, uint32_t src_mod, MsgPriority prio, const StackContext *ctx);
-uint32_t msg_get_count(MessageBus *bus);
-int msg_send_zerocopy(MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, MsgPriority prio, const uint8_t *data, uint32_t size);
-int msg_recv_zerocopy(MessageBus *bus, uint32_t mod_id, Message *msg);
-void msg_release_payload(MessageBus *bus, ZeroCopyPayload *payload);
-int msg_send_batch(MessageBus *bus, MessageBatch *batch);
-int msg_recv_batch(MessageBus *bus, uint32_t mod_id, MessageBatch *batch, uint32_t max_count);
+void idcu_msg_bus_init(idcu_MessageBus *bus);
+void idcu_msg_bus_destroy(idcu_MessageBus *bus);
+int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const idcu_StackContext *ctx);
+int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg);
+int idcu_msg_broadcast(idcu_MessageBus *bus, uint32_t src_mod, idcu_MsgPriority prio, const idcu_StackContext *ctx);
+uint32_t idcu_msg_get_count(idcu_MessageBus *bus);
+int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const uint8_t *data, uint32_t size);
+int idcu_msg_recv_zerocopy(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg);
+void idcu_msg_release_payload(idcu_MessageBus *bus, idcu_ZeroCopyPayload *payload);
+int idcu_msg_send_batch(idcu_MessageBus *bus, idcu_MessageBatch *batch);
+int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch *batch, uint32_t max_count);
 
 #endif // IDCU_SCHEDULER_MSG_BUS_H

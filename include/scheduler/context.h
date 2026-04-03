@@ -9,13 +9,13 @@ typedef struct {
     uint32_t module_id;
     uint32_t msg_id;
     uint32_t ts;
-    uint8_t  data[CONFIG_STACK_CTX_SIZE];
+    uint8_t  data[IDCU_CONFIG_STACK_CTX_SIZE];
     uint16_t len;
-} StackContext;
+} idcu_StackContext;
 
-static inline void ctx_init(StackContext *ctx, uint32_t mid, uint32_t msg)
+static inline void idcu_ctx_init(idcu_StackContext *ctx, uint32_t mid, uint32_t msg)
 {
-    memset(ctx, 0, sizeof(StackContext));
+    memset(ctx, 0, sizeof(idcu_StackContext));
     ctx->module_id = mid;
     ctx->msg_id = msg;
 }

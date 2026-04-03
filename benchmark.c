@@ -11,9 +11,9 @@
 #include <time.h>
 #endif
 
-static MessageBus g_bus;
-static CoroScheduler g_sched;
-static MemoryPool g_pool;
+static idcu_MessageBus g_bus;
+static idcu_CoroScheduler g_sched;
+static idcu_MemoryPool g_pool;
 
 static uint64_t get_timestamp_us(void)
 {
@@ -30,38 +30,38 @@ static uint64_t get_timestamp_us(void)
 }
 
 static void bench_msg_send(uint64_t iterations) {
-    StackContext ctx;
+    idcu_StackContext ctx;
     memset(&ctx, 0, sizeof(ctx));
     
     for (uint64_t i = 0; i < iterations; i++) {
-        msg_send(&g_bus, 1, 2, MSG_PRIO_NORMAL, &ctx);
+        idcu_msg_send(&g_bus, 1, 2, IDCU_MSG_PRIO_NORMAL, &ctx);
     }
 }
 
 static void bench_msg_recv(uint64_t iterations) {
-    Message msg;
+    idcu_Message msg;
     
     for (uint64_t i = 0; i < iterations; i++) {
-        msg_recv(&g_bus, 2, &msg);
+        idcu_msg_recv(&g_bus, 2, &msg);
     }
 }
 
 static void bench_msg_batch_send(uint64_t iterations) {
-    MessageBatch batch;
-    StackContext ctx;
+    idcu_MessageBatch batch;
+    idcu_StackContext ctx;
     memset(&ctx, 0, sizeof(ctx));
     
-    for (uint64_t i = 0; i < iterations; i += MSG_BATCH_MAX) {
+    for (uint64_t i = 0; i < iterations; i += IDCU_MSG_BATCH_MAX) {
         batch.count = 0;
-        for (uint32_t j = 0; j < MSG_BATCH_MAX && (i + j) < iterations; j++) {
+        for (uint32_t j = 0; j < IDCU_MSG_BATCH_MAX && (i + j) < iterations; j++) {
             batch.msgs[j].source_mod_id = 1;
             batch.msgs[j].target_mod_id = 2;
-            batch.msgs[j].priority = MSG_PRIO_NORMAL;
+            batch.msgs[j].priority = IDCU_MSG_PRIO_NORMAL;
             batch.msgs[j].data = ctx;
             batch.msgs[j].payload = NULL;
             batch.count++;
         }
-        msg_send_batch(&g_bus, &batch);
+        idcu_msg_send_batch(&g_bus, &batch);
     }
 }
 
@@ -71,31 +71,31 @@ static void bench_memory_pool_alloc(uint64_t iterations) {
     
     for (uint64_t i = 0; i < iterations; i++) {
         if (ptr_count < 1024) {
-            ptrs[ptr_count++] = mem_pool_alloc(&g_pool, 64);
+            ptrs[ptr_count++] = idcu_mem_pool_alloc(&g_pool, 64);
         } else {
-            mem_pool_free(&g_pool, ptrs[0]);
+            idcu_mem_pool_free(&g_pool, ptrs[0]);
             for (uint32_t j = 1; j < 1024; j++) {
                 ptrs[j - 1] = ptrs[j];
             }
-            ptrs[1023] = mem_pool_alloc(&g_pool, 64);
+            ptrs[1023] = idcu_mem_pool_alloc(&g_pool, 64);
         }
     }
     
     for (uint32_t i = 0; i < ptr_count; i++) {
-        mem_pool_free(&g_pool, ptrs[i]);
+        idcu_mem_pool_free(&g_pool, ptrs[i]);
     }
 }
 
-static CoroState test_coro_func(Coroutine* coro) {
+static idcu_CoroState test_coro_func(idcu_Coroutine* coro) {
     (void)coro;
-    return CORO_FINISHED;
+    return IDCU_CORO_FINISHED;
 }
 
 static void bench_coro_create(uint64_t iterations) {
     for (uint64_t i = 0; i < iterations; i++) {
-        int id = coro_create(&g_sched, test_coro_func, 32, 10, NULL);
+        int id = idcu_coro_create(&g_sched, test_coro_func, 32, 10, NULL);
         if (id > 0) {
-            coro_destroy(&g_sched, id);
+            idcu_coro_destroy(&g_sched, id);
         }
     }
 }
@@ -164,9 +164,9 @@ int main(void) {
     printf("IDCU Agent - Performance Benchmarks\n");
     printf("===================================\n");
     
-    msg_bus_init(&g_bus);
-    coro_sched_init(&g_sched);
-    mem_pool_init(&g_pool);
+    idcu_msg_bus_init(&g_bus);
+    idcu_coro_sched_init(&g_sched);
+    idcu_mem_pool_init(&g_pool);
     
     BenchmarkSuite suite;
     bench_suite_init(&suite, "Core Performance");
@@ -180,11 +180,10 @@ int main(void) {
     bench_suite_run(&suite);
     bench_suite_print_summary(&suite);
     
-    mem_pool_destroy(&g_pool);
-    coro_sched_destroy(&g_sched);
-    msg_bus_destroy(&g_bus);
+    idcu_mem_pool_destroy(&g_pool);
+    idcu_coro_sched_destroy(&g_sched);
+    idcu_msg_bus_destroy(&g_bus);
     
     printf("\nBenchmark completed!\n");
     return 0;
 }
-

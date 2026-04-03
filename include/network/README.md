@@ -34,57 +34,57 @@
 #include "network/network_layer.h"
 
 // 创建服务器
-NetworkServer server;
-network_server_create(&server, NET_PROTO_TCP, "0.0.0.0", 8080);
+idcu_NetworkServer server;
+idcu_network_server_create(&server, IDCU_NET_PROTO_TCP, "0.0.0.0", 8080);
 
 // 创建客户端连接
-NetworkSocket sock;
-network_socket_create(&sock, NET_PROTO_TCP);
+idcu_NetworkSocket sock;
+idcu_network_socket_create(&sock, IDCU_NET_PROTO_TCP);
 
-network_socket_destroy(&sock);
-network_server_destroy(&server);
+idcu_network_socket_destroy(&sock);
+idcu_network_server_destroy(&server);
 ```
 
 ### 使用分布式节点
 ```c
 #include "network/distributed_node.h"
 
-DistributedNode node;
-distributed_node_init(&node, 1, "node-1", "192.168.1.100", 8080);
+idcu_DistributedNode node;
+idcu_distributed_node_init(&node, 1, "node-1", "192.168.1.100", 8080);
 
 // 添加其他节点
-distributed_node_add_node(&node, 2, "node-2", "192.168.1.101", 8080);
+idcu_distributed_node_add_node(&node, 2, "node-2", "192.168.1.101", 8080);
 
 // 发送消息
 uint8_t data[] = {1, 2, 3, 4};
-distributed_node_send_message(&node, 2, 0, data, sizeof(data));
+idcu_distributed_node_send_message(&node, 2, 0, data, sizeof(data));
 
 // 接收消息
-NodeMessage msg;
-distributed_node_recv_message(&node, &msg);
+idcu_NodeMessage msg;
+idcu_distributed_node_recv_message(&node, &msg);
 
 // 更新心跳
-distributed_node_update_heartbeat(&node, 2);
+idcu_distributed_node_update_heartbeat(&node, 2);
 
-distributed_node_destroy(&node);
+idcu_distributed_node_destroy(&node);
 ```
 
 ### 使用节点发现
 ```c
 #include "network/node_discovery.h"
 
-void on_node_discovered(void* user_data, NodeInfo* node) {
+void on_node_discovered(void* user_data, idcu_NodeInfo* node) {
     printf("发现节点: %s\n", node->name);
 }
 
-void on_node_lost(void* user_data, NodeInfo* node) {
+void on_node_lost(void* user_data, idcu_NodeInfo* node) {
     printf("丢失节点: %s\n", node->name);
 }
 
-NodeDiscovery disc;
-node_discovery_init(&disc, &dist_node);
-node_discovery_set_discovered_handler(&disc, on_node_discovered, NULL);
-node_discovery_set_lost_handler(&disc, on_node_lost, NULL);
+idcu_NodeDiscovery disc;
+idcu_node_discovery_init(&disc, &dist_node);
+idcu_node_discovery_set_discovered_handler(&disc, on_node_discovered, NULL);
+idcu_node_discovery_set_lost_handler(&disc, on_node_lost, NULL);
 
-node_discovery_destroy(&disc);
+idcu_node_discovery_destroy(&disc);
 ```

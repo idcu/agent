@@ -28,16 +28,10 @@ file(GLOB_RECURSE CORE_SRCS
     src/kernel/*.c
 )
 
-add_library(idcu_core STATIC ${CORE_SRCS})
-set_target_properties(idcu_core PROPERTIES
-    VERSION ${IDCU_VERSION}
-    SOVERSION ${IDCU_VERSION_MAJOR}
-    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-)
-
 file(GLOB_RECURSE MODULE_SRCS modules/*.c)
-add_library(idcu_modules STATIC ${MODULE_SRCS})
-set_target_properties(idcu_modules PROPERTIES
+
+add_library(idcu_core STATIC ${CORE_SRCS} ${MODULE_SRCS})
+set_target_properties(idcu_core PROPERTIES
     VERSION ${IDCU_VERSION}
     SOVERSION ${IDCU_VERSION_MAJOR}
     ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
@@ -47,7 +41,7 @@ add_executable(idcu_agent main.c)
 set_target_properties(idcu_agent PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
 )
-target_link_libraries(idcu_agent PRIVATE idcu_core idcu_modules)
+target_link_libraries(idcu_agent PRIVATE idcu_core)
 
 if(WIN32)
     target_link_libraries(idcu_agent PRIVATE)
@@ -57,7 +51,7 @@ else()
 endif()
 
 option(BUILD_TESTS "Build tests" OFF)
-option(BUILD_BENCHMARKS "Build benchmarks" OFF)
+option(BUILD_BENCHMARKS "Build benchmarks" ON)
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
 
 if(ENABLE_CLANG_TIDY)

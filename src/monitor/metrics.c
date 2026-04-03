@@ -2,48 +2,48 @@
 #include <string.h>
 #include <stdio.h>
 
-int metrics_init(MetricsCollector* collector)
+int idcu_metrics_init(idcu_MetricsCollector* collector)
 {
     if (!collector) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    memset(collector, 0, sizeof(MetricsCollector));
-    return mutex_init(&collector->lock);
+    memset(collector, 0, sizeof(idcu_MetricsCollector));
+    return idcu_mutex_init(&collector->lock);
 }
 
-void metrics_destroy(MetricsCollector* collector)
+void idcu_metrics_destroy(idcu_MetricsCollector* collector)
 {
     if (!collector) {
         return;
     }
-    mutex_destroy(&collector->lock);
+    idcu_mutex_destroy(&collector->lock);
 }
 
-int metrics_register(MetricsCollector* collector, const char* name, const char* desc, MetricType type)
+int idcu_metrics_register(idcu_MetricsCollector* collector, const char* name, const char* desc, idcu_MetricType type)
 {
     if (!collector || !name) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
     for (uint32_t i = 0; i < collector->count; i++) {
         if (strcmp(collector->metrics[i].name, name) == 0) {
-            mutex_unlock(&collector->lock);
-            return ERR_ALREADY_EXISTS;
+            idcu_mutex_unlock(&collector->lock);
+            return IDCU_ERR_ALREADY_EXISTS;
         }
     }
 
-    if (collector->count >= MAX_METRICS) {
-        mutex_unlock(&collector->lock);
-        return ERR_QUEUE_FULL;
+    if (collector->count >= IDCU_MAX_METRICS) {
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_QUEUE_FULL;
     }
 
-    Metric* m = &collector->metrics[collector->count];
+    idcu_Metric* m = &collector->metrics[collector->count];
     strncpy(m->name, name, sizeof(m->name) - 1);
     m->name[sizeof(m->name) - 1] = '\0';
     
@@ -62,11 +62,11 @@ int metrics_register(MetricsCollector* collector, const char* name, const char* 
     m->count = 0;
     collector->count++;
 
-    mutex_unlock(&collector->lock);
-    return ERR_SUCCESS;
+    idcu_mutex_unlock(&collector->lock);
+    return IDCU_ERR_SUCCESS;
 }
 
-static Metric* find_metric(MetricsCollector* collector, const char* name)
+static idcu_Metric* find_metric(idcu_MetricsCollector* collector, const char* name)
 {
     for (uint32_t i = 0; i < collector->count; i++) {
         if (strcmp(collector->metrics[i].name, name) == 0) {
@@ -76,80 +76,80 @@ static Metric* find_metric(MetricsCollector* collector, const char* name)
     return NULL;
 }
 
-int metrics_inc(MetricsCollector* collector, const char* name, uint64_t value)
+int idcu_metrics_inc(idcu_MetricsCollector* collector, const char* name, uint64_t value)
 {
     if (!collector || !name) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
-    Metric* m = find_metric(collector, name);
+    idcu_Metric* m = find_metric(collector, name);
     if (!m) {
-        mutex_unlock(&collector->lock);
-        return ERR_NOT_FOUND;
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_NOT_FOUND;
     }
 
-    if (m->type != METRIC_COUNTER) {
-        mutex_unlock(&collector->lock);
-        return ERR_INVALID_PARAM;
+    if (m->type != IDCU_METRIC_COUNTER) {
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_INVALID_PARAM;
     }
 
     m->value += value;
-    mutex_unlock(&collector->lock);
-    return ERR_SUCCESS;
+    idcu_mutex_unlock(&collector->lock);
+    return IDCU_ERR_SUCCESS;
 }
 
-int metrics_set(MetricsCollector* collector, const char* name, uint64_t value)
+int idcu_metrics_set(idcu_MetricsCollector* collector, const char* name, uint64_t value)
 {
     if (!collector || !name) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
-    Metric* m = find_metric(collector, name);
+    idcu_Metric* m = find_metric(collector, name);
     if (!m) {
-        mutex_unlock(&collector->lock);
-        return ERR_NOT_FOUND;
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_NOT_FOUND;
     }
 
-    if (m->type != METRIC_GAUGE) {
-        mutex_unlock(&collector->lock);
-        return ERR_INVALID_PARAM;
+    if (m->type != IDCU_METRIC_GAUGE) {
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_INVALID_PARAM;
     }
 
     m->value = value;
-    mutex_unlock(&collector->lock);
-    return ERR_SUCCESS;
+    idcu_mutex_unlock(&collector->lock);
+    return IDCU_ERR_SUCCESS;
 }
 
-int metrics_observe(MetricsCollector* collector, const char* name, uint64_t value)
+int idcu_metrics_observe(idcu_MetricsCollector* collector, const char* name, uint64_t value)
 {
     if (!collector || !name) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
-    Metric* m = find_metric(collector, name);
+    idcu_Metric* m = find_metric(collector, name);
     if (!m) {
-        mutex_unlock(&collector->lock);
-        return ERR_NOT_FOUND;
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_NOT_FOUND;
     }
 
-    if (m->type != METRIC_HISTOGRAM) {
-        mutex_unlock(&collector->lock);
-        return ERR_INVALID_PARAM;
+    if (m->type != IDCU_METRIC_HISTOGRAM) {
+        idcu_mutex_unlock(&collector->lock);
+        return IDCU_ERR_INVALID_PARAM;
     }
 
     m->sum += value;
@@ -161,36 +161,36 @@ int metrics_observe(MetricsCollector* collector, const char* name, uint64_t valu
         m->max = value;
     }
 
-    mutex_unlock(&collector->lock);
-    return ERR_SUCCESS;
+    idcu_mutex_unlock(&collector->lock);
+    return IDCU_ERR_SUCCESS;
 }
 
-uint64_t metrics_get(MetricsCollector* collector, const char* name)
+uint64_t idcu_metrics_get(idcu_MetricsCollector* collector, const char* name)
 {
     if (!collector || !name) {
         return 0;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return 0;
     }
 
-    Metric* m = find_metric(collector, name);
+    idcu_Metric* m = find_metric(collector, name);
     uint64_t value = m ? m->value : 0;
 
-    mutex_unlock(&collector->lock);
+    idcu_mutex_unlock(&collector->lock);
     return value;
 }
 
-int metrics_export_text(MetricsCollector* collector, char* buffer, size_t buffer_size)
+int idcu_metrics_export_text(idcu_MetricsCollector* collector, char* buffer, size_t buffer_size)
 {
     if (!collector || !buffer) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
@@ -198,20 +198,20 @@ int metrics_export_text(MetricsCollector* collector, char* buffer, size_t buffer
     int len = 0;
 
     for (uint32_t i = 0; i < collector->count; i++) {
-        Metric* m = &collector->metrics[i];
+        idcu_Metric* m = &collector->metrics[i];
         
         switch (m->type) {
-            case METRIC_COUNTER:
+            case IDCU_METRIC_COUNTER:
                 len = snprintf(buffer + offset, buffer_size - offset,
                     "%s: %llu (counter) - %s\n",
                     m->name, (unsigned long long)m->value, m->desc);
                 break;
-            case METRIC_GAUGE:
+            case IDCU_METRIC_GAUGE:
                 len = snprintf(buffer + offset, buffer_size - offset,
                     "%s: %llu (gauge) - %s\n",
                     m->name, (unsigned long long)m->value, m->desc);
                 break;
-            case METRIC_HISTOGRAM:
+            case IDCU_METRIC_HISTOGRAM:
                 if (m->count > 0) {
                     len = snprintf(buffer + offset, buffer_size - offset,
                         "%s: count=%llu sum=%llu min=%llu max=%llu (histogram) - %s\n",
@@ -233,18 +233,18 @@ int metrics_export_text(MetricsCollector* collector, char* buffer, size_t buffer
         offset += len;
     }
 
-    mutex_unlock(&collector->lock);
-    return ERR_SUCCESS;
+    idcu_mutex_unlock(&collector->lock);
+    return IDCU_ERR_SUCCESS;
 }
 
-int metrics_export_prometheus(MetricsCollector* collector, char* buffer, size_t buffer_size)
+int idcu_metrics_export_prometheus(idcu_MetricsCollector* collector, char* buffer, size_t buffer_size)
 {
     if (!collector || !buffer) {
-        return ERR_INVALID_PARAM;
+        return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = mutex_lock(&collector->lock);
-    if (ret != ERR_SUCCESS) {
+    int ret = idcu_mutex_lock(&collector->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
@@ -252,20 +252,20 @@ int metrics_export_prometheus(MetricsCollector* collector, char* buffer, size_t 
     int len = 0;
 
     for (uint32_t i = 0; i < collector->count; i++) {
-        Metric* m = &collector->metrics[i];
+        idcu_Metric* m = &collector->metrics[i];
         
         switch (m->type) {
-            case METRIC_COUNTER:
+            case IDCU_METRIC_COUNTER:
                 len = snprintf(buffer + offset, buffer_size - offset,
                     "# HELP %s %s\n# TYPE %s counter\n%s %llu\n",
                     m->name, m->desc, m->name, m->name, (unsigned long long)m->value);
                 break;
-            case METRIC_GAUGE:
+            case IDCU_METRIC_GAUGE:
                 len = snprintf(buffer + offset, buffer_size - offset,
                     "# HELP %s %s\n# TYPE %s gauge\n%s %llu\n",
                     m->name, m->desc, m->name, m->name, (unsigned long long)m->value);
                 break;
-            case METRIC_HISTOGRAM:
+            case IDCU_METRIC_HISTOGRAM:
                 if (m->count > 0) {
                     len = snprintf(buffer + offset, buffer_size - offset,
                         "# HELP %s %s\n# TYPE %s summary\n%s_sum %llu\n%s_count %llu\n",
@@ -282,6 +282,6 @@ int metrics_export_prometheus(MetricsCollector* collector, char* buffer, size_t 
         offset += len;
     }
 
-    mutex_unlock(&collector->lock);
-    return ERR_SUCCESS;
+    idcu_mutex_unlock(&collector->lock);
+    return IDCU_ERR_SUCCESS;
 }

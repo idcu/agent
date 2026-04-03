@@ -28,47 +28,47 @@
 ```c
 #include "monitor/health_check.h"
 
-HealthMonitor monitor;
-health_monitor_init(&monitor);
+idcu_HealthMonitor monitor;
+idcu_health_monitor_init(&monitor);
 
 // 注册模块
-health_register_module(&monitor, module_id);
+idcu_health_register_module(&monitor, module_id);
 
 // 更新心跳
-health_update_heartbeat(&monitor, module_id);
+idcu_health_update_heartbeat(&monitor, module_id);
 
 // 报告错误
-health_report_error(&monitor, module_id);
+idcu_health_report_error(&monitor, module_id);
 
 // 检查所有模块健康状态
-health_check_all(&monitor);
+idcu_health_check_all(&monitor);
 
 // 获取模块状态
-HealthStatus status = health_get_status(&monitor, module_id);
+idcu_HealthStatus status = idcu_health_get_status(&monitor, module_id);
 
-health_monitor_destroy(&monitor);
+idcu_health_monitor_destroy(&monitor);
 ```
 
 ### 使用指标收集
 ```c
 #include "monitor/metrics.h"
 
-MetricsCollector collector;
-metrics_init(&collector);
+idcu_MetricsCollector collector;
+idcu_metrics_init(&collector);
 
 // 注册指标
-metrics_register(&collector, "requests_total", "总请求数", METRIC_COUNTER);
-metrics_register(&collector, "memory_usage", "内存使用量", METRIC_GAUGE);
+idcu_metrics_register(&collector, "requests_total", "总请求数", IDCU_METRIC_COUNTER);
+idcu_metrics_register(&collector, "memory_usage", "内存使用量", IDCU_METRIC_GAUGE);
 
 // 更新指标
-metrics_inc(&collector, "requests_total", 1);
-metrics_set(&collector, "memory_usage", 1024000);
-metrics_observe(&collector, "response_time", 42);
+idcu_metrics_inc(&collector, "requests_total", 1);
+idcu_metrics_set(&collector, "memory_usage", 1024000);
+idcu_metrics_observe(&collector, "response_time", 42);
 
 // 导出指标
 char buffer[4096];
-metrics_export_text(&collector, buffer, sizeof(buffer));
-metrics_export_prometheus(&collector, buffer, sizeof(buffer));
+idcu_metrics_export_text(&collector, buffer, sizeof(buffer));
+idcu_metrics_export_prometheus(&collector, buffer, sizeof(buffer));
 
-metrics_destroy(&collector);
+idcu_metrics_destroy(&collector);
 ```

@@ -10,49 +10,49 @@ extern "C" {
 #endif // IDCU_MONITOR_HEALTH_CHECK_H
 
 typedef enum {
-    HEALTH_UNKNOWN = 0,
-    HEALTH_HEALTHY,
-    HEALTH_WARNING,
-    HEALTH_CRITICAL,
-    HEALTH_DEAD
-} HealthStatus;
+    IDCU_HEALTH_UNKNOWN = 0,
+    IDCU_HEALTH_HEALTHY,
+    IDCU_HEALTH_WARNING,
+    IDCU_HEALTH_CRITICAL,
+    IDCU_HEALTH_DEAD
+} idcu_HealthStatus;
 
 typedef struct {
     uint32_t module_id;
-    HealthStatus status;
+    idcu_HealthStatus status;
     uint64_t last_heartbeat_ms;
     uint64_t error_count;
     uint64_t restart_count;
     uint64_t created_ms;
-} ModuleHealth;
+} idcu_ModuleHealth;
 
-typedef void (*HealthCallback)(uint32_t module_id, HealthStatus old_status, HealthStatus new_status, void* user_data);
+typedef void (*idcu_HealthCallback)(uint32_t module_id, idcu_HealthStatus old_status, idcu_HealthStatus new_status, void* user_data);
 
-#define MAX_MODULES_HEALTH 64
+#define IDCU_MAX_MODULES_HEALTH 64
 
 typedef struct {
-    ModuleHealth modules[MAX_MODULES_HEALTH];
+    idcu_ModuleHealth modules[IDCU_MAX_MODULES_HEALTH];
     uint32_t count;
-    Mutex lock;
-    HealthCallback callback;
+    idcu_Mutex lock;
+    idcu_HealthCallback callback;
     void* callback_user_data;
     uint64_t timeout_ms;
     uint64_t warning_threshold;
     uint64_t critical_threshold;
-} HealthMonitor;
+} idcu_HealthMonitor;
 
-int health_monitor_init(HealthMonitor* monitor);
-void health_monitor_destroy(HealthMonitor* monitor);
-int health_register_module(HealthMonitor* monitor, uint32_t module_id);
-int health_unregister_module(HealthMonitor* monitor, uint32_t module_id);
-int health_update_heartbeat(HealthMonitor* monitor, uint32_t module_id);
-int health_report_error(HealthMonitor* monitor, uint32_t module_id);
-int health_report_restart(HealthMonitor* monitor, uint32_t module_id);
-HealthStatus health_get_status(HealthMonitor* monitor, uint32_t module_id);
-const ModuleHealth* health_get_info(HealthMonitor* monitor, uint32_t module_id);
-int health_check_all(HealthMonitor* monitor);
-void health_set_callback(HealthMonitor* monitor, HealthCallback cb, void* user_data);
-uint64_t health_get_uptime_ms(void);
+int idcu_health_monitor_init(idcu_HealthMonitor* monitor);
+void idcu_health_monitor_destroy(idcu_HealthMonitor* monitor);
+int idcu_health_register_module(idcu_HealthMonitor* monitor, uint32_t module_id);
+int idcu_health_unregister_module(idcu_HealthMonitor* monitor, uint32_t module_id);
+int idcu_health_update_heartbeat(idcu_HealthMonitor* monitor, uint32_t module_id);
+int idcu_health_report_error(idcu_HealthMonitor* monitor, uint32_t module_id);
+int idcu_health_report_restart(idcu_HealthMonitor* monitor, uint32_t module_id);
+idcu_HealthStatus idcu_health_get_status(idcu_HealthMonitor* monitor, uint32_t module_id);
+const idcu_ModuleHealth* idcu_health_get_info(idcu_HealthMonitor* monitor, uint32_t module_id);
+int idcu_health_check_all(idcu_HealthMonitor* monitor);
+void idcu_health_set_callback(idcu_HealthMonitor* monitor, idcu_HealthCallback cb, void* user_data);
+uint64_t idcu_health_get_uptime_ms(void);
 
 #ifdef __cplusplus
 }

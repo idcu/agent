@@ -8,38 +8,38 @@
 extern "C" {
 #endif // IDCU_TEST_TEST_FRAMEWORK_H
 
-typedef void (*TestFunc)(void);
+typedef void (*idcu_TestFunc)(void);
 
 typedef struct {
     const char* name;
-    TestFunc func;
+    idcu_TestFunc func;
     int passed;
     int failed;
-} TestCase;
+} idcu_TestCase;
 
 typedef struct {
     const char* name;
-    TestCase* tests;
+    idcu_TestCase* tests;
     size_t count;
     size_t capacity;
     int total_passed;
     int total_failed;
-} TestSuite;
+} idcu_TestSuite;
 
-void test_suite_init(TestSuite* suite, const char* name);
-void test_suite_destroy(TestSuite* suite);
-int test_suite_add_test(TestSuite* suite, const char* name, TestFunc func);
-void test_suite_run(TestSuite* suite);
-void test_suite_print_summary(TestSuite* suite);
-int test_suite_get_failures(TestSuite* suite);
+void idcu_test_suite_init(idcu_TestSuite* suite, const char* name);
+void idcu_test_suite_destroy(idcu_TestSuite* suite);
+int idcu_test_suite_add_test(idcu_TestSuite* suite, const char* name, idcu_TestFunc func);
+void idcu_test_suite_run(idcu_TestSuite* suite);
+void idcu_test_suite_print_summary(idcu_TestSuite* suite);
+int idcu_test_suite_get_failures(idcu_TestSuite* suite);
 
-void test_pass(void);
-void test_fail(const char* file, int line, const char* msg);
-void test_assert(int condition, const char* msg);
+void idcu_test_pass(void);
+void idcu_test_fail(const char* file, int line, const char* msg);
+void idcu_test_assert(int condition, const char* msg);
 
-#define TEST_PASS() test_pass()
-#define TEST_FAIL(msg) test_fail(__FILE__, __LINE__, msg)
-#define TEST_ASSERT(cond, msg) test_assert(cond, msg)
+#define IDCU_TEST_PASS() idcu_test_pass()
+#define IDCU_TEST_FAIL(msg) idcu_test_fail(__FILE__, __LINE__, msg)
+#define IDCU_TEST_ASSERT(cond, msg) idcu_test_assert(cond, msg)
 
 #ifdef __cplusplus
 }

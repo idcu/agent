@@ -6,33 +6,33 @@
 #include "common/error_code.h"
 #include "utils/log.h"
 
-// æ¨¡åç¶æ?
+// 模块状态
 typedef enum {
-    MOD_STATE_UNINIT   = 0,
-    MOD_STATE_INITED   = 1,
-    MOD_STATE_RUNNING  = 2,
-    MOD_STATE_STOPPED  = 3,
-    MOD_STATE_ERROR    = 4
-} ModuleState;
+    IDCU_MOD_STATE_UNINIT   = 0,
+    IDCU_MOD_STATE_INITED   = 1,
+    IDCU_MOD_STATE_RUNNING  = 2,
+    IDCU_MOD_STATE_STOPPED  = 3,
+    IDCU_MOD_STATE_ERROR    = 4
+} idcu_ModuleState;
 
-// æ¨¡åä¼åçº?
+// 模块优先级
 typedef enum {
-    MOD_PRIO_LOW       = 0,
-    MOD_PRIO_NORMAL    = 1,
-    MOD_PRIO_HIGH      = 2,
-    MOD_PRIO_REALTIME  = 3
-} ModulePrio;
+    IDCU_MOD_PRIO_LOW       = 0,
+    IDCU_MOD_PRIO_NORMAL    = 1,
+    IDCU_MOD_PRIO_HIGH      = 2,
+    IDCU_MOD_PRIO_REALTIME  = 3
+} idcu_ModulePrio;
 
-// æ¨¡åæ¥å£å®ä¹
+// 模块接口定义
 typedef struct {
-    const char*         name;           // æ¨¡åå?
-    int (*init)(void);                  // åå§å?
-    int (*run)(void);                   // è¿è¡
-    int (*stop)(void);                  // åæ­¢
-} ModuleInterface;
+    const char*         name;           // 模块名
+    int (*init)(void);                  // 初始化
+    int (*run)(void);                   // 运行
+    int (*stop)(void);                  // 停止
+} idcu_ModuleInterface;
 
-#define REGISTER_MODULE(name, init_fn, run_fn, stop_fn) \
-    const ModuleInterface __module_##name \
+#define IDCU_REGISTER_MODULE(name, init_fn, run_fn, stop_fn) \
+    const idcu_ModuleInterface __idcu_module_##name \
         __attribute__((section(".modules"))) = { \
             #name, init_fn, run_fn, stop_fn \
         }
