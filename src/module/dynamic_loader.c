@@ -332,6 +332,9 @@ int idcu_dynamic_module_reload(idcu_DynamicLoader* loader, const char* name, con
 
 int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* name, const char* path)
 {
+    if (!loader || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
     IDCU_LOG_INFO("Hotplug loading module: %s", name);
     int ret = idcu_dynamic_loader_load_module(loader, name, path);
     if (ret != IDCU_ERR_SUCCESS) {
@@ -358,6 +361,9 @@ int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* nam
 
 int idcu_dynamic_loader_hotplug_unload(idcu_DynamicLoader* loader, const char* name)
 {
+    if (!loader || !name) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
     IDCU_LOG_INFO("Hotplug unloading module: %s", name);
     int ret = idcu_mutex_lock(&loader->lock);
     if (ret != IDCU_ERR_SUCCESS) {

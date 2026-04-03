@@ -176,6 +176,42 @@ if(BUILD_SAMPLE_DLL)
     target_link_libraries(sample_module PRIVATE idcu_core)
 endif()
 
+# 构建测试用动态模块
+if(BUILD_TESTS)
+    add_library(test_module_good SHARED modules/dynamic/test_module_good.c)
+    set_target_properties(test_module_good PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        PREFIX ""
+    )
+    if(UNIX AND NOT APPLE)
+        target_compile_options(test_module_good PRIVATE -fvisibility=hidden)
+    endif()
+    target_link_libraries(test_module_good PRIVATE idcu_core)
+
+    add_library(test_module_init_fail SHARED modules/dynamic/test_module_init_fail.c)
+    set_target_properties(test_module_init_fail PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        PREFIX ""
+    )
+    if(UNIX AND NOT APPLE)
+        target_compile_options(test_module_init_fail PRIVATE -fvisibility=hidden)
+    endif()
+    target_link_libraries(test_module_init_fail PRIVATE idcu_core)
+
+    add_library(test_module_no_interface SHARED modules/dynamic/test_module_no_interface.c)
+    set_target_properties(test_module_no_interface PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        PREFIX ""
+    )
+    if(UNIX AND NOT APPLE)
+        target_compile_options(test_module_no_interface PRIVATE -fvisibility=hidden)
+    endif()
+    target_link_libraries(test_module_no_interface PRIVATE idcu_core)
+endif()
+
 # 构建动态模块加载示例程序
 option(BUILD_DYNAMIC_LOADER_EXAMPLE "Build dynamic loader example" ON)
 if(BUILD_DYNAMIC_LOADER_EXAMPLE)
