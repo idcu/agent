@@ -1,8 +1,8 @@
-#include "test_framework.h"
-#include "msg_bus.h"
-#include "module_def.h"
-#include "module_registry.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "scheduler/msg_bus.h"
+#include "module/module_def.h"
+#include "module/module_registry.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

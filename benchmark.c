@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "kernel/msg_bus.h"
-#include "kernel/coroutine.h"
-#include "include/memory_pool.h"
+#include "scheduler/msg_bus.h"
+#include "scheduler/coroutine.h"
+#include "utils/memory_pool.h"
 
 #ifdef _WIN32
 #include <windows.h>

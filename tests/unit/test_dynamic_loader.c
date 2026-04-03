@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "dynamic_module.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "module/dynamic_module.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "config_manager.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "utils/config_manager.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

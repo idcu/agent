@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "sandbox.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "security/sandbox.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

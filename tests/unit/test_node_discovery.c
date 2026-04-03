@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "node_discovery.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "network/node_discovery.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "include/module_def.h"
+#include "module/module_def.h"
 #include "kernel/micro_kernel.h"
 
 static MicroKernel kernel;

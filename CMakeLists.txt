@@ -8,12 +8,21 @@ else()
     add_compile_options(-O2 -Wall -Wextra)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR} include kernel modules)
+include_directories(${PROJECT_SOURCE_DIR} include modules)
 
 file(GLOB_RECURSE SRCS
     main.c
     modules/*.c
-    kernel/*.c
+    src/common/*.c
+    src/utils/*.c
+    src/scheduler/*.c
+    src/module/*.c
+    src/monitor/*.c
+    src/network/*.c
+    src/security/*.c
+    src/plugin/*.c
+    src/test/*.c
+    src/kernel/*.c
 )
 
 add_executable(idcu_agent ${SRCS})
@@ -36,7 +45,17 @@ if(BUILD_TESTS)
 endif()
 
 if(BUILD_BENCHMARKS)
-    file(GLOB_RECURSE KERNEL_SRCS "kernel/*.c")
+    file(GLOB_RECURSE KERNEL_SRCS 
+        "src/common/*.c"
+        "src/utils/*.c"
+        "src/scheduler/*.c"
+        "src/module/*.c"
+        "src/monitor/*.c"
+        "src/network/*.c"
+        "src/security/*.c"
+        "src/plugin/*.c"
+        "src/test/*.c"
+    )
     list(FILTER KERNEL_SRCS EXCLUDE REGEX "micro_kernel.c")
     add_executable(idcu_benchmark
         benchmark.c

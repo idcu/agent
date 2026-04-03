@@ -3,13 +3,13 @@
 #include <string.h>
 #include <signal.h>
 
-#include "log.h"
-#include "distributed_node.h"
-#include "node_discovery.h"
-#include "plugin_ecosystem.h"
-#include "health_check.h"
-#include "metrics.h"
-#include "config.h"
+#include "utils/log.h"
+#include "network/distributed_node.h"
+#include "network/node_discovery.h"
+#include "plugin/plugin_ecosystem.h"
+#include "monitor/health_check.h"
+#include "monitor/metrics.h"
+#include "common/config.h"
 
 static volatile int g_running = 1;
 

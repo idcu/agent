@@ -1,4 +1,4 @@
-#include "include/module_def.h"
+#include "module/module_def.h"
 #include <stdio.h>
 
 static int core_init()  { printf("[core_module] init\n"); return 0; }

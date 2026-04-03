@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "metrics.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "monitor/metrics.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "json_parser.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "utils/json_parser.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

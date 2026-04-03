@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "distributed_node.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "network/distributed_node.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

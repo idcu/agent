@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "network_layer.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "network/network_layer.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 

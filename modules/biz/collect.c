@@ -1,4 +1,4 @@
-#include "include/module_def.h"
+#include "module/module_def.h"
 #include <stdio.h>
 
 static int coll_init()  { printf("[biz_collect] init\n"); return 0; }

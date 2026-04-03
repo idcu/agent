@@ -1,6 +1,6 @@
-#include "test_framework.h"
-#include "memory_pool.h"
-#include "log.h"
+#include "test/test_framework.h"
+#include "utils/memory_pool.h"
+#include "utils/log.h"
 #include <stdio.h>
 #include <string.h>
 
