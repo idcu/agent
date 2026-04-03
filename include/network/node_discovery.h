@@ -1,5 +1,5 @@
-#ifndef NODE_DISCOVERY_H
-#define NODE_DISCOVERY_H
+#ifndef IDCU_NETWORK_NODE_DISCOVERY_H
+#define IDCU_NETWORK_NODE_DISCOVERY_H
 
 #include "network/distributed_node.h"
 #include "common/error_code.h"
@@ -20,4 +20,4 @@ void node_discovery_destroy(NodeDiscovery* disc);
 int node_discovery_set_discovered_handler(NodeDiscovery* disc, NodeDiscoveredHandler handler, void* user_data);
 int node_discovery_set_lost_handler(NodeDiscovery* disc, NodeLostHandler handler, void* user_data);
 
-#endif
+#endif // IDCU_NETWORK_NODE_DISCOVERY_H

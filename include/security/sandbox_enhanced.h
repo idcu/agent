@@ -1,5 +1,5 @@
-#ifndef SANDBOX_ENHANCED_H
-#define SANDBOX_ENHANCED_H
+#ifndef IDCU_SECURITY_SANDBOX_ENHANCED_H
+#define IDCU_SECURITY_SANDBOX_ENHANCED_H
 
 #include "security/sandbox.h"
 #include "common/error_code.h"
@@ -52,4 +52,4 @@ int enhanced_sandbox_set_fd_limit(EnhancedSandbox* sb, uint32_t limit);
 int enhanced_sandbox_check_cpu_usage(EnhancedSandbox* sb);
 int enhanced_sandbox_check_fd_usage(EnhancedSandbox* sb, uint32_t requested_fds);
 
-#endif
+#endif // IDCU_SECURITY_SANDBOX_ENHANCED_H

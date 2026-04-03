@@ -1,12 +1,12 @@
-#ifndef TEST_FRAMEWORK_H
-#define TEST_FRAMEWORK_H
+#ifndef IDCU_TEST_TEST_FRAMEWORK_H
+#define IDCU_TEST_TEST_FRAMEWORK_H
 
 #include <stdint.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_TEST_TEST_FRAMEWORK_H
 
 typedef void (*TestFunc)(void);
 
@@ -43,6 +43,6 @@ void test_assert(int condition, const char* msg);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_TEST_TEST_FRAMEWORK_H
 
-#endif
+#endif // IDCU_TEST_TEST_FRAMEWORK_H

@@ -1,5 +1,5 @@
-#ifndef CONFIG_MANAGER_H
-#define CONFIG_MANAGER_H
+#ifndef IDCU_UTILS_CONFIG_MANAGER_H
+#define IDCU_UTILS_CONFIG_MANAGER_H
 
 #include "common/error_code.h"
 #include "common/lock.h"
@@ -7,7 +7,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_UTILS_CONFIG_MANAGER_H
 
 #define MAX_CONFIG_SECTIONS 64
 #define MAX_CONFIG_KEYS_PER_SECTION 128
@@ -58,6 +58,6 @@ int config_remove_section(const char* section);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_UTILS_CONFIG_MANAGER_H
 
-#endif
+#endif // IDCU_UTILS_CONFIG_MANAGER_H

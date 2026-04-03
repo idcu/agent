@@ -1,5 +1,5 @@
-#ifndef SANDBOX_H
-#define SANDBOX_H
+#ifndef IDCU_SECURITY_SANDBOX_H
+#define IDCU_SECURITY_SANDBOX_H
 
 #include "scheduler/context.h"
 #include "common/config.h"
@@ -21,4 +21,4 @@ static inline int sandbox_perm_check(Sandbox *sb, uint32_t mask)
     return ((sb->perm & mask) == mask) ? 0 : -1;
 }
 
-#endif
+#endif // IDCU_SECURITY_SANDBOX_H

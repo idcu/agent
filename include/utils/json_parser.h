@@ -1,5 +1,5 @@
-#ifndef JSON_PARSER_H
-#define JSON_PARSER_H
+#ifndef IDCU_UTILS_JSON_PARSER_H
+#define IDCU_UTILS_JSON_PARSER_H
 
 #include "common/error_code.h"
 #include <stdint.h>
@@ -7,7 +7,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_UTILS_JSON_PARSER_H
 
 typedef enum {
     JSON_TYPE_NULL = 0,
@@ -69,6 +69,6 @@ char* json_to_string_alloc(const JsonValue* value);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_UTILS_JSON_PARSER_H
 
-#endif
+#endif // IDCU_UTILS_JSON_PARSER_H

@@ -1,5 +1,5 @@
-#ifndef PLUGIN_ECOSYSTEM_H
-#define PLUGIN_ECOSYSTEM_H
+#ifndef IDCU_PLUGIN_PLUGIN_ECOSYSTEM_H
+#define IDCU_PLUGIN_PLUGIN_ECOSYSTEM_H
 
 #include "common/error_code.h"
 #include <stdint.h>
@@ -60,4 +60,4 @@ int plugin_ecosystem_check_compatibility(PluginEcosystem* eco, const char* name,
 int plugin_version_parse(const char* version_str, uint32_t* major, uint32_t* minor, uint32_t* patch);
 int plugin_version_compare(uint32_t maj1, uint32_t min1, uint32_t pat1, uint32_t maj2, uint32_t min2, uint32_t pat2);
 
-#endif
+#endif // IDCU_PLUGIN_PLUGIN_ECOSYSTEM_H

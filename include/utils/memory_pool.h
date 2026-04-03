@@ -1,5 +1,5 @@
-#ifndef MEMORY_POOL_H
-#define MEMORY_POOL_H
+#ifndef IDCU_UTILS_MEMORY_POOL_H
+#define IDCU_UTILS_MEMORY_POOL_H
 
 #include <stdint.h>
 #include "common/lock.h"
@@ -38,4 +38,4 @@ uint32_t mem_pool_get_free_count(MemoryPool *pool, uint32_t size);
 uint64_t mem_pool_get_total_allocated(MemoryPool *pool);
 uint64_t mem_pool_get_peak_usage(MemoryPool *pool);
 
-#endif
+#endif // IDCU_UTILS_MEMORY_POOL_H

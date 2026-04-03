@@ -1,5 +1,5 @@
-#ifndef LOG_H
-#define LOG_H
+#ifndef IDCU_UTILS_LOG_H
+#define IDCU_UTILS_LOG_H
 
 #include "common/config.h"
 #include <stdio.h>
@@ -41,4 +41,4 @@ void log_printf(LogLevel level, const char* file, int line, const char* fmt, ...
     do { if (CONFIG_LOG_LEVEL <= LOG_FATAL) \
         log_printf(LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__); } while(0)
 
-#endif // LOG_H
+#endif // IDCU_UTILS_LOG_H

@@ -1,5 +1,5 @@
-#ifndef MICRO_KERNEL_H
-#define MICRO_KERNEL_H
+#ifndef IDCU_KERNEL_MICRO_KERNEL_H
+#define IDCU_KERNEL_MICRO_KERNEL_H
 
 #include "scheduler/coroutine.h"
 #include "scheduler/msg_bus.h"
@@ -18,4 +18,4 @@ void kernel_init(MicroKernel *k);
 void kernel_start_modules(MicroKernel *k);
 void kernel_run(MicroKernel *k);
 
-#endif
+#endif // IDCU_KERNEL_MICRO_KERNEL_H

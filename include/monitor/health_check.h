@@ -1,5 +1,5 @@
-#ifndef HEALTH_CHECK_H
-#define HEALTH_CHECK_H
+#ifndef IDCU_MONITOR_HEALTH_CHECK_H
+#define IDCU_MONITOR_HEALTH_CHECK_H
 
 #include "common/error_code.h"
 #include "common/lock.h"
@@ -7,7 +7,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_MONITOR_HEALTH_CHECK_H
 
 typedef enum {
     HEALTH_UNKNOWN = 0,
@@ -56,6 +56,6 @@ uint64_t health_get_uptime_ms(void);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_MONITOR_HEALTH_CHECK_H
 
-#endif
+#endif // IDCU_MONITOR_HEALTH_CHECK_H

@@ -1,5 +1,5 @@
-#ifndef CONTEXT_H
-#define CONTEXT_H
+#ifndef IDCU_SCHEDULER_CONTEXT_H
+#define IDCU_SCHEDULER_CONTEXT_H
 
 #include <stdint.h>
 #include <string.h>
@@ -20,4 +20,4 @@ static inline void ctx_init(StackContext *ctx, uint32_t mid, uint32_t msg)
     ctx->msg_id = msg;
 }
 
-#endif
+#endif // IDCU_SCHEDULER_CONTEXT_H

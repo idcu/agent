@@ -1,5 +1,5 @@
-#ifndef NETWORK_LAYER_H
-#define NETWORK_LAYER_H
+#ifndef IDCU_NETWORK_NETWORK_LAYER_H
+#define IDCU_NETWORK_NETWORK_LAYER_H
 
 #include "common/error_code.h"
 #include <stdint.h>
@@ -32,4 +32,4 @@ void network_socket_destroy(NetworkSocket* sock);
 int network_server_create(NetworkServer* server, int protocol, const char* address, uint16_t port);
 void network_server_destroy(NetworkServer* server);
 
-#endif
+#endif // IDCU_NETWORK_NETWORK_LAYER_H

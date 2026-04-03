@@ -1,5 +1,5 @@
-#ifndef MSG_BUS_H
-#define MSG_BUS_H
+#ifndef IDCU_SCHEDULER_MSG_BUS_H
+#define IDCU_SCHEDULER_MSG_BUS_H
 
 #include "scheduler/context.h"
 #include "common/config.h"
@@ -62,4 +62,4 @@ void msg_release_payload(MessageBus *bus, ZeroCopyPayload *payload);
 int msg_send_batch(MessageBus *bus, MessageBatch *batch);
 int msg_recv_batch(MessageBus *bus, uint32_t mod_id, MessageBatch *batch, uint32_t max_count);
 
-#endif
+#endif // IDCU_SCHEDULER_MSG_BUS_H

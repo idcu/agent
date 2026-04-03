@@ -1,5 +1,5 @@
-#ifndef MODULE_REGISTRY_H
-#define MODULE_REGISTRY_H
+#ifndef IDCU_MODULE_MODULE_REGISTRY_H
+#define IDCU_MODULE_MODULE_REGISTRY_H
 
 #include "module/module_def.h"
 #include "common/error_code.h"
@@ -8,7 +8,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_MODULE_MODULE_REGISTRY_H
 
 #define MAX_REGISTERED_MODULES 64
 
@@ -44,6 +44,6 @@ int module_registry_stop_all(ModuleRegistry* registry);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_MODULE_MODULE_REGISTRY_H
 
-#endif
+#endif // IDCU_MODULE_MODULE_REGISTRY_H

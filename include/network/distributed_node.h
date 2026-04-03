@@ -1,5 +1,5 @@
-#ifndef DISTRIBUTED_NODE_H
-#define DISTRIBUTED_NODE_H
+#ifndef IDCU_NETWORK_DISTRIBUTED_NODE_H
+#define IDCU_NETWORK_DISTRIBUTED_NODE_H
 
 #include "common/error_code.h"
 #include <stdint.h>
@@ -57,4 +57,4 @@ int distributed_node_send_message(DistributedNode* node, uint64_t to_node, uint3
 int distributed_node_recv_message(DistributedNode* node, NodeMessage* msg);
 uint64_t distributed_node_select_node_by_load(DistributedNode* node);
 
-#endif
+#endif // IDCU_NETWORK_DISTRIBUTED_NODE_H

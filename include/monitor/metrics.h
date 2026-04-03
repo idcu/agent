@@ -1,5 +1,5 @@
-#ifndef METRICS_H
-#define METRICS_H
+#ifndef IDCU_MONITOR_METRICS_H
+#define IDCU_MONITOR_METRICS_H
 
 #include "common/error_code.h"
 #include "common/lock.h"
@@ -7,7 +7,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_MONITOR_METRICS_H
 
 typedef enum {
     METRIC_COUNTER = 0,
@@ -46,6 +46,6 @@ int metrics_export_prometheus(MetricsCollector* collector, char* buffer, size_t 
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_MONITOR_METRICS_H
 
-#endif
+#endif // IDCU_MONITOR_METRICS_H

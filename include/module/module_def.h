@@ -1,5 +1,5 @@
-#ifndef MODULE_DEF_H
-#define MODULE_DEF_H
+#ifndef IDCU_MODULE_MODULE_DEF_H
+#define IDCU_MODULE_MODULE_DEF_H
 
 #include <stdint.h>
 #include "common/config.h"
@@ -37,4 +37,4 @@ typedef struct {
             #name, init_fn, run_fn, stop_fn \
         }
 
-#endif
+#endif // IDCU_MODULE_MODULE_DEF_H

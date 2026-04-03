@@ -1,5 +1,5 @@
-#ifndef LOCK_H
-#define LOCK_H
+#ifndef IDCU_COMMON_LOCK_H
+#define IDCU_COMMON_LOCK_H
 
 #include "common/error_code.h"
 
@@ -7,18 +7,18 @@
 #include <windows.h>
 #else
 #include <pthread.h>
-#endif
+#endif // IDCU_COMMON_LOCK_H
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_COMMON_LOCK_H
 
 typedef struct {
 #ifdef _WIN32
     CRITICAL_SECTION cs;
 #else
     pthread_mutex_t mutex;
-#endif
+#endif // IDCU_COMMON_LOCK_H
     int initialized;
 } Mutex;
 
@@ -27,7 +27,7 @@ typedef struct {
     SRWLOCK rwlock;
 #else
     pthread_rwlock_t rwlock;
-#endif
+#endif // IDCU_COMMON_LOCK_H
     int initialized;
 } RwLock;
 
@@ -44,6 +44,6 @@ int rwlock_unlock(RwLock* lock);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_COMMON_LOCK_H
 
-#endif
+#endif // IDCU_COMMON_LOCK_H

@@ -1,5 +1,5 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef IDCU_COMMON_CONFIG_H
+#define IDCU_COMMON_CONFIG_H
 
 #define CONFIG_MAX_MODULES 32
 #define CONFIG_MAX_MSG 64
@@ -18,4 +18,4 @@
 #define PERM_DEBUG       (1U << 6)
 #define PERM_MODULE_MGR  (1U << 7)
 
-#endif
+#endif // IDCU_COMMON_CONFIG_H

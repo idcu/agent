@@ -1,5 +1,5 @@
-#ifndef COROUTINE_H
-#define COROUTINE_H
+#ifndef IDCU_SCHEDULER_COROUTINE_H
+#define IDCU_SCHEDULER_COROUTINE_H
 
 #include "scheduler/context.h"
 #include "common/config.h"
@@ -59,4 +59,4 @@ int coro_resume(CoroScheduler *sched, uint32_t id);
 Coroutine* coro_get(CoroScheduler *sched, uint32_t id);
 uint32_t coro_get_ready_count(CoroScheduler *sched);
 
-#endif
+#endif // IDCU_SCHEDULER_COROUTINE_H

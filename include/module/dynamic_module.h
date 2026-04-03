@@ -1,5 +1,5 @@
-#ifndef DYNAMIC_MODULE_H
-#define DYNAMIC_MODULE_H
+#ifndef IDCU_MODULE_DYNAMIC_MODULE_H
+#define IDCU_MODULE_DYNAMIC_MODULE_H
 
 #include "module/module_def.h"
 #include "common/error_code.h"
@@ -8,7 +8,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_MODULE_DYNAMIC_MODULE_H
 
 #define MAX_DYNAMIC_MODULES 32
 #define MODULE_PATH_MAX 256
@@ -19,7 +19,7 @@ typedef HMODULE ModuleHandle;
 #else
 #include <dlfcn.h>
 typedef void* ModuleHandle;
-#endif
+#endif // IDCU_MODULE_DYNAMIC_MODULE_H
 
 typedef struct {
     char name[64];
@@ -50,6 +50,6 @@ int dynamic_module_stop(DynamicModule* mod);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_MODULE_DYNAMIC_MODULE_H
 
-#endif
+#endif // IDCU_MODULE_DYNAMIC_MODULE_H

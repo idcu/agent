@@ -1,12 +1,12 @@
-#ifndef ATOMIC_H
-#define ATOMIC_H
+#ifndef IDCU_COMMON_ATOMIC_H
+#define IDCU_COMMON_ATOMIC_H
 
 #include "common/error_code.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+#endif // IDCU_COMMON_ATOMIC_H
 
 int32_t atomic_fetch_add_int32(volatile int32_t* ptr, int32_t value);
 int32_t atomic_fetch_sub_int32(volatile int32_t* ptr, int32_t value);
@@ -29,6 +29,6 @@ void atomic_store_int64(volatile int64_t* ptr, int64_t value);
 
 #ifdef __cplusplus
 }
-#endif
+#endif // IDCU_COMMON_ATOMIC_H
 
-#endif
+#endif // IDCU_COMMON_ATOMIC_H
