@@ -132,6 +132,13 @@ void idcu_kernel_run(idcu_MicroKernel *k)
                 idcu_msg_recv(&k->msg, i, &msg);
             }
         }
+
+        for (uint32_t i = 0; i < k->tracked_cnt; ++i) {
+            idcu_TrackedModule *tracked = &k->tracked_modules[i];
+            if (tracked->state == IDCU_MOD_STATE_RUNNING && tracked->iface->run) {
+                tracked->iface->run();
+            }
+        }
     }
     
     idcu_kernel_stop(k);
