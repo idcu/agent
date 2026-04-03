@@ -50,8 +50,8 @@ if(WIN32)
     elseif(MINGW)
     endif()
 else()
-    target_link_libraries(idcu_agent PRIVATE pthread)
-    target_link_libraries(idcu_core PRIVATE pthread)
+    target_link_libraries(idcu_agent PRIVATE pthread dl)
+    target_link_libraries(idcu_core PRIVATE pthread dl)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_link_options(idcu_agent PRIVATE -Wl,--whole-archive idcu_core -Wl,--no-whole-archive)
     endif()
@@ -169,6 +169,10 @@ if(BUILD_SAMPLE_DLL)
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
         PREFIX ""  # 在 Windows 上不添加 "lib" 前缀
     )
+    # 为 Linux 平台设置符号可见性
+    if(UNIX AND NOT APPLE)
+        target_compile_options(sample_module PRIVATE -fvisibility=hidden)
+    endif()
     target_link_libraries(sample_module PRIVATE idcu_core)
 endif()
 

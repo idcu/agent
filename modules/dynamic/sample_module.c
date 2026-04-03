@@ -31,9 +31,14 @@ static int sample_module_stop(void)
 }
 
 #ifdef _WIN32
-__declspec(dllexport)
+#define MODULE_EXPORT __declspec(dllexport)
+#elif defined(__GNUC__) || defined(__clang__)
+#define MODULE_EXPORT __attribute__((visibility("default")))
+#else
+#define MODULE_EXPORT
 #endif
-const idcu_ModuleInterface module_interface = {
+
+MODULE_EXPORT const idcu_ModuleInterface module_interface = {
     .name = "sample_module",
     .dependencies = NULL,
     .dependency_count = 0,

@@ -1,4 +1,5 @@
 #include "module/dynamic_module.h"
+#include "utils/log.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -82,8 +83,16 @@ int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name
     full_path[sizeof(full_path) - 1] = '\0';
 #ifdef _WIN32
     mod->handle = LoadLibraryA(full_path);
+    if (!mod->handle) {
+        DWORD err = GetLastError();
+        IDCU_LOG_ERROR("Failed to load module %s (Windows error: %lu)", full_path, err);
+    }
 #else
     mod->handle = dlopen(full_path, RTLD_NOW | RTLD_LOCAL);
+    if (!mod->handle) {
+        const char* err = dlerror();
+        IDCU_LOG_ERROR("Failed to load module %s: %s", full_path, err ? err : "unknown error");
+    }
 #endif
     if (!mod->handle) {
         idcu_mutex_unlock(&loader->lock);
@@ -91,8 +100,16 @@ int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name
     }
 #ifdef _WIN32
     mod->iface = (idcu_ModuleInterface*)GetProcAddress(mod->handle, "module_interface");
+    if (!mod->iface) {
+        DWORD err = GetLastError();
+        IDCU_LOG_ERROR("Failed to find module_interface in %s (Windows error: %lu)", full_path, err);
+    }
 #else
     mod->iface = (idcu_ModuleInterface*)dlsym(mod->handle, "module_interface");
+    if (!mod->iface) {
+        const char* err = dlerror();
+        IDCU_LOG_ERROR("Failed to find module_interface in %s: %s", full_path, err ? err : "unknown error");
+    }
 #endif
     if (!mod->iface) {
 #ifdef _WIN32
