@@ -1,5 +1,6 @@
 #include "scheduler/msg_bus.h"
 #include "common/error_code.h"
+#include "utils/log.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -65,20 +66,24 @@ static int is_queue_empty(idcu_MessageBus *bus, idcu_MsgPriority prio)
 int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const idcu_StackContext *ctx)
 {
     if (!bus || !ctx) {
+        IDCU_LOG_ERROR("msg_send failed: invalid parameters (bus=%p, ctx=%p)", (void*)bus, (void*)ctx);
         return IDCU_ERR_INVALID_PARAM;
     }
 
     if (prio >= IDCU_MSG_PRIO_COUNT) {
+        IDCU_LOG_ERROR("msg_send failed: invalid priority %d", prio);
         return IDCU_ERR_INVALID_PARAM;
     }
 
     int ret = idcu_mutex_lock(&bus->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("msg_send failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
 
     if (is_queue_full(bus, prio)) {
         idcu_mutex_unlock(&bus->lock);
+        IDCU_LOG_WARN("msg_send failed: queue full (prio=%d)", prio);
         return IDCU_ERR_QUEUE_FULL;
     }
 
@@ -95,17 +100,20 @@ int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu
     bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
 
     idcu_mutex_unlock(&bus->lock);
+    IDCU_LOG_DEBUG("msg_send succeeded: src=%u, dst=%u, prio=%d", src_mod, dst_mod, prio);
     return IDCU_ERR_SUCCESS;
 }
 
 int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg)
 {
     if (!bus || !msg) {
+        IDCU_LOG_ERROR("msg_recv failed: invalid parameters (bus=%p, msg=%p)", (void*)bus, (void*)msg);
         return IDCU_ERR_INVALID_PARAM;
     }
 
     int ret = idcu_mutex_lock(&bus->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("msg_recv failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
 
@@ -119,6 +127,7 @@ int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg)
                 *msg = *queue_msg;
                 bus->head[prio] = (bus->head[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
                 idcu_mutex_unlock(&bus->lock);
+                IDCU_LOG_DEBUG("msg_recv succeeded: mod=%u, src=%u, prio=%d", mod_id, queue_msg->source_mod_id, prio);
                 return IDCU_ERR_SUCCESS;
             }
         }
@@ -161,6 +170,7 @@ static idcu_ZeroCopyPayload* allocate_payload(idcu_MessageBus *bus, uint32_t siz
 {
     int ret = idcu_mutex_lock(&bus->payload_lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("allocate_payload failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return NULL;
     }
     
@@ -170,43 +180,51 @@ static idcu_ZeroCopyPayload* allocate_payload(idcu_MessageBus *bus, uint32_t siz
             payload->data = (uint8_t*)malloc(size);
             if (!payload->data) {
                 idcu_mutex_unlock(&bus->payload_lock);
+                IDCU_LOG_ERROR("allocate_payload failed: out of memory (size=%u)", size);
                 return NULL;
             }
             payload->size = size;
             payload->ref_count = 1;
             bus->payload_in_use[i] = 1;
             idcu_mutex_unlock(&bus->payload_lock);
+            IDCU_LOG_DEBUG("allocate_payload succeeded: slot=%u, size=%u", i, size);
             return payload;
         }
     }
     
     idcu_mutex_unlock(&bus->payload_lock);
+    IDCU_LOG_WARN("allocate_payload failed: no available slots in payload pool");
     return NULL;
 }
 
 int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const uint8_t *data, uint32_t size)
 {
     if (!bus || !data || size == 0) {
+        IDCU_LOG_ERROR("msg_send_zerocopy failed: invalid parameters (bus=%p, data=%p, size=%u)", (void*)bus, (void*)data, size);
         return IDCU_ERR_INVALID_PARAM;
     }
 
     if (prio >= IDCU_MSG_PRIO_COUNT) {
+        IDCU_LOG_ERROR("msg_send_zerocopy failed: invalid priority %d", prio);
         return IDCU_ERR_INVALID_PARAM;
     }
 
     int ret = idcu_mutex_lock(&bus->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("msg_send_zerocopy failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
 
     if (is_queue_full(bus, prio)) {
         idcu_mutex_unlock(&bus->lock);
+        IDCU_LOG_WARN("msg_send_zerocopy failed: queue full (prio=%d)", prio);
         return IDCU_ERR_QUEUE_FULL;
     }
 
     idcu_ZeroCopyPayload *payload = allocate_payload(bus, size);
     if (!payload) {
         idcu_mutex_unlock(&bus->lock);
+        IDCU_LOG_ERROR("msg_send_zerocopy failed: allocate payload failed");
         return IDCU_ERR_NO_MEMORY;
     }
 
@@ -224,6 +242,7 @@ int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_
     bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
 
     idcu_mutex_unlock(&bus->lock);
+    IDCU_LOG_DEBUG("msg_send_zerocopy succeeded: src=%u, dst=%u, prio=%d, size=%u", src_mod, dst_mod, prio, size);
     return IDCU_ERR_SUCCESS;
 }
 

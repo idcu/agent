@@ -1,4 +1,6 @@
 #include "module/module_registry.h"
+#include "utils/log.h"
+#include "common/error_code.h"
 #include <string.h>
 
 #if defined(__GNUC__) && !defined(__MINGW32__)
@@ -84,22 +86,30 @@ void idcu_module_registry_destroy(idcu_ModuleRegistry* registry)
 int idcu_module_registry_register(idcu_ModuleRegistry* registry, const idcu_ModuleInterface* iface, idcu_ModulePrio priority)
 {
     if (!registry || !iface || !iface->name) {
+        IDCU_LOG_ERROR("module_registry_register failed: invalid parameters");
         return IDCU_ERR_INVALID_PARAM;
     }
+    
     int ret = idcu_mutex_lock(&registry->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("module_registry_register failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
+    
     for (uint32_t i = 0; i < registry->count; i++) {
         if (strcmp(registry->modules[i].iface->name, iface->name) == 0) {
             idcu_mutex_unlock(&registry->lock);
+            IDCU_LOG_WARN("module_registry_register: module %s already exists", iface->name);
             return IDCU_ERR_ALREADY_EXISTS;
         }
     }
+    
     if (registry->count >= IDCU_MAX_REGISTERED_MODULES) {
         idcu_mutex_unlock(&registry->lock);
+        IDCU_LOG_ERROR("module_registry_register failed: module registry full (max=%d)", IDCU_MAX_REGISTERED_MODULES);
         return IDCU_ERR_QUEUE_FULL;
     }
+    
     idcu_RegisteredModule* mod = &registry->modules[registry->count];
     mod->iface = iface;
     mod->module_id = registry->next_id++;
@@ -111,6 +121,8 @@ int idcu_module_registry_register(idcu_ModuleRegistry* registry, const idcu_Modu
     registry->count++;
     registry->topological_valid = 0;
     idcu_mutex_unlock(&registry->lock);
+    
+    IDCU_LOG_INFO("module registered: %s (id=%u)", iface->name, mod->module_id);
     return IDCU_ERR_SUCCESS;
 }
 
@@ -222,12 +234,16 @@ const idcu_RegisteredModule* idcu_module_registry_get_at(idcu_ModuleRegistry* re
 int idcu_module_registry_init_module(idcu_ModuleRegistry* registry, uint32_t module_id)
 {
     if (!registry) {
+        IDCU_LOG_ERROR("module_registry_init_module failed: invalid parameters");
         return IDCU_ERR_INVALID_PARAM;
     }
+    
     int ret = idcu_mutex_lock(&registry->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("module_registry_init_module failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
+    
     idcu_RegisteredModule* mod = NULL;
     for (uint32_t i = 0; i < registry->count; i++) {
         if (registry->modules[i].module_id == module_id) {
@@ -235,23 +251,32 @@ int idcu_module_registry_init_module(idcu_ModuleRegistry* registry, uint32_t mod
             break;
         }
     }
+    
     if (!mod) {
         idcu_mutex_unlock(&registry->lock);
+        IDCU_LOG_ERROR("module_registry_init_module failed: module id=%u not found", module_id);
         return IDCU_ERR_NOT_FOUND;
     }
+    
     if (mod->state >= IDCU_MOD_STATE_INITED) {
         idcu_mutex_unlock(&registry->lock);
+        IDCU_LOG_DEBUG("module %s already initialized", mod->iface->name);
         return IDCU_ERR_SUCCESS;
     }
+    
     int result = IDCU_ERR_SUCCESS;
     if (mod->iface->init) {
+        IDCU_LOG_INFO("initializing module %s...", mod->iface->name);
         result = mod->iface->init();
         if (result != IDCU_ERR_SUCCESS) {
             mod->state = IDCU_MOD_STATE_ERROR;
             idcu_mutex_unlock(&registry->lock);
+            IDCU_LOG_ERROR("module %s init failed, code=%d (%s)", mod->iface->name, result, idcu_err_to_str(result));
             return result;
         }
+        IDCU_LOG_INFO("module %s initialized successfully", mod->iface->name);
     }
+    
     mod->state = IDCU_MOD_STATE_INITED;
     idcu_mutex_unlock(&registry->lock);
     return IDCU_ERR_SUCCESS;
@@ -260,12 +285,16 @@ int idcu_module_registry_init_module(idcu_ModuleRegistry* registry, uint32_t mod
 int idcu_module_registry_run_module(idcu_ModuleRegistry* registry, uint32_t module_id)
 {
     if (!registry) {
+        IDCU_LOG_ERROR("module_registry_run_module failed: invalid parameters");
         return IDCU_ERR_INVALID_PARAM;
     }
+    
     int ret = idcu_mutex_lock(&registry->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("module_registry_run_module failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
+    
     idcu_RegisteredModule* mod = NULL;
     for (uint32_t i = 0; i < registry->count; i++) {
         if (registry->modules[i].module_id == module_id) {
@@ -273,14 +302,19 @@ int idcu_module_registry_run_module(idcu_ModuleRegistry* registry, uint32_t modu
             break;
         }
     }
+    
     if (!mod) {
         idcu_mutex_unlock(&registry->lock);
+        IDCU_LOG_ERROR("module_registry_run_module failed: module id=%u not found", module_id);
         return IDCU_ERR_NOT_FOUND;
     }
+    
     if (mod->state == IDCU_MOD_STATE_RUNNING) {
         idcu_mutex_unlock(&registry->lock);
+        IDCU_LOG_DEBUG("module %s already running", mod->iface->name);
         return IDCU_ERR_SUCCESS;
     }
+    
     if (mod->state == IDCU_MOD_STATE_UNINIT) {
         idcu_mutex_unlock(&registry->lock);
         int init_ret = idcu_module_registry_init_module(registry, module_id);
@@ -289,18 +323,24 @@ int idcu_module_registry_run_module(idcu_ModuleRegistry* registry, uint32_t modu
         }
         ret = idcu_mutex_lock(&registry->lock);
         if (ret != IDCU_ERR_SUCCESS) {
+            IDCU_LOG_ERROR("module_registry_run_module failed: lock error after init, code=%d (%s)", ret, idcu_err_to_str(ret));
             return ret;
         }
     }
+    
     int result = IDCU_ERR_SUCCESS;
     if (mod->iface->run) {
+        IDCU_LOG_INFO("running module %s...", mod->iface->name);
         result = mod->iface->run();
         if (result != IDCU_ERR_SUCCESS) {
             mod->state = IDCU_MOD_STATE_ERROR;
             idcu_mutex_unlock(&registry->lock);
+            IDCU_LOG_ERROR("module %s run failed, code=%d (%s)", mod->iface->name, result, idcu_err_to_str(result));
             return result;
         }
+        IDCU_LOG_INFO("module %s running successfully", mod->iface->name);
     }
+    
     mod->state = IDCU_MOD_STATE_RUNNING;
     idcu_mutex_unlock(&registry->lock);
     return IDCU_ERR_SUCCESS;
@@ -342,13 +382,17 @@ int idcu_module_registry_stop_module(idcu_ModuleRegistry* registry, uint32_t mod
 int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry)
 {
     if (!registry) {
+        IDCU_LOG_ERROR("module_registry_build_dependency_graph failed: invalid parameters");
         return IDCU_ERR_INVALID_PARAM;
     }
     
     int ret = idcu_mutex_lock(&registry->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("module_registry_build_dependency_graph failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
+    
+    IDCU_LOG_INFO("building dependency graph for %u modules...", registry->count);
     
     for (uint32_t i = 0; i < registry->count; i++) {
         registry->modules[i].in_degree = 0;
@@ -376,31 +420,38 @@ int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry)
                     
                     mod->in_degree++;
                     dep_found = 1;
+                    IDCU_LOG_DEBUG("dependency: %s -> %s", mod->iface->name, dep_name);
                     break;
                 }
             }
             
             if (!dep_found) {
                 idcu_mutex_unlock(&registry->lock);
+                IDCU_LOG_ERROR("module_registry_build_dependency_graph failed: dependency %s not found for module %s", dep_name, mod->iface->name);
                 return IDCU_ERR_NOT_FOUND;
             }
         }
     }
     
     idcu_mutex_unlock(&registry->lock);
+    IDCU_LOG_INFO("dependency graph built successfully");
     return IDCU_ERR_SUCCESS;
 }
 
 int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry)
 {
     if (!registry) {
+        IDCU_LOG_ERROR("module_registry_topological_sort failed: invalid parameters");
         return IDCU_ERR_INVALID_PARAM;
     }
     
     int ret = idcu_mutex_lock(&registry->lock);
     if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("module_registry_topological_sort failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
+    
+    IDCU_LOG_INFO("performing topological sort...");
     
     uint32_t temp_in_degree[IDCU_MAX_REGISTERED_MODULES];
     for (uint32_t i = 0; i < registry->count; i++) {
@@ -436,6 +487,7 @@ int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry)
     
     if (topological_idx != registry->count) {
         idcu_mutex_unlock(&registry->lock);
+        IDCU_LOG_ERROR("module_registry_topological_sort failed: circular dependency detected");
         return IDCU_ERR_CIRCULAR_DEP;
     }
     
@@ -443,6 +495,7 @@ int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry)
     registry->topological_valid = 1;
     
     idcu_mutex_unlock(&registry->lock);
+    IDCU_LOG_INFO("topological sort completed, order count=%u", topological_idx);
     return IDCU_ERR_SUCCESS;
 }
 
