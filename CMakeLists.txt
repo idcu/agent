@@ -60,6 +60,7 @@ endif()
 option(BUILD_TESTS "Build tests" OFF)
 option(BUILD_BENCHMARKS "Build benchmarks" ON)
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
+option(ENABLE_CODE_COVERAGE "Enable code coverage with gcov/lcov" OFF)
 
 if(ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES clang-tidy)
@@ -71,9 +72,79 @@ if(ENABLE_CLANG_TIDY)
     endif()
 endif()
 
+if(ENABLE_CODE_COVERAGE)
+    if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "Code coverage requires GCC or Clang compiler")
+    endif()
+    
+    if(NOT UNIX)
+        message(FATAL_ERROR "Code coverage is only supported on Unix-like systems (Linux/macOS)")
+    endif()
+    
+    message(STATUS "Code coverage enabled")
+    
+    add_compile_options(--coverage -O0 -g)
+    add_link_options(--coverage)
+    
+    find_program(LCOV_EXE NAMES lcov)
+    if(LCOV_EXE)
+        message(STATUS "Found lcov: ${LCOV_EXE}")
+    else()
+        message(WARNING "lcov not found, HTML report generation disabled")
+    endif()
+    
+    find_program(GENHTML_EXE NAMES genhtml)
+    if(GENHTML_EXE)
+        message(STATUS "Found genhtml: ${GENHTML_EXE}")
+    else()
+        message(WARNING "genhtml not found, HTML report generation disabled")
+    endif()
+endif()
+
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    
+    if(ENABLE_CODE_COVERAGE)
+        add_custom_target(coverage_clean
+            COMMAND ${LCOV_EXE} --directory ${PROJECT_BINARY_DIR} --zerocounters
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            COMMENT "Clearing coverage counters"
+        )
+        
+        add_custom_target(coverage_capture
+            COMMAND ${LCOV_EXE} --directory ${PROJECT_BINARY_DIR} --capture --output-file coverage.info
+            COMMAND ${LCOV_EXE} --remove coverage.info '/usr/*' '*/tests/*' '*/modules/*' --output-file coverage_filtered.info
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            COMMENT "Capturing coverage data"
+            DEPENDS coverage_clean
+        )
+        
+        if(GENHTML_EXE)
+            add_custom_target(coverage_report
+                COMMAND ${GENHTML_EXE} -o coverage_report coverage_filtered.info
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+                COMMENT "Generating HTML coverage report"
+                DEPENDS coverage_capture
+            )
+            
+            add_custom_target(coverage
+                COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                COMMAND ${CMAKE_COMMAND} --build . --target coverage_report
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+                COMMENT "Running tests and generating coverage report"
+                DEPENDS coverage_clean
+            )
+        else()
+            add_custom_target(coverage
+                COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                COMMAND ${CMAKE_COMMAND} --build . --target coverage_capture
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+                COMMENT "Running tests and capturing coverage data"
+                DEPENDS coverage_clean
+            )
+        endif()
+    endif()
 endif()
 
 if(BUILD_BENCHMARKS)
