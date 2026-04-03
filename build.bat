@@ -27,7 +27,7 @@ mkdir out build 2>nul
 cd build
 
 :: 使用 MinGW 生成器
-cmake -G "MinGW Makefiles" -DBUILD_TESTS=ON ..
+cmake -G "MinGW Makefiles" -DBUILD_TESTS=ON -DBUILD_SAMPLE_DLL=ON -DBUILD_DYNAMIC_LOADER_EXAMPLE=ON ..
 if %errorlevel% neq 0 (
     echo.
     echo CMake 生成失败！

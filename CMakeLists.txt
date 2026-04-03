@@ -159,3 +159,28 @@ if(BUILD_BENCHMARKS)
         target_link_libraries(idcu_benchmark PRIVATE pthread)
     endif()
 endif()
+
+# 构建示例动态模块 (DLL/SO)
+option(BUILD_SAMPLE_DLL "Build sample dynamic module" ON)
+if(BUILD_SAMPLE_DLL)
+    add_library(sample_module SHARED modules/dynamic/sample_module.c)
+    set_target_properties(sample_module PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+        PREFIX ""  # 在 Windows 上不添加 "lib" 前缀
+    )
+    target_link_libraries(sample_module PRIVATE idcu_core)
+endif()
+
+# 构建动态模块加载示例程序
+option(BUILD_DYNAMIC_LOADER_EXAMPLE "Build dynamic loader example" ON)
+if(BUILD_DYNAMIC_LOADER_EXAMPLE)
+    add_executable(dynamic_module_example examples/dynamic_module_example.c)
+    set_target_properties(dynamic_module_example PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+    )
+    target_link_libraries(dynamic_module_example PRIVATE idcu_core)
+    if(NOT WIN32)
+        target_link_libraries(dynamic_module_example PRIVATE pthread dl)
+    endif()
+endif()

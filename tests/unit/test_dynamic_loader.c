@@ -9,7 +9,7 @@ static idcu_TestSuite g_suite;
 static void test_dynamic_loader_init_destroy(void) {
     idcu_DynamicLoader loader;
     int ret = idcu_dynamic_loader_init(&loader, NULL);
-    IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "idcu_dynamic_loader_init should succeed");
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "idcu_dynamic_loader_init should succeed");
     
     idcu_dynamic_loader_destroy(&loader);
     IDCU_TEST_PASS();
@@ -48,6 +48,33 @@ static void test_dynamic_loader_get_at_invalid(void) {
     IDCU_TEST_PASS();
 }
 
+static void test_dynamic_loader_load_invalid_path(void) {
+    idcu_DynamicLoader loader;
+    idcu_dynamic_loader_init(&loader, NULL);
+    
+    int ret = idcu_dynamic_loader_load_module(&loader, "invalid", "nonexistent.dll");
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_MODULE_LOAD, "Loading invalid module should fail");
+    
+    idcu_dynamic_loader_destroy(&loader);
+    IDCU_TEST_PASS();
+}
+
+static void test_dynamic_loader_null_params(void) {
+    int ret = idcu_dynamic_loader_init(NULL, NULL);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_INVALID_PARAM, "init with NULL should fail");
+    
+    ret = idcu_dynamic_loader_load_module(NULL, "name", NULL);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_INVALID_PARAM, "load_module with NULL loader should fail");
+    
+    idcu_DynamicLoader loader;
+    idcu_dynamic_loader_init(&loader, NULL);
+    ret = idcu_dynamic_loader_load_module(&loader, NULL, NULL);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_INVALID_PARAM, "load_module with NULL name should fail");
+    
+    idcu_dynamic_loader_destroy(&loader);
+    IDCU_TEST_PASS();
+}
+
 int main(void) {
     idcu_log_init(NULL, IDCU_LOG_INFO);
     
@@ -57,6 +84,8 @@ int main(void) {
     idcu_test_suite_add_test(&g_suite, "dynamic_loader_empty_count", test_dynamic_loader_empty_count);
     idcu_test_suite_add_test(&g_suite, "dynamic_loader_find_nonexistent", test_dynamic_loader_find_nonexistent);
     idcu_test_suite_add_test(&g_suite, "dynamic_loader_get_at_invalid", test_dynamic_loader_get_at_invalid);
+    idcu_test_suite_add_test(&g_suite, "dynamic_loader_load_invalid_path", test_dynamic_loader_load_invalid_path);
+    idcu_test_suite_add_test(&g_suite, "dynamic_loader_null_params", test_dynamic_loader_null_params);
     
     idcu_test_suite_run(&g_suite);
     idcu_test_suite_print_summary(&g_suite);
