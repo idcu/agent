@@ -43,11 +43,11 @@ void kernel_run(MicroKernel *k)
     while (1) {
         coro_sched_run(&k->coro);
 
-        StackContext ctx;
+        Message msg;
         for (uint32_t i = 0; i < k->sb_cnt; ++i) {
             Sandbox *sb = &k->sandbox[i];
             if (sandbox_perm_check(sb, PERM_RECV) == 0) {
-                msg_recv(&k->msg, i, &ctx);
+                msg_recv(&k->msg, i, &msg);
             }
         }
     }

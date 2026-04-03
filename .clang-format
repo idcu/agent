@@ -1,0 +1,57 @@
+---
+BasedOnStyle: Google
+Language: Cpp
+Standard: c11
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 100
+
+PointerAlignment: Left
+
+AlignAfterOpenBracket: Align
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignOperands: true
+AlignTrailingComments: true
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+
+SortIncludes: true
+
+IncludeCategories:
+  - Regex: '^".*\.h"$'
+    Priority: 1
+  - Regex: '^<.*\.h>$'
+    Priority: 2
+
+IncludeIsMainRegex: '(_test|_unittest)?$'
+
+---
+Language: C
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 100

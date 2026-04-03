@@ -10,20 +10,38 @@ static LogLevel log_level = LOG_INFO;
 
 const char* err_to_str(int err_code) {
     switch (err_code) {
-        case ERR_SUCCESS: return "Success";
-        case ERR_GENERAL: return "General error";
-        case ERR_INVALID_PARAM: return "Invalid parameter";
-        case ERR_OUT_OF_MEM: return "Out of memory";
-        case ERR_PERM_DENIED: return "Permission denied";
-        case ERR_QUEUE_FULL: return "Queue full";
-        case ERR_QUEUE_EMPTY: return "Queue empty";
-        case ERR_MODULE_NOT_FOUND: return "Module not found";
-        case ERR_MODULE_INIT: return "Module init failed";
-        case ERR_CONFIG_LOAD: return "Config load failed";
-        case ERR_MSG_SEND: return "Message send failed";
-        case ERR_MSG_RECV: return "Message recv failed";
-        case ERR_CORO_CREATE: return "Coroutine create failed";
-        case ERR_SANDBOX_INIT: return "Sandbox init failed";
+        case 0: return "Success";
+        case -1: return "General error";
+        case -2: return "Invalid parameter";
+        case -3: return "Out of memory";
+        case -4: return "Permission denied";
+        case -5: return "Queue full";
+        case -6: return "Queue empty";
+        case -7: return "Module not found";
+        case -8: return "Module init failed";
+        case -9: return "Config load failed";
+        case -10: return "Message send failed";
+        case -11: return "Message recv failed";
+        case -12: return "Coroutine create failed";
+        case -13: return "Sandbox init failed";
+        case -14: return "Module load failed";
+        case -15: return "Module invalid";
+        case -16: return "Not found";
+        case -17: return "Already exists";
+        case -18: return "Busy";
+        case -19: return "Module run failed";
+        case -20: return "Module stop failed";
+        case -21: return "Module crash";
+        case -22: return "Dependency error";
+        case -23: return "Circular dependency";
+        case -24: return "Version mismatch";
+        case -25: return "Not initialized";
+        case -26: return "Lock failed";
+        case -27: return "Unlock failed";
+        case -28: return "Message timeout";
+        case -29: return "Message dropped";
+        case -30: return "Health check failed";
+        case -31: return "Config parse error";
         default: return "Unknown error";
     }
 }
