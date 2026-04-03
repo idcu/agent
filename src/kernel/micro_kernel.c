@@ -63,29 +63,62 @@ void idcu_kernel_start_modules(idcu_MicroKernel *k)
 
     while (*mod && cnt < 16) {
         printf("[kernel] module %s init\n", (*mod)->name);
-        (*mod)->init();
+        if ((*mod)->init) {
+            int ret = (*mod)->init();
+            if (ret != 0) {
+                printf("[kernel] warning: module %s init failed with code %d\n", (*mod)->name, ret);
+            }
+        }
+        
         k->sandbox[cnt].module_id = cnt;
         k->sandbox[cnt].perm = IDCU_PERM_SEND | IDCU_PERM_RECV | IDCU_PERM_RUN;
+        
+        k->tracked_modules[cnt].iface = *mod;
+        k->tracked_modules[cnt].state = IDCU_MOD_STATE_RUNNING;
+        
         cnt++;
         mod++;
     }
     k->sb_cnt = cnt;
+    k->tracked_cnt = cnt;
 }
 
 void idcu_kernel_stop(idcu_MicroKernel *k)
 {
     printf("[kernel] stopping all modules...\n");
     
-    uint32_t cnt = 0;
-    const idcu_ModuleInterface** mod = modules;
-
-    while (*mod && cnt < k->sb_cnt) {
-        if ((*mod)->stop) {
-            printf("[kernel] stopping module %s\n", (*mod)->name);
-            (*mod)->stop();
+    if (k->tracked_cnt == 0) {
+        printf("[kernel] no modules to stop\n");
+        return;
+    }
+    
+    int stop_failures = 0;
+    
+    for (int i = (int)k->tracked_cnt - 1; i >= 0; i--) {
+        idcu_TrackedModule *tracked = &k->tracked_modules[i];
+        
+        if (tracked->state != IDCU_MOD_STATE_RUNNING) {
+            printf("[kernel] module %s is not running, skipping stop\n", tracked->iface->name);
+            continue;
         }
-        cnt++;
-        mod++;
+        
+        printf("[kernel] stopping module %s\n", tracked->iface->name);
+        
+        if (tracked->iface->stop) {
+            int ret = tracked->iface->stop();
+            if (ret != 0) {
+                printf("[kernel] warning: module %s stop failed with code %d\n", tracked->iface->name, ret);
+                stop_failures++;
+            }
+        } else {
+            printf("[kernel] module %s has no stop function\n", tracked->iface->name);
+        }
+        
+        tracked->state = IDCU_MOD_STATE_STOPPED;
+    }
+    
+    if (stop_failures > 0) {
+        printf("[kernel] %d module(s) reported errors during stop\n", stop_failures);
     }
     
     printf("[kernel] all modules stopped\n");

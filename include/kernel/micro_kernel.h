@@ -7,12 +7,19 @@
 #include "module/module_def.h"
 
 typedef struct {
+    const idcu_ModuleInterface* iface;
+    idcu_ModuleState state;
+} idcu_TrackedModule;
+
+typedef struct {
     idcu_CoroScheduler coro;
     idcu_MessageBus    msg;
     idcu_Sandbox       sandbox[16];
     uint32_t           sb_cnt;
     idcu_StackContext  global;
     volatile int       should_exit;
+    idcu_TrackedModule tracked_modules[16];
+    uint32_t           tracked_cnt;
 } idcu_MicroKernel;
 
 void idcu_kernel_init(idcu_MicroKernel *k);
