@@ -33,7 +33,6 @@ Thumbs.db
 
 # 调试文件
 *.gdb
-core
 *.dSYM/
 
 # CMake
