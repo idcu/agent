@@ -28,6 +28,7 @@ file(GLOB_RECURSE CORE_SRCS
     src/plugin/*.c
     src/test/*.c
     src/kernel/*.c
+    src/sdk/*.c
 )
 
 file(GLOB_RECURSE MODULE_SRCS modules/*.c)
