@@ -23,12 +23,60 @@ static uint64_t get_timestamp_us(void)
 #endif
 }
 
-static int find_coro_index(idcu_CoroScheduler *sched, uint32_t id)
+static inline void circular_queue_init(idcu_CircularQueue *q)
 {
-    for (uint32_t i = 0; i < sched->count; i++) {
-        if (sched->coros[i].id == id) {
-            return i;
+    q->head = 0;
+    q->tail = 0;
+    q->count = 0;
+}
+
+static inline int circular_queue_enqueue(idcu_CircularQueue *q, uint32_t item)
+{
+    if (q->count >= IDCU_CORO_MAX_COUNT) return -1;
+    q->items[q->tail] = item;
+    q->tail = (q->tail + 1) % IDCU_CORO_MAX_COUNT;
+    q->count++;
+    return 0;
+}
+
+static inline int circular_queue_dequeue(idcu_CircularQueue *q, uint32_t *item)
+{
+    if (q->count == 0) return -1;
+    *item = q->items[q->head];
+    q->head = (q->head + 1) % IDCU_CORO_MAX_COUNT;
+    q->count--;
+    return 0;
+}
+
+static inline int circular_queue_remove(idcu_CircularQueue *q, uint32_t item)
+{
+    uint32_t temp[IDCU_CORO_MAX_COUNT];
+    uint32_t temp_count = 0;
+    uint32_t current;
+    int found = 0;
+
+    while (q->count > 0) {
+        if (circular_queue_dequeue(q, &current) != 0) break;
+        if (current == item) {
+            found = 1;
+        } else {
+            temp[temp_count++] = current;
         }
+    }
+
+    for (uint32_t i = 0; i < temp_count; i++) {
+        circular_queue_enqueue(q, temp[i]);
+    }
+
+    return found ? 0 : -1;
+}
+
+static inline int find_coro_index(idcu_CoroScheduler *sched, uint32_t id)
+{
+    if (id == 0 || id > IDCU_CORO_MAX_COUNT) return -1;
+    uint32_t idx = sched->id_to_index[id];
+    if (idx < sched->count && sched->coros[idx].id == id) {
+        return (int)idx;
     }
     return -1;
 }
@@ -37,40 +85,22 @@ static void add_to_ready_queue(idcu_CoroScheduler *sched, uint32_t coro_idx)
 {
     idcu_Coroutine *coro = &sched->coros[coro_idx];
     if (coro->prio >= IDCU_CORO_MAX_PRIO) return;
-    
-    if (sched->ready_count[coro->prio] < IDCU_CORO_MAX_COUNT) {
-        sched->ready_queue[coro->prio][sched->ready_count[coro->prio]] = coro_idx;
-        sched->ready_count[coro->prio]++;
-    }
+    circular_queue_enqueue(&sched->ready_queues[coro->prio], coro_idx);
 }
 
 static int remove_from_ready_queue(idcu_CoroScheduler *sched, uint32_t coro_idx)
 {
     idcu_Coroutine *coro = &sched->coros[coro_idx];
     if (coro->prio >= IDCU_CORO_MAX_PRIO) return -1;
-    
-    for (uint32_t i = 0; i < sched->ready_count[coro->prio]; i++) {
-        if (sched->ready_queue[coro->prio][i] == coro_idx) {
-            for (uint32_t j = i; j < sched->ready_count[coro->prio] - 1; j++) {
-                sched->ready_queue[coro->prio][j] = sched->ready_queue[coro->prio][j + 1];
-            }
-            sched->ready_count[coro->prio]--;
-            return 0;
-        }
-    }
-    return -1;
+    return circular_queue_remove(&sched->ready_queues[coro->prio], coro_idx);
 }
 
 static int get_next_ready_coro(idcu_CoroScheduler *sched)
 {
     for (int p = IDCU_CORO_MAX_PRIO - 1; p >= 0; p--) {
-        if (sched->ready_count[p] > 0) {
-            uint32_t idx = sched->ready_queue[p][0];
-            for (uint32_t i = 0; i < sched->ready_count[p] - 1; i++) {
-                sched->ready_queue[p][i] = sched->ready_queue[p][i + 1];
-            }
-            sched->ready_count[p]--;
-            return idx;
+        uint32_t idx;
+        if (circular_queue_dequeue(&sched->ready_queues[p], &idx) == 0) {
+            return (int)idx;
         }
     }
     return -1;
@@ -79,9 +109,14 @@ static int get_next_ready_coro(idcu_CoroScheduler *sched)
 void idcu_coro_sched_init(idcu_CoroScheduler *sched)
 {
     if (!sched) return;
-    
+
     memset(sched, 0, sizeof(idcu_CoroScheduler));
     idcu_mutex_init(&sched->lock);
+    
+    for (uint32_t p = 0; p < IDCU_CORO_MAX_PRIO; p++) {
+        circular_queue_init(&sched->ready_queues[p]);
+    }
+    
     sched->next_id = 1;
     sched->last_ts = get_timestamp_us();
 }
@@ -97,27 +132,28 @@ int idcu_coro_create(idcu_CoroScheduler *sched, idcu_CoroState (*func)(idcu_Coro
     if (!sched || !func) return IDCU_ERR_INVALID_PARAM;
     if (prio >= IDCU_CORO_MAX_PRIO) return IDCU_ERR_INVALID_PARAM;
     if (sched->count >= IDCU_CORO_MAX_COUNT) return IDCU_ERR_NO_MEMORY;
-    
+
     int ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return ret;
-    
+
     uint32_t idx = sched->count;
     idcu_Coroutine *coro = &sched->coros[idx];
     memset(coro, 0, sizeof(idcu_Coroutine));
-    
+
     coro->id = sched->next_id++;
     coro->prio = prio;
     coro->state = IDCU_CORO_READY;
     coro->func = func;
     coro->timeslice = (timeslice == 0) ? IDCU_CORO_DEFAULT_TIMESLICE : timeslice;
     coro->user_data = user_data;
-    
+
+    sched->id_to_index[coro->id] = idx;
     add_to_ready_queue(sched, idx);
     sched->count++;
-    
+
     idcu_global_metrics_set(IDCU_METRIC_CORO_TOTAL, sched->count);
     idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
-    
+
     idcu_mutex_unlock(&sched->lock);
     return coro->id;
 }
@@ -125,34 +161,36 @@ int idcu_coro_create(idcu_CoroScheduler *sched, idcu_CoroState (*func)(idcu_Coro
 int idcu_coro_destroy(idcu_CoroScheduler *sched, uint32_t id)
 {
     if (!sched) return IDCU_ERR_INVALID_PARAM;
-    
+
     int ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return ret;
-    
+
     int idx = find_coro_index(sched, id);
     if (idx < 0) {
         idcu_mutex_unlock(&sched->lock);
         return IDCU_ERR_NOT_FOUND;
     }
-    
+
     idcu_Coroutine *coro = &sched->coros[idx];
     if (coro->state == IDCU_CORO_READY) {
         remove_from_ready_queue(sched, idx);
     }
-    
+
     if ((uint32_t)idx < sched->count - 1) {
         sched->coros[idx] = sched->coros[sched->count - 1];
+        sched->id_to_index[sched->coros[idx].id] = idx;
         if (sched->coros[idx].state == IDCU_CORO_READY) {
             remove_from_ready_queue(sched, sched->count - 1);
             add_to_ready_queue(sched, idx);
         }
     }
-    
+
+    sched->id_to_index[id] = 0;
     sched->count--;
-    
+
     idcu_global_metrics_set(IDCU_METRIC_CORO_TOTAL, sched->count);
     idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
-    
+
     idcu_mutex_unlock(&sched->lock);
     return IDCU_ERR_SUCCESS;
 }
@@ -160,16 +198,16 @@ int idcu_coro_destroy(idcu_CoroScheduler *sched, uint32_t id)
 int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id)
 {
     if (!sched) return IDCU_ERR_INVALID_PARAM;
-    
+
     int ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return ret;
-    
+
     int idx = find_coro_index(sched, id);
     if (idx < 0) {
         idcu_mutex_unlock(&sched->lock);
         return IDCU_ERR_NOT_FOUND;
     }
-    
+
     idcu_Coroutine *coro = &sched->coros[idx];
     if (coro->state == IDCU_CORO_READY) {
         remove_from_ready_queue(sched, idx);
@@ -177,9 +215,9 @@ int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id)
     } else if (coro->state == IDCU_CORO_RUNNING) {
         coro->state = IDCU_CORO_SUSPENDED;
     }
-    
+
     idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
-    
+
     idcu_mutex_unlock(&sched->lock);
     return IDCU_ERR_SUCCESS;
 }
@@ -187,24 +225,24 @@ int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id)
 int idcu_coro_resume(idcu_CoroScheduler *sched, uint32_t id)
 {
     if (!sched) return IDCU_ERR_INVALID_PARAM;
-    
+
     int ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return ret;
-    
+
     int idx = find_coro_index(sched, id);
     if (idx < 0) {
         idcu_mutex_unlock(&sched->lock);
         return IDCU_ERR_NOT_FOUND;
     }
-    
+
     idcu_Coroutine *coro = &sched->coros[idx];
     if (coro->state == IDCU_CORO_SUSPENDED) {
         coro->state = IDCU_CORO_READY;
         add_to_ready_queue(sched, idx);
     }
-    
+
     idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
-    
+
     idcu_mutex_unlock(&sched->lock);
     return IDCU_ERR_SUCCESS;
 }
@@ -212,16 +250,16 @@ int idcu_coro_resume(idcu_CoroScheduler *sched, uint32_t id)
 idcu_Coroutine* idcu_coro_get(idcu_CoroScheduler *sched, uint32_t id)
 {
     if (!sched) return NULL;
-    
+
     int ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return NULL;
-    
+
     int idx = find_coro_index(sched, id);
     idcu_Coroutine *result = NULL;
     if (idx >= 0) {
         result = &sched->coros[idx];
     }
-    
+
     idcu_mutex_unlock(&sched->lock);
     return result;
 }
@@ -229,60 +267,55 @@ idcu_Coroutine* idcu_coro_get(idcu_CoroScheduler *sched, uint32_t id)
 uint32_t idcu_coro_get_ready_count(idcu_CoroScheduler *sched)
 {
     if (!sched) return 0;
-    
-    int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return 0;
-    
+
     uint32_t total = 0;
     for (uint32_t p = 0; p < IDCU_CORO_MAX_PRIO; p++) {
-        total += sched->ready_count[p];
+        total += sched->ready_queues[p].count;
     }
-    
-    idcu_mutex_unlock(&sched->lock);
     return total;
 }
 
 idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
 {
     if (!sched) return IDCU_CORO_IDLE;
-    
+
     int ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return IDCU_CORO_IDLE;
-    
+
     int next_idx = get_next_ready_coro(sched);
     if (next_idx < 0) {
         idcu_mutex_unlock(&sched->lock);
         return IDCU_CORO_IDLE;
     }
-    
+
     idcu_Coroutine *coro = &sched->coros[next_idx];
     sched->current = next_idx;
     sched->current_prio = coro->prio;
     coro->state = IDCU_CORO_RUNNING;
-    
+
     idcu_global_metrics_set(IDCU_METRIC_CORO_RUNNING, 1);
     idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
-    
+
     uint64_t start_ts = get_timestamp_us();
     coro->stats.last_switch_ts = start_ts;
-    
+
     idcu_mutex_unlock(&sched->lock);
-    
+
     idcu_CoroState result = coro->func(coro);
-    
+
     ret = idcu_mutex_lock(&sched->lock);
     if (ret != IDCU_ERR_SUCCESS) return result;
-    
+
     uint64_t end_ts = get_timestamp_us();
     uint64_t runtime = end_ts - start_ts;
     coro->stats.total_runtime_us += runtime;
     coro->stats.switch_count++;
     coro->stats.timeslice_used++;
-    
+
     idcu_global_metrics_inc(IDCU_METRIC_CORO_SWITCHES, 1);
     idcu_global_metrics_inc(IDCU_METRIC_CORO_RUNTIME_US, runtime);
     idcu_global_metrics_set(IDCU_METRIC_CORO_RUNNING, 0);
-    
+
     if (result == IDCU_CORO_RUNNING || result == IDCU_CORO_READY) {
         coro->state = IDCU_CORO_READY;
         if (coro->stats.timeslice_used < coro->timeslice) {
@@ -299,9 +332,9 @@ idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
     } else {
         coro->state = result;
     }
-    
+
     idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
-    
+
     idcu_mutex_unlock(&sched->lock);
     return result;
 }

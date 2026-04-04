@@ -38,9 +38,16 @@ struct idcu_Coroutine {
 };
 
 typedef struct {
+    uint32_t items[IDCU_CORO_MAX_COUNT];
+    uint32_t head;
+    uint32_t tail;
+    uint32_t count;
+} idcu_CircularQueue;
+
+typedef struct {
     idcu_Coroutine coros[IDCU_CORO_MAX_COUNT];
-    uint32_t ready_queue[IDCU_CORO_MAX_PRIO][IDCU_CORO_MAX_COUNT];
-    uint32_t ready_count[IDCU_CORO_MAX_PRIO];
+    idcu_CircularQueue ready_queues[IDCU_CORO_MAX_PRIO];
+    uint32_t id_to_index[IDCU_CORO_MAX_COUNT + 1];
     uint32_t count;
     uint32_t current;
     uint32_t current_prio;
