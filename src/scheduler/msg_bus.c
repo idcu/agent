@@ -1,5 +1,6 @@
 #include "scheduler/msg_bus.h"
 #include "common/error_code.h"
+#include "monitor/metrics.h"
 #include "utils/log.h"
 #include <string.h>
 #include <stdlib.h>
@@ -99,6 +100,9 @@ int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu
 
     bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
 
+    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, 1);
+    idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
+
     idcu_mutex_unlock(&bus->lock);
     IDCU_LOG_DEBUG("msg_send succeeded: src=%u, dst=%u, prio=%d", src_mod, dst_mod, prio);
     return IDCU_ERR_SUCCESS;
@@ -126,6 +130,10 @@ int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg)
             if (queue_msg->target_mod_id == mod_id || queue_msg->target_mod_id == 0) {
                 *msg = *queue_msg;
                 bus->head[prio] = (bus->head[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
+
+                idcu_global_metrics_inc(IDCU_METRIC_MSG_RECEIVED, 1);
+                idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
+
                 idcu_mutex_unlock(&bus->lock);
                 IDCU_LOG_DEBUG("msg_recv succeeded: mod=%u, src=%u, prio=%d", mod_id, queue_msg->source_mod_id, prio);
                 return IDCU_ERR_SUCCESS;
@@ -139,7 +147,11 @@ int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg)
 
 int idcu_msg_broadcast(idcu_MessageBus *bus, uint32_t src_mod, idcu_MsgPriority prio, const idcu_StackContext *ctx)
 {
-    return idcu_msg_send(bus, src_mod, 0, prio, ctx);
+    int ret = idcu_msg_send(bus, src_mod, 0, prio, ctx);
+    if (ret == IDCU_ERR_SUCCESS) {
+        idcu_global_metrics_inc(IDCU_METRIC_MSG_BROADCAST, 1);
+    }
+    return ret;
 }
 
 uint32_t idcu_msg_get_count(idcu_MessageBus *bus)
@@ -241,6 +253,10 @@ int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_
 
     bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
 
+    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, 1);
+    idcu_global_metrics_inc(IDCU_METRIC_MSG_ZEROCOPY_SENT, 1);
+    idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
+
     idcu_mutex_unlock(&bus->lock);
     IDCU_LOG_DEBUG("msg_send_zerocopy succeeded: src=%u, dst=%u, prio=%d, size=%u", src_mod, dst_mod, prio, size);
     return IDCU_ERR_SUCCESS;
@@ -314,6 +330,10 @@ int idcu_msg_send_batch(idcu_MessageBus *bus, idcu_MessageBatch *batch)
         bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
     }
 
+    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, batch->count);
+    idcu_global_metrics_inc(IDCU_METRIC_MSG_BATCH_SENT, 1);
+    idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
+
     idcu_mutex_unlock(&bus->lock);
     return (int)batch->count;
 }
@@ -354,6 +374,12 @@ int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch
         if (!found) {
             break;
         }
+    }
+
+    if (batch->count > 0) {
+        idcu_global_metrics_inc(IDCU_METRIC_MSG_RECEIVED, batch->count);
+        idcu_global_metrics_inc(IDCU_METRIC_MSG_BATCH_RECEIVED, 1);
+        idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
     }
 
     idcu_mutex_unlock(&bus->lock);

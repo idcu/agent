@@ -2,6 +2,9 @@
 #include <string.h>
 #include <stdio.h>
 
+static idcu_MetricsCollector g_global_collector;
+static int g_global_initialized = 0;
+
 int idcu_metrics_init(idcu_MetricsCollector* collector)
 {
     if (!collector) {
@@ -244,7 +247,7 @@ int idcu_metrics_export_prometheus(idcu_MetricsCollector* collector, char* buffe
     }
 
     int ret = idcu_mutex_lock(&collector->lock);
-    if (ret != IDCU_ERR_OK) {
+    if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
 
@@ -291,5 +294,137 @@ int idcu_metrics_export_prometheus(idcu_MetricsCollector* collector, char* buffe
     }
 
     idcu_mutex_unlock(&collector->lock);
-    return IDCU_ERR_OK;
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_global_metrics_init(void)
+{
+    if (g_global_initialized) {
+        return IDCU_ERR_SUCCESS;
+    }
+    int ret = idcu_metrics_init(&g_global_collector);
+    if (ret == IDCU_ERR_SUCCESS) {
+        g_global_initialized = 1;
+    }
+    return ret;
+}
+
+void idcu_global_metrics_destroy(void)
+{
+    if (!g_global_initialized) {
+        return;
+    }
+    idcu_metrics_destroy(&g_global_collector);
+    g_global_initialized = 0;
+}
+
+idcu_MetricsCollector* idcu_global_metrics_collector(void)
+{
+    return g_global_initialized ? &g_global_collector : NULL;
+}
+
+int idcu_global_metrics_register(const char* name, const char* desc, idcu_MetricType type)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    return idcu_metrics_register(&g_global_collector, name, desc, type);
+}
+
+int idcu_global_metrics_inc(const char* name, uint64_t value)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    return idcu_metrics_inc(&g_global_collector, name, value);
+}
+
+int idcu_global_metrics_set(const char* name, uint64_t value)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    return idcu_metrics_set(&g_global_collector, name, value);
+}
+
+int idcu_global_metrics_observe(const char* name, uint64_t value)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    return idcu_metrics_observe(&g_global_collector, name, value);
+}
+
+uint64_t idcu_global_metrics_get(const char* name)
+{
+    if (!g_global_initialized) {
+        return 0;
+    }
+    return idcu_metrics_get(&g_global_collector, name);
+}
+
+int idcu_global_metrics_export_text(char* buffer, size_t buffer_size)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    return idcu_metrics_export_text(&g_global_collector, buffer, buffer_size);
+}
+
+int idcu_global_metrics_export_prometheus(char* buffer, size_t buffer_size)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    return idcu_metrics_export_prometheus(&g_global_collector, buffer, buffer_size);
+}
+
+int idcu_global_metrics_register_default(void)
+{
+    if (!g_global_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    
+    int ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_CORO_TOTAL, "Total number of coroutines", IDCU_METRIC_GAUGE);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_CORO_RUNNING, "Number of running coroutines", IDCU_METRIC_GAUGE);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_CORO_READY, "Number of ready coroutines", IDCU_METRIC_GAUGE);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_CORO_SUSPENDED, "Number of suspended coroutines", IDCU_METRIC_GAUGE);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_CORO_SWITCHES, "Total coroutine context switches", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_CORO_RUNTIME_US, "Total coroutine runtime in microseconds", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_SENT, "Total messages sent", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_RECEIVED, "Total messages received", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_BROADCAST, "Total broadcast messages", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_QUEUE_SIZE, "Current message queue size", IDCU_METRIC_GAUGE);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_ZEROCOPY_SENT, "Total zero-copy messages sent", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_BATCH_SENT, "Total batch messages sent", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    ret = idcu_global_metrics_register(IDCU_METRIC_MSG_BATCH_RECEIVED, "Total batch messages received", IDCU_METRIC_COUNTER);
+    if (ret != IDCU_ERR_SUCCESS) return ret;
+    
+    return IDCU_ERR_SUCCESS;
 }

@@ -1,6 +1,8 @@
 #include "test/test_framework.h"
 #include "monitor/metrics.h"
 #include "monitor/prometheus_exporter.h"
+#include "scheduler/coroutine.h"
+#include "scheduler/msg_bus.h"
 #include "network/network_layer.h"
 #include "utils/log.h"
 #include <stdio.h>
@@ -126,6 +128,119 @@ static void test_prometheus_exporter_init_destroy(void) {
     IDCU_TEST_PASS();
 }
 
+static void test_global_metrics_init_destroy(void) {
+    int ret = idcu_global_metrics_init();
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "Global metrics init should succeed");
+    
+    ret = idcu_global_metrics_init();
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "Re-init should succeed (idempotent)");
+    
+    idcu_global_metrics_destroy();
+    idcu_global_metrics_destroy();
+    IDCU_TEST_PASS();
+}
+
+static void test_global_metrics_register_default(void) {
+    idcu_global_metrics_init();
+    
+    int ret = idcu_global_metrics_register_default();
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "Register default metrics should succeed");
+    
+    uint64_t val = idcu_global_metrics_get(IDCU_METRIC_CORO_TOTAL);
+    IDCU_TEST_ASSERT(val == 0, "coro_total should be 0 initially");
+    
+    val = idcu_global_metrics_get(IDCU_METRIC_MSG_SENT);
+    IDCU_TEST_ASSERT(val == 0, "msg_sent should be 0 initially");
+    
+    idcu_global_metrics_destroy();
+    IDCU_TEST_PASS();
+}
+
+static idcu_CoroState test_coro_func(idcu_Coroutine* coro) {
+    (void)coro;
+    return IDCU_CORO_FINISHED;
+}
+
+static void test_coro_metrics_integration(void) {
+    idcu_global_metrics_init();
+    idcu_global_metrics_register_default();
+    
+    idcu_CoroScheduler sched;
+    idcu_coro_sched_init(&sched);
+    
+    uint64_t total_before = idcu_global_metrics_get(IDCU_METRIC_CORO_TOTAL);
+    IDCU_TEST_ASSERT(total_before == 0, "coro_total should be 0");
+    
+    int coro_id = idcu_coro_create(&sched, test_coro_func, 10, 10, NULL);
+    IDCU_TEST_ASSERT(coro_id > 0, "Create coroutine should succeed");
+    
+    uint64_t total_after = idcu_global_metrics_get(IDCU_METRIC_CORO_TOTAL);
+    IDCU_TEST_ASSERT(total_after == 1, "coro_total should be 1");
+    
+    uint64_t ready_before = idcu_global_metrics_get(IDCU_METRIC_CORO_READY);
+    IDCU_TEST_ASSERT(ready_before == 1, "coro_ready should be 1");
+    
+    idcu_coro_sched_run(&sched);
+    
+    uint64_t switches = idcu_global_metrics_get(IDCU_METRIC_CORO_SWITCHES);
+    IDCU_TEST_ASSERT(switches == 1, "coro_switches should be 1");
+    
+    uint64_t runtime = idcu_global_metrics_get(IDCU_METRIC_CORO_RUNTIME_US);
+    IDCU_TEST_ASSERT(runtime > 0, "coro_runtime should be > 0");
+    
+    idcu_coro_destroy(&sched, coro_id);
+    
+    uint64_t total_final = idcu_global_metrics_get(IDCU_METRIC_CORO_TOTAL);
+    IDCU_TEST_ASSERT(total_final == 0, "coro_total should be 0 after destroy");
+    
+    idcu_coro_sched_destroy(&sched);
+    idcu_global_metrics_destroy();
+    IDCU_TEST_PASS();
+}
+
+static void test_msg_bus_metrics_integration(void) {
+    idcu_global_metrics_init();
+    idcu_global_metrics_register_default();
+    
+    idcu_MessageBus bus;
+    idcu_msg_bus_init(&bus);
+    
+    uint64_t sent_before = idcu_global_metrics_get(IDCU_METRIC_MSG_SENT);
+    IDCU_TEST_ASSERT(sent_before == 0, "msg_sent should be 0");
+    
+    idcu_StackContext ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    
+    int ret = idcu_msg_send(&bus, 1, 2, IDCU_MSG_PRIO_NORMAL, &ctx);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "Send message should succeed");
+    
+    uint64_t sent_after = idcu_global_metrics_get(IDCU_METRIC_MSG_SENT);
+    IDCU_TEST_ASSERT(sent_after == 1, "msg_sent should be 1");
+    
+    uint64_t queue_size = idcu_global_metrics_get(IDCU_METRIC_MSG_QUEUE_SIZE);
+    IDCU_TEST_ASSERT(queue_size == 1, "msg_queue_size should be 1");
+    
+    idcu_Message msg;
+    ret = idcu_msg_recv(&bus, 2, &msg);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "Receive message should succeed");
+    
+    uint64_t received = idcu_global_metrics_get(IDCU_METRIC_MSG_RECEIVED);
+    IDCU_TEST_ASSERT(received == 1, "msg_received should be 1");
+    
+    queue_size = idcu_global_metrics_get(IDCU_METRIC_MSG_QUEUE_SIZE);
+    IDCU_TEST_ASSERT(queue_size == 0, "msg_queue_size should be 0");
+    
+    ret = idcu_msg_broadcast(&bus, 1, IDCU_MSG_PRIO_NORMAL, &ctx);
+    IDCU_TEST_ASSERT(ret == IDCU_ERR_SUCCESS, "Broadcast message should succeed");
+    
+    uint64_t broadcast = idcu_global_metrics_get(IDCU_METRIC_MSG_BROADCAST);
+    IDCU_TEST_ASSERT(broadcast == 1, "msg_broadcast should be 1");
+    
+    idcu_msg_bus_destroy(&bus);
+    idcu_global_metrics_destroy();
+    IDCU_TEST_PASS();
+}
+
 int main(void) {
     idcu_log_init(NULL, IDCU_LOG_INFO);
     idcu_network_init();
@@ -138,6 +253,10 @@ int main(void) {
     idcu_test_suite_add_test(&g_suite, "metrics_gauge", test_metrics_gauge);
     idcu_test_suite_add_test(&g_suite, "metrics_export_prometheus", test_metrics_export_prometheus);
     idcu_test_suite_add_test(&g_suite, "prometheus_exporter_init_destroy", test_prometheus_exporter_init_destroy);
+    idcu_test_suite_add_test(&g_suite, "global_metrics_init_destroy", test_global_metrics_init_destroy);
+    idcu_test_suite_add_test(&g_suite, "global_metrics_register_default", test_global_metrics_register_default);
+    idcu_test_suite_add_test(&g_suite, "coro_metrics_integration", test_coro_metrics_integration);
+    idcu_test_suite_add_test(&g_suite, "msg_bus_metrics_integration", test_msg_bus_metrics_integration);
     
     idcu_test_suite_run(&g_suite);
     idcu_test_suite_print_summary(&g_suite);
