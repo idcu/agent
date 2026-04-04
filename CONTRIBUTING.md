@@ -320,10 +320,16 @@ git push origin feature/你的功能名
    - [开发者指引.md](./开发者指引.md)
    - [用户指引.md](./用户指引.md)
    - [docs/](./docs/) 目录下的文档
+   - [教程系列](./docs/)
 
-2. 创建 Issue 提问
+2. 加入社区：
+   - 查看 [社区指南](./docs/community_guide.md) 了解如何参与社区
+   - 在 GitHub Discussions 中提问
+   - （待建立）加入 Discord/Slack 实时聊天
 
-3. 在 PR 中讨论
+3. 创建 Issue 提问
+
+4. 在 PR 中讨论
 
 ---
 

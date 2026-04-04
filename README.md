@@ -109,6 +109,41 @@ idcu-agent/
 
 如果你想修改代码或添加新功能，请看 [开发者指引.md](./开发者指引.md)
 
+## 社区
+
+我们欢迎你加入 IDCU Agent 社区！
+
+### 沟通渠道
+
+- 💬 **Discord/Slack**: (待建立) - 实时聊天、讨论问题、分享想法
+- 📋 **GitHub Issues**: 报告 Bug、提出功能建议
+- 📝 **GitHub Discussions**: 更深入的技术讨论
+- 🔄 **Pull Requests**: 参与代码贡献
+
+### 如何参与
+
+1. **提问和讨论**: 在社区中提问、分享你的想法
+2. **报告 Bug**: 发现问题时及时报告
+3. **贡献代码**: 提交 PR 修复 Bug 或添加新功能
+4. **改进文档**: 帮助完善文档和教程
+5. **帮助他人**: 回答其他社区成员的问题
+
+详细的参与指南请查看 [社区指南](./docs/community_guide.md) 和 [贡献指南](./CONTRIBUTING.md)。
+
+## 学习资源
+
+- 📚 **教程系列**:
+  - [教程一：快速入门](./docs/tutorial_01_quick_start.md)
+  - [教程二：模块开发入门](./docs/tutorial_02_module_development.md)
+  - [教程三：消息总线使用](./docs/tutorial_03_message_bus.md)
+  - [教程四：协程调度详解](./docs/tutorial_04_coroutine.md)
+  - [教程五：沙箱安全机制](./docs/tutorial_05_sandbox.md)
+
+- 📖 **其他文档**:
+  - [用户指引](./用户指引.md) - 如何使用 IDCU Agent
+  - [开发者指引](./开发者指引.md) - 如何开发模块
+  - [架构设计](./docs/architecture.md) - 深入了解系统架构
+
 ## 常见问题
 
 **Q: 编译失败怎么办？**
@@ -122,6 +157,13 @@ A: 按 `Ctrl + C` 就可以停止程序。
 **Q: 我可以添加自己的功能吗？**
 
 A: 当然可以！看 [开发者指引.md](./开发者指引.md) 了解怎么做。
+
+**Q: 如何获得帮助？**
+
+A: 你可以：
+1. 查看文档和教程
+2. 在 GitHub Issues 中提问
+3. 加入我们的社区聊天（待建立）
 
 ## 许可证
 
