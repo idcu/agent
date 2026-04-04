@@ -5,6 +5,7 @@
 #include "scheduler/msg_bus.h"
 #include "security/sandbox.h"
 #include "module/module_def.h"
+#include "module/module_registry.h"
 #include "module/dynamic_module.h"
 #include "monitor/health_check.h"
 
@@ -28,6 +29,7 @@ typedef struct {
     idcu_HealthMonitor health_monitor;
     uint64_t           last_health_check_ms;
     uint64_t           health_check_interval_ms;
+    idcu_ModuleRegistry* registry;
 } idcu_MicroKernel;
 
 void idcu_kernel_init(idcu_MicroKernel *k);
@@ -46,5 +48,7 @@ void idcu_kernel_get_health_summary(idcu_MicroKernel *k, idcu_HealthSummary* sum
 int idcu_kernel_update_module_heartbeat(idcu_MicroKernel *k, uint32_t module_idx);
 int idcu_kernel_report_module_error(idcu_MicroKernel *k, uint32_t module_idx);
 void idcu_kernel_set_health_check_interval(idcu_MicroKernel *k, uint64_t interval_ms);
+
+idcu_MicroKernel* idcu_get_kernel(void);
 
 #endif // IDCU_KERNEL_MICRO_KERNEL_H

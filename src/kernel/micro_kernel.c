@@ -67,6 +67,8 @@ void idcu_kernel_init(idcu_MicroKernel *k)
         return;
     }
     
+    k->registry = &g_module_registry;
+    
     ret = idcu_module_registry_discover_modules(&g_module_registry);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("failed to discover modules, error code: %d (%s)", ret, idcu_err_to_str(ret));
