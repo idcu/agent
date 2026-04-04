@@ -46,7 +46,16 @@ void idcu_kernel_init(idcu_MicroKernel *k)
     idcu_msg_bus_init(&k->msg);
     idcu_ctx_init(&k->global, 0, 0);
     
-    int ret = idcu_dynamic_loader_init(&k->dynamic_loader, NULL);
+    int ret = idcu_health_monitor_init(&k->health_monitor);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("failed to init health monitor, error code: %d (%s)", ret, idcu_err_to_str(ret));
+        return;
+    }
+    
+    k->health_check_interval_ms = 5000;
+    k->last_health_check_ms = idcu_health_get_uptime_ms();
+    
+    ret = idcu_dynamic_loader_init(&k->dynamic_loader, NULL);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("failed to init dynamic loader, error code: %d (%s)", ret, idcu_err_to_str(ret));
         return;
@@ -99,11 +108,18 @@ void idcu_kernel_start_modules(idcu_MicroKernel *k)
         const idcu_ModuleInterface* mod = reg_mod->iface;
         IDCU_LOG_INFO("module %s started", mod->name);
         
+        uint32_t health_module_id = cnt;
+        ret = idcu_health_register_module(&k->health_monitor, health_module_id);
+        if (ret != IDCU_ERR_SUCCESS) {
+            IDCU_LOG_WARN("failed to register module %s with health monitor: %d", mod->name, ret);
+        }
+        
         k->sandbox[cnt].module_id = cnt;
         k->sandbox[cnt].perm = IDCU_PERM_SEND | IDCU_PERM_RECV | IDCU_PERM_RUN;
         
         k->tracked_modules[cnt].iface = mod;
         k->tracked_modules[cnt].state = IDCU_MOD_STATE_RUNNING;
+        k->tracked_modules[cnt].health_module_id = health_module_id;
         
         cnt++;
     }
@@ -124,9 +140,11 @@ void idcu_kernel_stop(idcu_MicroKernel *k)
     for (uint32_t i = 0; i < k->tracked_cnt; i++) {
         idcu_TrackedModule *tracked = &k->tracked_modules[i];
         tracked->state = IDCU_MOD_STATE_STOPPED;
+        idcu_health_unregister_module(&k->health_monitor, tracked->health_module_id);
     }
     
     idcu_dynamic_loader_destroy(&k->dynamic_loader);
+    idcu_health_monitor_destroy(&k->health_monitor);
     
     IDCU_LOG_INFO("all modules stopped");
 }
@@ -243,7 +261,21 @@ void idcu_kernel_run(idcu_MicroKernel *k)
             idcu_TrackedModule *tracked = &k->tracked_modules[i];
             if (tracked->state == IDCU_MOD_STATE_RUNNING && tracked->iface->run) {
                 tracked->iface->run();
+                idcu_health_update_heartbeat(&k->health_monitor, tracked->health_module_id);
             }
+        }
+
+        uint64_t now = idcu_health_get_uptime_ms();
+        if (now - k->last_health_check_ms >= k->health_check_interval_ms) {
+            idcu_health_check_all(&k->health_monitor);
+            
+            idcu_HealthSummary summary;
+            idcu_health_get_summary(&k->health_monitor, &summary);
+            IDCU_LOG_INFO("Health check - Total: %u, Healthy: %u, Warning: %u, Critical: %u, Dead: %u",
+                          summary.total_count, summary.healthy_count, summary.warning_count,
+                          summary.critical_count, summary.dead_count);
+            
+            k->last_health_check_ms = now;
         }
     }
     
@@ -270,4 +302,51 @@ void idcu_kernel_set_signal_handler(idcu_MicroKernel *k)
         IDCU_LOG_WARN("failed to set SIGTERM handler");
     }
 #endif
+}
+
+idcu_HealthMonitor* idcu_kernel_get_health_monitor(idcu_MicroKernel *k)
+{
+    if (!k) {
+        return NULL;
+    }
+    return &k->health_monitor;
+}
+
+idcu_HealthStatus idcu_kernel_get_overall_health(idcu_MicroKernel *k)
+{
+    if (!k) {
+        return IDCU_HEALTH_UNKNOWN;
+    }
+    return idcu_health_get_overall_status(&k->health_monitor);
+}
+
+void idcu_kernel_get_health_summary(idcu_MicroKernel *k, idcu_HealthSummary* summary)
+{
+    if (!k || !summary) {
+        return;
+    }
+    idcu_health_get_summary(&k->health_monitor, summary);
+}
+
+int idcu_kernel_update_module_heartbeat(idcu_MicroKernel *k, uint32_t module_idx)
+{
+    if (!k || module_idx >= k->tracked_cnt) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    return idcu_health_update_heartbeat(&k->health_monitor, k->tracked_modules[module_idx].health_module_id);
+}
+
+int idcu_kernel_report_module_error(idcu_MicroKernel *k, uint32_t module_idx)
+{
+    if (!k || module_idx >= k->tracked_cnt) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    return idcu_health_report_error(&k->health_monitor, k->tracked_modules[module_idx].health_module_id);
+}
+
+void idcu_kernel_set_health_check_interval(idcu_MicroKernel *k, uint64_t interval_ms)
+{
+    if (k) {
+        k->health_check_interval_ms = interval_ms;
+    }
 }
