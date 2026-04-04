@@ -29,9 +29,9 @@
 
 **示例：**
 ```c
-#include "module/module_def.h"
-#include "utils/config_manager.h"
-#include "utils/log.h"
+#include "core/module-system/include/module_def.h"
+#include "core/utils/include/config_manager.h"
+#include "core/utils/include/log.h"
 #include <stdlib.h>
 
 // 模块私有数据
@@ -146,7 +146,7 @@ debug_mode = false
 ### 2.2 读取配置
 
 ```c
-#include "utils/config_manager.h"
+#include "core/utils/include/config_manager.h"
 
 static void read_config(void)
 {
@@ -173,7 +173,7 @@ static void read_config(void)
 ### 3.1 日志级别
 
 ```c
-#include "utils/log.h"
+#include "core/utils/include/log.h"
 
 void log_examples(void)
 {
@@ -208,9 +208,9 @@ log_level = info  # 可选: debug, info, warn, error
 ### 4.1 创建 `counter_module.c`
 
 ```c
-#include "module/module_def.h"
-#include "utils/config_manager.h"
-#include "utils/log.h"
+#include "core/module-system/include/module_def.h"
+#include "core/utils/include/config_manager.h"
+#include "core/utils/include/log.h"
 #include <stdio.h>
 #include <time.h>
 

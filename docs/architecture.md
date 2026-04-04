@@ -15,114 +15,158 @@ IDCU Agent 采用微内核架构设计，核心只负责基本的调度和通信
 │  │ base_log │  │biz_collect│  │   ...    │            │
 │  └──────────┘  └──────────┘  └──────────┘            │
 ├─────────────────────────────────────────────────────────┤
-│                 微内核层 (Micro Kernel)                   │
+│                 服务层 (Services)                        │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐            │
-│  │ 协程调度 │  │ 消息总线 │  │ 沙箱安全 │            │
+│  │ 监控系统 │  │ 网络系统 │  │ 安全系统 │            │
 │  └──────────┘  └──────────┘  └──────────┘            │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐            │
-│  │ 模块管理 │  │ 监控检测 │  │ 网络通信 │            │
-│  └──────────┘  └──────────┘  └──────────┘            │
+│  ┌──────────┐                                          │
+│  │ 插件系统 │                                          │
+│  └──────────┘                                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ## 核心模块说明
 
-### 1. 微内核 (Micro Kernel)
-**文件位置**: `include/kernel/micro_kernel.h` / `src/kernel/micro_kernel.c`
+### 1. 监控系统 (Monitor)
+**文件位置**: `modules/services/monitor/`
 
-微内核是整个系统的核心，负责：
-- 协程调度器的管理
-- 消息总线的初始化和维护
-- 沙箱环境的创建
-- 模块的加载、初始化和启动
+提供完整的监控和可观测性功能：
 
-### 2. 协程调度器 (Coroutine Scheduler)
-**文件位置**: `include/scheduler/coroutine.h` / `src/scheduler/coroutine.c`
+- **健康检查** (`health_check.h/c`)
+  - 模块心跳检测
+  - 健康状态管理
+  - 健康状态查询接口
 
-提供轻量级的协程调度功能，支持：
-- 多优先级协程
-- 时间片轮转调度
-- 协程挂起和恢复
-- 性能统计
+- **指标收集** (`metrics.h/c`)
+  - 性能指标收集
+  - 指标分类管理
+  - 指标查询接口
 
-### 3. 消息总线 (Message Bus)
-**文件位置**: `include/scheduler/msg_bus.h` / `src/scheduler/msg_bus.c`
+- **告警管理** (`alert_manager.h/c`)
+  - 告警规则定义
+  - 告警条件判断
+  - 告警状态管理
 
-模块间通信的核心组件，特性包括：
-- 多优先级消息队列
-- 零拷贝消息传输
-- 消息广播
-- 批量消息处理
+- **通知器** (`notifier.h/c`)
+  - 告警通知发送
+  - 多渠道通知支持
 
-### 4. 沙箱安全 (Sandbox)
-**文件位置**:
-- `include/security/sandbox.h` / `src/security/sandbox.c`
-- `include/security/sandbox_enhanced.h` / `src/security/sandbox_enhanced.c`
+- **Prometheus 导出** (`prometheus_exporter.h/c`)
+  - Prometheus 格式指标导出
+  - HTTP 端点提供
+
+### 2. 网络系统 (Network)
+**文件位置**: `modules/services/network/`
+
+提供网络通信和分布式功能：
+
+- **网络层** (`network_layer.h/c`)
+  - TCP/UDP Socket 封装
+  - 网络连接管理
+  - 数据收发接口
+
+- **连接池** (`connection_pool.h/c`)
+  - 连接复用管理
+  - 连接生命周期管理
+  - 连接健康检查
+
+- **HTTP 服务器** (`http_server.h/c`)
+  - 轻量级 HTTP 服务实现
+  - 请求路由
+  - 响应处理
+
+- **管理 API** (`management_api.h/c`)
+  - RESTful 管理接口
+  - 模块管理 API
+  - 状态查询 API
+
+- **分布式节点** (`distributed_node.h/c`)
+  - 多节点通信
+  - 节点状态同步
+  - 数据同步机制
+
+- **节点发现** (`node_discovery.h/c`)
+  - 节点自动发现
+  - 节点广播
+  - 发现协议实现
+
+### 3. 安全系统 (Security)
+**文件位置**: `modules/services/security/`
 
 提供模块隔离和安全机制：
-- 权限控制 (发送、接收、运行、硬件访问等)
-- 内存区域保护
-- 系统调用白名单
-- 资源限制 (CPU、内存、文件描述符)
 
-### 5. 模块管理 (Module Management)
-**文件位置**:
-- `include/module/module_def.h` - 模块接口定义
-- `include/module/module_registry.h` / `src/module/module_registry.c` - 模块注册表
-- `include/module/dynamic_module.h` / `src/module/dynamic_loader.c` - 动态模块加载
+- **沙箱基础版** (`sandbox.h/c`)
+  - 权限控制 (发送、接收、运行、硬件访问等)
+  - 内存区域保护
+  - 资源限制 (CPU、内存、文件描述符)
 
-支持模块的生命周期管理：
-- 静态模块注册
-- 动态模块加载 (Windows/Linux)
-- 模块初始化、运行、停止
-- 模块依赖管理
+- **沙箱增强版** (`sandbox_enhanced.h/c`)
+  - 系统调用白名单
+  - 增强的权限检查
+  - 更严格的资源限制
 
-### 6. 监控检测 (Monitoring)
-**文件位置**:
-- `include/monitor/health_check.h` / `src/monitor/health_check.c` - 健康检查
-- `include/monitor/metrics.h` / `src/monitor/metrics.c` - 指标收集
+### 4. 插件系统 (Plugin)
+**文件位置**: `modules/services/plugin/`
 
-提供系统监控功能：
-- 模块心跳检测
-- 健康状态管理
-- 性能指标收集
-- Prometheus 格式导出
+提供插件生态系统支持：
 
-### 7. 网络通信 (Network)
-**文件位置**:
-- `include/network/network_layer.h` / `src/network/network_layer.c` - 网络层
-- `include/network/distributed_node.h` / `src/network/distributed_node.c` - 分布式节点
-- `include/network/node_discovery.h` / `src/network/node_discovery.c` - 节点发现
-
-支持网络通信和分布式功能：
-- TCP/UDP Socket 封装
-- 分布式节点管理
-- 节点自动发现
-- 节点间消息传递
+- **插件加载和卸载**
+- **插件依赖管理**
+- **插件生命周期管理**
 
 ## 目录结构
 
 ```
 idcu-agent/
-├── include/              # 公共头文件
-│   ├── common/           # 通用工具 (atomic, lock, error_code, config)
-│   ├── utils/            # 工具模块 (log, memory_pool, json_parser, config_manager)
-│   ├── scheduler/        # 调度相关 (coroutine, msg_bus, context)
-│   ├── module/           # 模块系统 (module_def, module_registry, dynamic_module)
-│   ├── monitor/          # 监控系统 (health_check, metrics)
-│   ├── network/          # 网络相关 (network_layer, distributed_node, node_discovery)
-│   ├── security/         # 安全相关 (sandbox, sandbox_enhanced)
-│   ├── plugin/           # 插件系统 (plugin_ecosystem)
-│   ├── test/             # 测试框架 (test_framework)
-│   └── kernel/           # 内核核心 (micro_kernel)
-├── src/                  # 源代码实现
-│   └── (与 include 对应)
-├── modules/              # 业务模块
-│   ├── base/             # 基础模块
-│   └── biz/              # 业务模块
-├── config/               # 配置文件
-├── tests/                # 测试用例
-├── docs/                 # 文档目录
+├── app/                          # 应用程序入口
+├── modules/                      # 模块化结构
+│   ├── services/                 # 服务模块组
+│   │   ├── monitor/              # 监控系统
+│   │   │   ├── include/          # 头文件
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── README.md
+│   │   │   └── module.json
+│   │   ├── network/              # 网络相关
+│   │   │   ├── include/          # 头文件
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── README.md
+│   │   │   └── module.json
+│   │   ├── security/             # 安全相关
+│   │   │   ├── include/          # 头文件
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── README.md
+│   │   │   └── module.json
+│   │   └── plugin/               # 插件系统
+│   │       ├── include/          # 头文件
+│   │       ├── src/              # 源代码
+│   │       ├── tests/            # 测试
+│   │       ├── CMakeLists.txt
+│   │       ├── README.md
+│   │       └── module.json
+│   └── business/                 # 业务模块组
+│       ├── core-module/          # 核心基础模块
+│       ├── alert/                # 告警模块
+│       ├── collect/              # 采集模块
+│       ├── config/               # 配置模块
+│       ├── data-collector/       # 数据采集模块
+│       ├── healthcheck/          # 健康检查模块
+│       ├── heartbeat/            # 心跳模块
+│       ├── http-management/      # HTTP管理模块
+│       ├── log/                  # 日志模块
+│       ├── metrics/              # 指标模块
+│       ├── examples/             # 示例模块
+│       └── dynamic/              # 动态加载模块示例
+├── module-repo/                  # 模块仓库
+├── tests/                        # 测试用例
+├── examples/                     # 示例程序
+├── config/                       # 配置文件
+├── docs/                         # 文档目录
 └── CMakeLists.txt
 ```
 
@@ -131,34 +175,25 @@ idcu-agent/
 1. **模块启动流程**:
    ```
    main() 
-     → idcu_kernel_init() 
-       → 初始化协程调度器
-       → 初始化消息总线
-       → 初始化沙箱
-     → idcu_kernel_start_modules()
-       → 加载并初始化所有模块
-     → idcu_kernel_run()
-       → 主循环：调度协程 + 处理消息
+     → 初始化服务模块
+       → 初始化监控系统
+       → 初始化网络系统
+       → 初始化安全系统
+     → 加载业务模块
+       → 初始化业务模块
+     → 主循环
+       → 调度模块运行
+       → 处理消息
    ```
 
 2. **模块间通信**:
    ```
    模块A 
-     → idcu_msg_send() 
+     → 发送消息
        → 消息总线队列
      → 模块B 
-       → idcu_msg_recv() 
+       → 接收消息
          → 处理消息
-   ```
-
-3. **协程调度**:
-   ```
-   协程创建 
-     → 加入就绪队列
-   调度器循环 
-     → 选择最高优先级协程
-     → 运行时间片
-     → 切换到下一个协程
    ```
 
 ## 前缀命名空间
@@ -174,23 +209,23 @@ idcu-agent/
 
 ## 扩展指南
 
-### 添加新功能模块
+### 添加新业务模块
 
-1. 在 `modules/` 目录下创建模块文件
-2. 实现 `idcu_ModuleInterface` 接口
-3. 使用 `IDCU_REGISTER_MODULE` 宏注册模块
-4. 在微内核中添加模块引用
+1. 在 `modules/business/` 目录下创建模块目录
+2. 实现模块功能
+3. 创建 CMakeLists.txt
+4. 编译测试
 
-### 添加新的核心组件
+### 添加新的服务组件
 
-1. 在 `include/` 对应子目录创建头文件
-2. 在 `src/` 对应子目录创建实现文件
-3. 更新 `CMakeLists.txt`
-4. 在微内核中集成新组件
+1. 在 `modules/services/` 对应子目录创建头文件和实现文件
+2. 更新 CMakeLists.txt
+3. 编写测试
+4. 集成到系统中
 
 ## 设计原则
 
-1. **最小化核心**: 微内核只包含最基本的功能
+1. **最小化核心**: 服务模块提供基础功能，业务逻辑在业务模块中实现
 2. **模块化**: 所有功能通过模块实现
 3. **松耦合**: 模块间通过消息总线通信
 4. **安全性**: 沙箱隔离，权限控制

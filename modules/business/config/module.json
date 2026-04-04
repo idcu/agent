@@ -1,0 +1,12 @@
+{
+  "name": "config_module",
+  "category": "foundation",
+  "version": "1.0.0",
+  "description": "Configuration management module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {}
+}

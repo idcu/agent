@@ -1,9 +1,9 @@
-#include "module/module_def.h"
-#include "network/http_server.h"
-#include "network/management_api.h"
-#include "kernel/micro_kernel.h"
-#include "utils/log.h"
-#include "common/config.h"
+#include "module_def.h"
+#include "http_server.h"
+#include "management_api.h"
+#include "micro_kernel.h"
+#include "log.h"
+#include "config.h"
 #include <stdio.h>
 
 static idcu_HttpServer g_http_server;

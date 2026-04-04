@@ -1,0 +1,16 @@
+{
+  "name": "alert_module",
+  "category": "business",
+  "version": "2.0.0",
+  "description": "Alert management and notification module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module", "config_module"],
+  "priority": "normal",
+  "type": "builtin",
+  "config_schema": {
+    "enabled": { "type": "boolean", "default": true },
+    "notification_url": { "type": "string", "default": "http://localhost:8080/alert" },
+    "retry_count": { "type": "integer", "default": 3 }
+  }
+}

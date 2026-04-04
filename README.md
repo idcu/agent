@@ -16,68 +16,130 @@ IDCU Agent 是一个可以在后台运行的程序，它像一个"小管家"一�
 - 🛡️ **沙箱机制** - 模块安全隔离
 - 🔄 **协程调度** - 高效的任务调度
 - 📨 **消息总线** - 模块间通信
+- 🔧 **动态模块加载** - 运行时加载 DLL/SO 模块
+- 📊 **Prometheus 指标导出** - 支持 Prometheus 监控
+- 🌐 **分布式节点支持** - 多节点通信
+- ⚠️ **告警管理** - 健康检查与告警通知
 
 ## 项目结构
 
 ```
 idcu-agent/
-├── main.c                    # 程序入口
-├── include/                  # 头文件目录
-│   ├── common/              # 通用工具
-│   │   ├── atomic.h
-│   │   ├── config.h
-│   │   ├── error_code.h
-│   │   └── lock.h
-│   ├── kernel/              # 内核核心
-│   │   └── micro_kernel.h
-│   ├── module/              # 模块系统
-│   │   ├── dynamic_module.h
-│   │   ├── module_def.h
-│   │   ├── module_registry.h
-│   │   └── module_manager.h
-│   ├── monitor/             # 监控系统
-│   │   ├── health_check.h
-│   │   └── metrics.h
-│   ├── network/             # 网络相关
-│   │   ├── distributed_node.h
-│   │   ├── network_layer.h
-│   │   └── node_discovery.h
-│   ├── plugin/              # 插件系统
-│   │   └── plugin_ecosystem.h
-│   ├── scheduler/           # 调度相关
-│   │   ├── context.h
-│   │   ├── coroutine.h
-│   │   └── msg_bus.h
-│   ├── security/            # 安全相关
-│   │   ├── sandbox.h
-│   │   └── sandbox_enhanced.h
-│   ├── test/                # 测试框架
-│   │   └── test_framework.h
-│   └── utils/               # 工具模块
-│       ├── config_manager.h
-│       ├── json_parser.h
-│       ├── log.h
-│       └── memory_pool.h
-├── src/                     # 源代码实现
-│   └── (与 include 对应)
-├── modules/                 # 功能模块
-│   ├── base/                # 基础模块
-│   │   ├── core_module.c
-│   │   └── log.c
-│   └── biz/                 # 业务模块
-│       └── collect.c
-├── config/                  # 配置文件
+├── app/                          # 应用程序入口
+│   ├── main.c                    # 主程序入口
+│   └── benchmark.c               # 性能基准测试
+├── modules/                      # 模块化结构
+│   ├── services/                 # 服务模块组
+│   │   ├── monitor/              # 监控系统
+│   │   │   ├── include/          # 头文件 (健康检查、指标、告警、通知、Prometheus导出)
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── README.md
+│   │   │   └── module.json
+│   │   ├── network/              # 网络相关
+│   │   │   ├── include/          # 头文件 (网络层、连接池、HTTP服务器、分布式节点、节点发现、管理API)
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── README.md
+│   │   │   └── module.json
+│   │   ├── security/             # 安全相关
+│   │   │   ├── include/          # 头文件 (沙箱基础版、增强版)
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── README.md
+│   │   │   └── module.json
+│   │   └── plugin/               # 插件系统
+│   │       ├── include/          # 头文件
+│   │       ├── src/              # 源代码
+│   │       ├── tests/            # 测试
+│   │       ├── CMakeLists.txt
+│   │       ├── README.md
+│   │       └── module.json
+│   └── business/                 # 业务模块组
+│       ├── core-module/          # 核心基础模块
+│       ├── alert/                # 告警模块
+│       ├── collect/              # 采集模块
+│       ├── config/               # 配置模块
+│       ├── data-collector/       # 数据采集模块
+│       ├── healthcheck/          # 健康检查模块
+│       ├── heartbeat/            # 心跳模块
+│       ├── http-management/      # HTTP管理模块
+│       ├── log/                  # 日志模块
+│       ├── metrics/              # 指标模块
+│       ├── examples/             # 示例模块
+│       │   ├── simple-example/   # 简单示例
+│       │   ├── messaging-example/ # 消息示例
+│       │   └── advanced-example/ # 高级示例
+│       └── dynamic/              # 动态加载模块示例
+│           ├── sample/           # 示例模块
+│           ├── test-good/        # 测试模块(正常)
+│           ├── test-init-fail/   # 测试模块(初始化失败)
+│           └── test-no-interface/ # 测试模块(无接口)
+├── module-repo/                  # 模块仓库
+│   ├── official/                 # 官方模块
+│   │   ├── monitoring/
+│   │   │   ├── health_check_module.c
+│   │   │   ├── metrics_module.c
+│   │   │   └── prometheus_exporter_module.c
+│   │   ├── networking/
+│   │   │   ├── distributed_node_module.c
+│   │   │   ├── http_management_module.c
+│   │   │   ├── network_layer_module.c
+│   │   │   └── node_discovery_module.c
+│   │   └── security/
+│   │       ├── sandbox_module.c
+│   │       └── sandbox_enhanced_module.c
+│   ├── templates/                # 模块模板
+│   │   ├── README.md
+│   │   └── module_template.c
+│   ├── CMakeLists.txt
+│   └── index.json
+├── config/                       # 配置文件
 │   └── agent.cfg
-├── tests/                   # 测试用例
-│   ├── unit/                # 单元测试
-│   └── integration/         # 集成测试
-├── docs/                    # 文档目录
-│   ├── architecture.md      # 架构设计文档
-│   └── module_loader_design.md
-├── CMakeLists.txt           # CMake 构建脚本
-├── build.bat                # Windows 编译脚本
-├── build.sh                 # Linux 编译脚本
-└── benchmark.c              # 性能基准测试
+├── tests/                        # 测试用例
+│   ├── unit/                     # 单元测试
+│   └── integration/              # 集成测试
+├── examples/                     # 示例程序
+│   ├── dynamic_module_example.c
+│   ├── distributed_app.c
+│   └── prometheus_exporter_example.c
+├── docs/                         # 文档目录
+│   ├── architecture.md
+│   ├── community_guide.md
+│   ├── issue_pr_workflow.md
+│   ├── management_api.md
+│   ├── modular_architecture_guide.md
+│   ├── module_loader_design.md
+│   ├── roadmap.md
+│   ├── sdk_guide.md
+│   ├── tutorial_01_quick_start.md
+│   ├── tutorial_02_module_development.md
+│   ├── tutorial_03_message_bus.md
+│   ├── tutorial_04_coroutine.md
+│   └── tutorial_05_sandbox.md
+├── scripts/                      # 构建和辅助脚本
+│   ├── build.bat                 # Windows 编译脚本
+│   ├── build.sh                  # Linux 编译脚本
+│   └── generate_coverage.sh      # 覆盖率生成脚本
+├── templates/                    # 模块模板
+│   └── module/
+├── CMakeLists.txt                # CMake 构建脚本
+├── CMakeLists_benchmark.txt      # 基准测试 CMake 配置
+├── Doxyfile                      # Doxygen 文档配置
+├── .clang-format                 # 代码格式化配置
+├── .clang-tidy                   # 代码静态分析配置
+├── .editorconfig                 # 编辑器配置
+├── .gitignore                    # Git 忽略文件
+├── README.md                     # 项目说明文档
+├── CONTRIBUTING.md               # 贡献指南
+├── CODE_OF_CONDUCT.md            # 行为准则
+└── .github/                      # GitHub 相关配置
+    ├── workflows/                # CI/CD 工作流
+    ├── ISSUE_TEMPLATE/           # Issue 模板
+    └── PULL_REQUEST_TEMPLATE.md  # PR 模板
 ```
 
 ## 前缀命名空间说明
@@ -95,19 +157,28 @@ idcu-agent/
 
 ### Windows 用户
 
-如果你用的是 Windows，最简单的方法是直接双击 `build.bat` 来编译。
+如果你用的是 Windows，最简单的方法是直接双击 `scripts\build.bat` 来编译，或者在命令行中运行：
+
+```
+scripts\build.bat
+```
 
 ### Linux 用户
 
-如果你用的是 Linux，运行 `./build.sh` 来编译。
+如果你用的是 Linux，运行 `scripts/build.sh` 来编译：
+
+```
+chmod +x scripts/build.sh
+./scripts/build.sh
+```
 
 ## 怎么用？
 
-详细的使用说明请看 [用户指引.md](./用户指引.md)
+详细的使用说明请看 [用户指引](./docs/user_guide.md)
 
 ## 想自己开发？
 
-如果你想修改代码或添加新功能，请看 [开发者指引.md](./开发者指引.md)
+如果你想修改代码或添加新功能，请看 [开发者指引](./docs/developer_guide.md)
 
 ## 社区
 
@@ -140,8 +211,8 @@ idcu-agent/
   - [教程五：沙箱安全机制](./docs/tutorial_05_sandbox.md)
 
 - 📖 **其他文档**:
-  - [用户指引](./用户指引.md) - 如何使用 IDCU Agent
-  - [开发者指引](./开发者指引.md) - 如何开发模块
+  - [用户指引](./docs/user_guide.md) - 如何使用 IDCU Agent
+  - [开发者指引](./docs/developer_guide.md) - 如何开发模块
   - [架构设计](./docs/architecture.md) - 深入了解系统架构
 
 ## 常见问题
@@ -156,7 +227,7 @@ A: 按 `Ctrl + C` 就可以停止程序。
 
 **Q: 我可以添加自己的功能吗？**
 
-A: 当然可以！看 [开发者指引.md](./开发者指引.md) 了解怎么做。
+A: 当然可以！看 [开发者指引](./docs/developer_guide.md) 了解怎么做。
 
 **Q: 如何获得帮助？**
 

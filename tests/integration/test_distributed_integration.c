@@ -1,8 +1,9 @@
-#include "test/test_framework.h"
-#include "network/distributed_node.h"
-#include "network/node_discovery.h"
-#include "network/network_layer.h"
-#include "utils/log.h"
+#include "test_framework.h"
+#include "micro_kernel.h"
+#include "distributed_node.h"
+#include "node_discovery.h"
+#include "network_layer.h"
+#include "log.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,6 +15,13 @@
 #include <unistd.h>
 #define msleep(ms) usleep((ms) * 1000)
 #endif
+
+static idcu_MicroKernel g_kernel;
+
+idcu_MicroKernel* idcu_get_kernel(void)
+{
+    return &g_kernel;
+}
 
 static idcu_TestSuite g_suite;
 

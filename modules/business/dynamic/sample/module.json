@@ -1,0 +1,12 @@
+{
+  "name": "sample_module",
+  "category": "dynamic",
+  "version": "1.0.0",
+  "description": "Sample dynamic module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": [],
+  "priority": "low",
+  "type": "dynamic",
+  "config_schema": {}
+}

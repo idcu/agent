@@ -207,10 +207,10 @@ enable_biz_collect = true # 是否启用数据收集模块
 
 ### 6.1 创建模块文件
 
-在 `modules/base/` 目录下创建 `hello.c` 文件：
+在 `modules/business/` 目录下创建新的模块目录和文件：
 
 ```c
-#include "module/module_def.h"
+#include "core/module-system/include/module_def.h"
 #include <stdio.h>
 
 static int hello_init(void)
@@ -240,16 +240,9 @@ static int hello_stop(void)
 IDCU_REGISTER_MODULE(hello, hello_init, hello_run, hello_stop);
 ```
 
-### 6.2 更新 CMakeLists.txt
+### 6.2 创建模块的 CMakeLists.txt
 
-我们需要把新模块添加到构建系统中。查看根目录的 `CMakeLists.txt`，找到添加模块源文件的部分，添加：
-
-```cmake
-# 添加你的 hello 模块
-list(APPEND MODULE_SOURCES
-    modules/base/hello.c
-)
-```
+在新模块目录下创建 `CMakeLists.txt`，参考其他业务模块的配置。CMake 会自动发现和构建所有模块。
 
 ### 6.3 重新编译并运行
 
@@ -290,7 +283,7 @@ A: 检查：
 恭喜你完成了快速入门教程！接下来你可以：
 
 - 阅读 [教程二：模块开发入门](./tutorial_02_module_development.md)，学习如何开发更复杂的模块
-- 查看 [开发者指引](../开发者指引.md)，深入了解项目架构
+- 查看 [开发者指引](./developer_guide.md)，深入了解项目架构
 - 探索现有的模块代码，学习别人是怎么写的
 
 ---

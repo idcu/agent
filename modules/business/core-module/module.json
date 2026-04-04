@@ -1,0 +1,12 @@
+{
+  "name": "core_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Core functionality module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": [],
+  "priority": "realtime",
+  "type": "builtin",
+  "config_schema": {}
+}

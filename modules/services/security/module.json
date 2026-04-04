@@ -1,0 +1,12 @@
+{
+  "name": "security_service",
+  "category": "service",
+  "version": "1.0.0",
+  "description": "Security service module providing sandbox mechanism and enhanced sandbox",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module"],
+  "priority": "high",
+  "type": "service",
+  "config_schema": {}
+}

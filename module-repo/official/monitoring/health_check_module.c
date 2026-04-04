@@ -1,8 +1,8 @@
 
-#include "module/module_def.h"
-#include "common/error_code.h"
-#include "utils/log.h"
-#include "monitor/health_check.h"
+#include "module_def.h"
+#include "error_code.h"
+#include "log.h"
+#include "health_check.h"
 
 static idcu_HealthMonitor g_health_monitor;
 static int g_initialized = 0;

@@ -1,0 +1,14 @@
+{
+  "name": "heartbeat_module",
+  "category": "business",
+  "version": "1.0.0",
+  "description": "Heartbeat module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module", "config_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {
+    "interval_ms": { "type": "integer", "default": 5000 }
+  }
+}

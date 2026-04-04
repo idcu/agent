@@ -15,51 +15,150 @@ else()
     add_compile_options(-O2 -Wall -Wextra)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR} include modules)
 
-file(GLOB_RECURSE CORE_SRCS
-    src/common/*.c
-    src/utils/*.c
-    src/scheduler/*.c
-    src/module/*.c
-    src/monitor/*.c
-    src/network/*.c
-    src/security/*.c
-    src/plugin/*.c
-    src/test/*.c
-    src/kernel/*.c
-    src/sdk/*.c
-)
 
-file(GLOB_RECURSE MODULE_SRCS modules/*.c)
+# ==================== 核心模块 ====================
+add_subdirectory(modules/core/common)
+add_subdirectory(modules/core/utils)
+add_subdirectory(modules/core/test-framework)
+add_subdirectory(modules/core/sdk)
+add_subdirectory(modules/core/scheduler)
+add_subdirectory(modules/core/module-system)
+add_subdirectory(modules/core/micro-kernel)
 
-add_library(idcu_core STATIC ${CORE_SRCS} ${MODULE_SRCS})
-set_target_properties(idcu_core PROPERTIES
-    VERSION ${IDCU_VERSION}
-    SOVERSION ${IDCU_VERSION_MAJOR}
-    ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-)
+# ==================== 服务模块 ====================
+add_subdirectory(modules/services/monitor)
+add_subdirectory(modules/services/network)
+add_subdirectory(modules/services/security)
+add_subdirectory(modules/services/plugin)
 
-add_executable(idcu_agent main.c)
+# ==================== 业务模块 ====================
+add_subdirectory(modules/business/core-module)
+add_subdirectory(modules/business/alert)
+add_subdirectory(modules/business/collect)
+add_subdirectory(modules/business/config)
+add_subdirectory(modules/business/data-collector)
+add_subdirectory(modules/business/healthcheck)
+add_subdirectory(modules/business/heartbeat)
+# add_subdirectory(modules/business/http-management)
+add_subdirectory(modules/business/log)
+add_subdirectory(modules/business/metrics)
+add_subdirectory(modules/business/examples/simple-example)
+add_subdirectory(modules/business/examples/messaging-example)
+add_subdirectory(modules/business/examples/advanced-example)
+
+# ==================== 动态模块 ====================
+# 暂时禁用，需要修复 TMP/TEMP 环境变量问题
+option(BUILD_SAMPLE_DLL "Build sample dynamic module" OFF)
+if(BUILD_SAMPLE_DLL)
+    add_subdirectory(modules/business/dynamic/sample)
+endif()
+
+if(BUILD_TESTS)
+    # 暂时禁用，需要修复 TMP/TEMP 环境变量问题
+    # add_subdirectory(modules/business/dynamic/test-good)
+    # add_subdirectory(modules/business/dynamic/test-init-fail)
+    # add_subdirectory(modules/business/dynamic/test-no-interface)
+endif()
+
+# ==================== 主程序 ====================
+add_executable(idcu_agent app/main.c)
 set_target_properties(idcu_agent PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
 )
-target_link_libraries(idcu_agent PRIVATE idcu_core)
 
 if(WIN32)
-    if(MSVC)
-    elseif(MINGW)
+    # MinGW 也支持 whole-archive，需要强制链接所有模块符号
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        target_link_libraries(idcu_agent PRIVATE -lws2_32
+            -Wl,--whole-archive 
+            idcu_core_common
+            idcu_core_utils
+            idcu_core_scheduler
+            idcu_core_module_system
+            idcu_core_micro_kernel
+            idcu_services_monitor
+            idcu_services_network
+            idcu_services_security
+            idcu_services_plugin
+            idcu_business_core_module
+            idcu_business_alert
+            idcu_business_collect
+            idcu_business_config
+            idcu_business_data_collector
+            idcu_business_healthcheck
+            idcu_business_heartbeat
+            idcu_business_log
+            idcu_business_metrics
+            -Wl,--no-whole-archive)
+    else()
+        target_link_libraries(idcu_agent PRIVATE -lws2_32
+            idcu_core_common
+            idcu_core_utils
+            idcu_core_scheduler
+            idcu_core_module_system
+            idcu_core_micro_kernel
+            idcu_services_monitor
+            idcu_services_network
+            idcu_services_security
+            idcu_services_plugin
+            idcu_business_core_module
+            idcu_business_alert
+            idcu_business_collect
+            idcu_business_config
+            idcu_business_data_collector
+            idcu_business_healthcheck
+            idcu_business_heartbeat
+            idcu_business_log
+            idcu_business_metrics)
     endif()
-    target_link_libraries(idcu_agent PRIVATE ws2_32)
-    target_link_libraries(idcu_core PRIVATE ws2_32)
 else()
     target_link_libraries(idcu_agent PRIVATE pthread dl)
-    target_link_libraries(idcu_core PRIVATE pthread dl)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-        target_link_options(idcu_agent PRIVATE -Wl,--whole-archive idcu_core -Wl,--no-whole-archive)
+        target_link_options(idcu_agent PRIVATE -Wl,--whole-archive 
+            idcu_core_common
+            idcu_core_utils
+            idcu_core_scheduler
+            idcu_core_module_system
+            idcu_core_micro_kernel
+            idcu_services_monitor
+            idcu_services_network
+            idcu_services_security
+            idcu_services_plugin
+            idcu_business_core_module
+            idcu_business_alert
+            idcu_business_collect
+            idcu_business_config
+            idcu_business_data_collector
+            idcu_business_healthcheck
+            idcu_business_heartbeat
+            idcu_business_log
+            idcu_business_metrics
+            -Wl,--no-whole-archive)
+    else()
+        target_link_libraries(idcu_agent PRIVATE
+            idcu_core_common
+            idcu_core_utils
+            idcu_core_scheduler
+            idcu_core_module_system
+            idcu_core_micro_kernel
+            idcu_services_monitor
+            idcu_services_network
+            idcu_services_security
+            idcu_services_plugin
+            idcu_business_core_module
+            idcu_business_alert
+            idcu_business_collect
+            idcu_business_config
+            idcu_business_data_collector
+            idcu_business_healthcheck
+            idcu_business_heartbeat
+            idcu_business_log
+            idcu_business_metrics)
     endif()
 endif()
 
+# ==================== 测试和基准测试 ====================
 option(BUILD_TESTS "Build tests" OFF)
 option(BUILD_BENCHMARKS "Build benchmarks" ON)
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
@@ -79,29 +178,14 @@ if(ENABLE_CODE_COVERAGE)
     if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         message(FATAL_ERROR "Code coverage requires GCC or Clang compiler")
     endif()
-    
     if(NOT UNIX)
         message(FATAL_ERROR "Code coverage is only supported on Unix-like systems (Linux/macOS)")
     endif()
-    
     message(STATUS "Code coverage enabled")
-    
     add_compile_options(--coverage -O0 -g)
     add_link_options(--coverage)
-    
     find_program(LCOV_EXE NAMES lcov)
-    if(LCOV_EXE)
-        message(STATUS "Found lcov: ${LCOV_EXE}")
-    else()
-        message(WARNING "lcov not found, HTML report generation disabled")
-    endif()
-    
     find_program(GENHTML_EXE NAMES genhtml)
-    if(GENHTML_EXE)
-        message(STATUS "Found genhtml: ${GENHTML_EXE}")
-    else()
-        message(WARNING "genhtml not found, HTML report generation disabled")
-    endif()
 endif()
 
 if(BUILD_TESTS)
@@ -114,7 +198,6 @@ if(BUILD_TESTS)
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             COMMENT "Clearing coverage counters"
         )
-        
         add_custom_target(coverage_capture
             COMMAND ${LCOV_EXE} --directory ${PROJECT_BINARY_DIR} --capture --output-file coverage.info
             COMMAND ${LCOV_EXE} --remove coverage.info '/usr/*' '*/tests/*' '*/modules/*' --output-file coverage_filtered.info
@@ -122,7 +205,6 @@ if(BUILD_TESTS)
             COMMENT "Capturing coverage data"
             DEPENDS coverage_clean
         )
-        
         if(GENHTML_EXE)
             add_custom_target(coverage_report
                 COMMAND ${GENHTML_EXE} -o coverage_report coverage_filtered.info
@@ -130,7 +212,6 @@ if(BUILD_TESTS)
                 COMMENT "Generating HTML coverage report"
                 DEPENDS coverage_capture
             )
-            
             add_custom_target(coverage
                 COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
                 COMMAND ${CMAKE_COMMAND} --build . --target coverage_report
@@ -151,97 +232,58 @@ if(BUILD_TESTS)
 endif()
 
 if(BUILD_BENCHMARKS)
-    add_executable(idcu_benchmark
-        benchmark.c
-    )
+    add_executable(idcu_benchmark app/benchmark.c)
     set_target_properties(idcu_benchmark PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
     )
-    target_link_libraries(idcu_benchmark PRIVATE idcu_core)
+    target_link_libraries(idcu_benchmark PRIVATE
+        idcu_core_common
+        idcu_core_utils
+        idcu_core_micro_kernel
+        idcu_business_core_module
+    )
     if(NOT WIN32)
         target_link_libraries(idcu_benchmark PRIVATE pthread m)
     else()
-        if(MSVC)
-        elseif(MINGW)
+        if(MINGW)
             target_link_libraries(idcu_benchmark PRIVATE m)
         endif()
     endif()
 endif()
 
-# 构建示例动态模块 (DLL/SO)
-option(BUILD_SAMPLE_DLL "Build sample dynamic module" ON)
-if(BUILD_SAMPLE_DLL)
-    add_library(sample_module SHARED modules/dynamic/sample_module.c)
-    set_target_properties(sample_module PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        PREFIX ""  # 在 Windows 上不添加 "lib" 前缀
-    )
-    # 为 Linux 平台设置符号可见性
-    if(UNIX AND NOT APPLE)
-        target_compile_options(sample_module PRIVATE -fvisibility=hidden)
-    endif()
-    target_link_libraries(sample_module PRIVATE idcu_core)
-endif()
+# ==================== 动态模块示例 ====================
+# 动态模块通过子目录的 CMakeLists.txt 管理
 
-# 构建测试用动态模块
-if(BUILD_TESTS)
-    add_library(test_module_good SHARED modules/dynamic/test_module_good.c)
-    set_target_properties(test_module_good PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        PREFIX ""
-    )
-    if(UNIX AND NOT APPLE)
-        target_compile_options(test_module_good PRIVATE -fvisibility=hidden)
-    endif()
-    target_link_libraries(test_module_good PRIVATE idcu_core)
-
-    add_library(test_module_init_fail SHARED modules/dynamic/test_module_init_fail.c)
-    set_target_properties(test_module_init_fail PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        PREFIX ""
-    )
-    if(UNIX AND NOT APPLE)
-        target_compile_options(test_module_init_fail PRIVATE -fvisibility=hidden)
-    endif()
-    target_link_libraries(test_module_init_fail PRIVATE idcu_core)
-
-    add_library(test_module_no_interface SHARED modules/dynamic/test_module_no_interface.c)
-    set_target_properties(test_module_no_interface PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-        PREFIX ""
-    )
-    if(UNIX AND NOT APPLE)
-        target_compile_options(test_module_no_interface PRIVATE -fvisibility=hidden)
-    endif()
-    target_link_libraries(test_module_no_interface PRIVATE idcu_core)
-endif()
-
-# 构建动态模块加载示例程序
 option(BUILD_DYNAMIC_LOADER_EXAMPLE "Build dynamic loader example" ON)
 if(BUILD_DYNAMIC_LOADER_EXAMPLE)
     add_executable(dynamic_module_example examples/dynamic_module_example.c)
     set_target_properties(dynamic_module_example PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
     )
-    target_link_libraries(dynamic_module_example PRIVATE idcu_core)
+    target_link_libraries(dynamic_module_example PRIVATE
+        idcu_core_common
+        idcu_core_utils
+        idcu_core_module_system
+    )
     if(NOT WIN32)
         target_link_libraries(dynamic_module_example PRIVATE pthread dl)
     endif()
 endif()
 
-# 构建Prometheus导出器示例程序
 option(BUILD_PROMETHEUS_EXPORTER_EXAMPLE "Build Prometheus exporter example" ON)
 if(BUILD_PROMETHEUS_EXPORTER_EXAMPLE)
     add_executable(prometheus_exporter_example examples/prometheus_exporter_example.c)
     set_target_properties(prometheus_exporter_example PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
     )
-    target_link_libraries(prometheus_exporter_example PRIVATE idcu_core)
+    target_link_libraries(prometheus_exporter_example PRIVATE
+        idcu_core_common
+        idcu_core_utils
+        idcu_services_monitor
+    )
     if(NOT WIN32)
         target_link_libraries(prometheus_exporter_example PRIVATE pthread)
+    else()
+        target_link_libraries(prometheus_exporter_example PRIVATE -lws2_32)
     endif()
 endif()

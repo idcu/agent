@@ -1,9 +1,9 @@
 
-#include "module/module_def.h"
-#include "common/error_code.h"
-#include "utils/log.h"
-#include "monitor/prometheus_exporter.h"
-#include "monitor/metrics.h"
+#include "module_def.h"
+#include "error_code.h"
+#include "log.h"
+#include "prometheus_exporter.h"
+#include "metrics.h"
 
 static idcu_PrometheusExporter g_exporter;
 static int g_initialized = 0;

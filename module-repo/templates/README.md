@@ -4,39 +4,27 @@
 
 ## 模块结构
 
-每个模块应包含以下函数：
+每个模块应包含以下基本生命周期函数：
 
 ```c
-#include "module/module_def.h"
+#include <stdio.h>
 
 static int module_init(void) {
     // 初始化模块
-    return IDCU_ERR_OK;
+    printf("[module] initialized\n");
+    return 0;
 }
 
-static int module_start(void) {
-    // 启动模块
-    return IDCU_ERR_OK;
+static int module_run(void) {
+    // 运行模块（主循环中反复调用）
+    return 0;
 }
 
 static int module_stop(void) {
     // 停止模块
-    return IDCU_ERR_OK;
+    printf("[module] stopped\n");
+    return 0;
 }
-
-static void module_destroy(void) {
-    // 清理资源
-}
-
-IDCU_MODULE_DEFINE(
-    "module_name",
-    "1.0.0",
-    "Module description",
-    module_init,
-    module_start,
-    module_stop,
-    module_destroy
-);
 ```
 
 ## 模板文件
@@ -45,13 +33,15 @@ IDCU_MODULE_DEFINE(
 
 ## 使用说明
 
-1. 复制模板文件
+1. 复制模板文件到目标位置
 2. 修改模块名称和描述
-3. 实现 init/start/stop/destroy 函数
+3. 实现 init/run/stop 函数
 4. 添加业务逻辑
+5. 创建 CMakeLists.txt
 
 ## 注意事项
 
 - 所有公共符号使用 `idcu_` 前缀
 - 遵循项目的代码风格
 - 添加必要的错误处理
+- 参考现有模块的实现方式

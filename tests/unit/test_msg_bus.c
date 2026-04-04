@@ -1,7 +1,7 @@
 #include "test/test_framework.h"
-#include "scheduler/msg_bus.h"
-#include "utils/log.h"
-#include "common/error_code.h"
+#include "msg_bus.h"
+#include "log.h"
+#include "error_code.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -1,0 +1,15 @@
+{
+  "name": "healthcheck_module",
+  "category": "business",
+  "version": "1.0.0",
+  "description": "Health check monitoring module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module", "config_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {
+    "check_interval_ms": { "type": "integer", "default": 10000 },
+    "alert_threshold": { "type": "integer", "default": 3 }
+  }
+}

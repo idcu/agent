@@ -1,6 +1,6 @@
 #include "test/test_framework.h"
-#include "security/sandbox_enhanced.h"
-#include "utils/log.h"
+#include "sandbox_enhanced.h"
+#include "log.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

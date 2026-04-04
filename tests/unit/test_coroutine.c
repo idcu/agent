@@ -1,6 +1,6 @@
 #include "test/test_framework.h"
-#include "scheduler/coroutine.h"
-#include "utils/log.h"
+#include "coroutine.h"
+#include "log.h"
 #include <stdio.h>
 #include <string.h>
 

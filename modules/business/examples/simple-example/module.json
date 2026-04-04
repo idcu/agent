@@ -1,0 +1,12 @@
+{
+  "name": "sdk_simple_example",
+  "category": "example",
+  "version": "1.0.0",
+  "description": "A simple example module using IDCU SDK",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": [],
+  "priority": "low",
+  "type": "example",
+  "config_schema": {}
+}

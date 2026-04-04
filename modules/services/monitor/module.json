@@ -1,0 +1,12 @@
+{
+  "name": "monitor_service",
+  "category": "service",
+  "version": "1.0.0",
+  "description": "Monitoring service module providing health check, metrics, alert management and Prometheus export",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module"],
+  "priority": "high",
+  "type": "service",
+  "config_schema": {}
+}

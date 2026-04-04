@@ -1,0 +1,12 @@
+{
+  "name": "log_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Logging management module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {}
+}

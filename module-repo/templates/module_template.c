@@ -1,7 +1,7 @@
 
-#include "module/module_def.h"
-#include "common/error_code.h"
-#include "utils/log.h"
+#include "module_def.h"
+#include "error_code.h"
+#include "log.h"
 
 typedef struct {
     int initialized;

@@ -1,5 +1,5 @@
 #include "test/test_framework.h"
-#include "module/module_version.h"
+#include "module_version.h"
 #include <string.h>
 
 static void test_version_create(void) {

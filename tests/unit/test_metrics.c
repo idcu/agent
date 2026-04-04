@@ -1,10 +1,10 @@
 #include "test/test_framework.h"
-#include "monitor/metrics.h"
-#include "monitor/prometheus_exporter.h"
-#include "scheduler/coroutine.h"
-#include "scheduler/msg_bus.h"
-#include "network/network_layer.h"
-#include "utils/log.h"
+#include "metrics.h"
+#include "prometheus_exporter.h"
+#include "coroutine.h"
+#include "msg_bus.h"
+#include "network_layer.h"
+#include "log.h"
 #include <stdio.h>
 #include <string.h>
 

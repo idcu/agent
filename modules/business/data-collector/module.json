@@ -1,0 +1,12 @@
+{
+  "name": "data_collector_module",
+  "category": "business",
+  "version": "1.0.0",
+  "description": "Data collector module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module", "log_module"],
+  "priority": "normal",
+  "type": "builtin",
+  "config_schema": {}
+}

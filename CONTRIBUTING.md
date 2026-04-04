@@ -317,8 +317,8 @@ git push origin feature/你的功能名
 
 1. 查看文档：
    - [README.md](./README.md)
-   - [开发者指引.md](./开发者指引.md)
-   - [用户指引.md](./用户指引.md)
+   - [开发者指引](./docs/developer_guide.md)
+   - [用户指引](./docs/user_guide.md)
    - [docs/](./docs/) 目录下的文档
    - [教程系列](./docs/)
 
