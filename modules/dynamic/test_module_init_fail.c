@@ -30,6 +30,7 @@ static int test_init_fail_module_stop(void)
 
 MODULE_EXPORT const idcu_ModuleInterface module_interface = {
     .name = "test_module_init_fail",
+    .version = IDCU_MODULE_VERSION(1, 0, 0),
     .dependencies = NULL,
     .dependency_count = 0,
     .init = test_init_fail_module_init,

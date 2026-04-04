@@ -155,6 +155,15 @@ if(NOT WIN32)
 endif()
 add_test(NAME test_micro_kernel COMMAND test_micro_kernel)
 
+add_executable(test_module_version
+    unit/test_module_version.c
+)
+target_link_libraries(test_module_version idcu_core)
+if(NOT WIN32)
+    target_link_libraries(test_module_version pthread)
+endif()
+add_test(NAME test_module_version COMMAND test_module_version)
+
 # 设置单元测试输出目录
 set_target_properties(
     test_config_manager test_msg_bus test_coroutine test_registry
@@ -162,6 +171,7 @@ set_target_properties(
     test_plugin_ecosystem test_memory_pool test_json_parser
     test_health_check test_metrics test_network_layer
     test_node_discovery test_dynamic_loader test_micro_kernel
+    test_module_version
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out/tests
 )

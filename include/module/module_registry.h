@@ -2,6 +2,7 @@
 #define IDCU_MODULE_MODULE_REGISTRY_H
 
 #include "module/module_def.h"
+#include "module/module_version.h"
 #include "common/error_code.h"
 #include "common/lock.h"
 #include <stdint.h>
@@ -51,6 +52,11 @@ int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry);
 int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry);
 int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry);
 int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry);
+
+// 版本管理相关函数
+int idcu_module_registry_check_dependency_versions(idcu_ModuleRegistry* registry);
+int idcu_module_registry_get_module_version(idcu_ModuleRegistry* registry, const char* module_name, idcu_ModuleVersion* out_version);
+int idcu_module_registry_find_module_by_version(idcu_ModuleRegistry* registry, const char* module_name, const idcu_ModuleVersion* min_version, const idcu_ModuleVersion* max_version, const idcu_RegisteredModule** out_module);
 
 #ifdef __cplusplus
 }

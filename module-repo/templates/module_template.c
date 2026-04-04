@@ -39,12 +39,4 @@ static void my_module_destroy(void) {
     idcu_log_info("Destroying my module");
 }
 
-IDCU_MODULE_DEFINE(
-    "my_module",
-    "1.0.0",
-    "My custom module description",
-    my_module_init,
-    my_module_start,
-    my_module_stop,
-    my_module_destroy
-);
+IDCU_REGISTER_MODULE(my_module, IDCU_MODULE_VERSION(1, 0, 0), my_module_init, my_module_start, my_module_stop);

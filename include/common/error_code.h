@@ -74,8 +74,21 @@ typedef enum {
     IDCU_ERR_FILE_DELETE    = -47,  /**< 文件删除失败 */
     IDCU_ERR_CORO_SCHEDULE  = -48,  /**< 协程调度失败 */
     IDCU_ERR_CORO_YIELD     = -49,  /**< 协程让出失败 */
-    IDCU_ERR_BUFFER_TOO_SMALL = -50  /**< 缓冲区太小 */
+    IDCU_ERR_BUFFER_TOO_SMALL = -50,  /**< 缓冲区太小 */
+    IDCU_ERR_VERSION_TOO_OLD = -51, /**< 版本过旧 */
+    IDCU_ERR_VERSION_TOO_NEW = -52, /**< 版本过新 */
+    IDCU_ERR_VERSION_INCOMPATIBLE = -53, /**< 版本不兼容 */
+    IDCU_ERR_MEMORY = -54 /**< 内存分配失败 */
 } idcu_ErrorCode;
+
+// 为了向后兼容，同时定义不带 _ERR_ 前缀的版本
+#define IDCU_SUCCESS IDCU_ERR_SUCCESS
+#define IDCU_ERROR_INVALID_PARAM IDCU_ERR_INVALID_PARAM
+#define IDCU_ERROR_MEMORY IDCU_ERR_MEMORY
+#define IDCU_ERROR_BUFFER_TOO_SMALL IDCU_ERR_BUFFER_TOO_SMALL
+#define IDCU_ERROR_VERSION_TOO_OLD IDCU_ERR_VERSION_TOO_OLD
+#define IDCU_ERROR_VERSION_TOO_NEW IDCU_ERR_VERSION_TOO_NEW
+#define IDCU_ERROR_VERSION_INCOMPATIBLE IDCU_ERR_VERSION_INCOMPATIBLE
 
 /**
  * @brief 将错误码转换为可读的字符串描述

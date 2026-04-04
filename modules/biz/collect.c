@@ -13,4 +13,4 @@ static int coll_run()   {
 }
 static int coll_stop()  { printf("[biz_collect] stop\n"); return 0; }
 
-IDCU_REGISTER_MODULE(biz_collect, coll_init, coll_run, coll_stop);
+IDCU_REGISTER_MODULE(biz_collect, IDCU_MODULE_VERSION(1, 0, 0), coll_init, coll_run, coll_stop);

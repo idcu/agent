@@ -1,4 +1,5 @@
 #include "module/module_registry.h"
+#include "module/module_version.h"
 #include "utils/log.h"
 #include "common/error_code.h"
 #include <string.h>
@@ -614,4 +615,138 @@ int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry)
     }
     
     return IDCU_ERR_SUCCESS;
+}
+
+int idcu_module_registry_check_dependency_versions(idcu_ModuleRegistry* registry)
+{
+    if (!registry) {
+        IDCU_LOG_ERROR("module_registry_check_dependency_versions failed: invalid parameters");
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("module_registry_check_dependency_versions failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
+        return ret;
+    }
+    
+    IDCU_LOG_INFO("checking dependency versions for %u modules...", registry->count);
+    
+    for (uint32_t i = 0; i < registry->count; i++) {
+        idcu_RegisteredModule* mod = &registry->modules[i];
+        
+        if (!mod->iface->dependencies || mod->iface->dependency_count == 0) {
+            continue;
+        }
+        
+        for (int d = 0; d < mod->iface->dependency_count; d++) {
+            const idcu_ModuleDependency* dep = &mod->iface->dependencies[d];
+            int dep_found = 0;
+            
+            for (uint32_t j = 0; j < registry->count; j++) {
+                if (strcmp(registry->modules[j].iface->name, dep->dependency_name) == 0) {
+                    idcu_RegisteredModule* dep_mod = &registry->modules[j];
+                    
+                    int version_check = idcu_version_check_dependency(&dep_mod->iface->version, dep);
+                    if (version_check != IDCU_SUCCESS) {
+                        char ver_str[IDCU_VERSION_STR_MAX];
+                        char req_min_str[IDCU_VERSION_STR_MAX];
+                        idcu_version_format(&dep_mod->iface->version, ver_str, sizeof(ver_str));
+                        idcu_version_format(&dep->min_version, req_min_str, sizeof(req_min_str));
+                        
+                        idcu_mutex_unlock(&registry->lock);
+                        IDCU_LOG_ERROR("version check failed for %s -> %s: actual=%s, required min=%s, error=%s",
+                                       mod->iface->name, dep->dependency_name, ver_str, req_min_str,
+                                       idcu_err_to_str(version_check));
+                        return version_check;
+                    }
+                    
+                    dep_found = 1;
+                    IDCU_LOG_DEBUG("version check passed: %s -> %s", mod->iface->name, dep->dependency_name);
+                    break;
+                }
+            }
+            
+            if (!dep_found) {
+                idcu_mutex_unlock(&registry->lock);
+                IDCU_LOG_ERROR("module_registry_check_dependency_versions failed: dependency %s not found for module %s",
+                               dep->dependency_name, mod->iface->name);
+                return IDCU_ERR_NOT_FOUND;
+            }
+        }
+    }
+    
+    idcu_mutex_unlock(&registry->lock);
+    IDCU_LOG_INFO("all dependency versions checked successfully");
+    return IDCU_SUCCESS;
+}
+
+int idcu_module_registry_get_module_version(idcu_ModuleRegistry* registry, const char* module_name, idcu_ModuleVersion* out_version)
+{
+    if (!registry || !module_name || !out_version) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    int found = 0;
+    for (uint32_t i = 0; i < registry->count; i++) {
+        if (strcmp(registry->modules[i].iface->name, module_name) == 0) {
+            *out_version = registry->modules[i].iface->version;
+            found = 1;
+            break;
+        }
+    }
+    
+    idcu_mutex_unlock(&registry->lock);
+    return found ? IDCU_SUCCESS : IDCU_ERR_NOT_FOUND;
+}
+
+int idcu_module_registry_find_module_by_version(idcu_ModuleRegistry* registry, const char* module_name,
+                                                 const idcu_ModuleVersion* min_version, const idcu_ModuleVersion* max_version,
+                                                 const idcu_RegisteredModule** out_module)
+{
+    if (!registry || !module_name || !out_module) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    *out_module = NULL;
+    const idcu_RegisteredModule* best_match = NULL;
+    
+    for (uint32_t i = 0; i < registry->count; i++) {
+        if (strcmp(registry->modules[i].iface->name, module_name) == 0) {
+            const idcu_ModuleVersion* ver = &registry->modules[i].iface->version;
+            int compatible = 1;
+            
+            if (min_version) {
+                if (idcu_version_compare(ver, min_version) == IDCU_VERSION_LESS) {
+                    compatible = 0;
+                }
+            }
+            
+            if (max_version && compatible) {
+                if (idcu_version_compare(ver, max_version) == IDCU_VERSION_GREATER) {
+                    compatible = 0;
+                }
+            }
+            
+            if (compatible) {
+                if (!best_match || idcu_version_compare(ver, &best_match->iface->version) == IDCU_VERSION_GREATER) {
+                    best_match = &registry->modules[i];
+                }
+            }
+        }
+    }
+    
+    *out_module = best_match;
+    idcu_mutex_unlock(&registry->lock);
+    return best_match ? IDCU_SUCCESS : IDCU_ERR_NOT_FOUND;
 }

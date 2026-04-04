@@ -108,6 +108,14 @@ const char* idcu_err_to_str(int err_code) {
             return "Coroutine yield failed";
         case IDCU_ERR_BUFFER_TOO_SMALL:
             return "Buffer too small";
+        case IDCU_ERR_VERSION_TOO_OLD:
+            return "Version too old";
+        case IDCU_ERR_VERSION_TOO_NEW:
+            return "Version too new";
+        case IDCU_ERR_VERSION_INCOMPATIBLE:
+            return "Version incompatible";
+        case IDCU_ERR_MEMORY:
+            return "Memory allocation failed";
 
         default:
             return "Unknown error";
