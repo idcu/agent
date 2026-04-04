@@ -1,114 +1,136 @@
 #include "module/module_def.h"
-#include "monitor/alert_manager.h"
-#include "monitor/metrics.h"
-#include "monitor/notifier.h"
+#include "utils/config_manager.h"
 #include "utils/log.h"
-#include "kernel/micro_kernel.h"
 #include <stdio.h>
+#include <string.h>
 
-static idcu_AlertManager g_alert_manager;
-static idcu_Notifier g_notifier;
-static idcu_MetricsCollector* g_metrics_collector = NULL;
-static idcu_MicroKernel* g_kernel = NULL;
-static int g_initialized = 0;
+#define MAX_CHANNELS 16
+#define MAX_ALERT_LEVELS 4
+#define MAX_RULES 16
 
-static int alert_module_init(void)
+typedef struct {
+    char name[64];
+    int enabled;
+    char config[512];
+} AlertChannel;
+
+typedef struct {
+    char name[64];
+    int enabled;
+    int threshold;
+    int duration_ms;
+    char channels[256];
+} AlertRule;
+
+static char g_notification_url[256] = "http://localhost:8080/alert";
+static int g_retry_count = 3;
+static int g_alert_count = 0;
+static int g_module_enabled = 1;
+
+static AlertChannel g_channels[MAX_CHANNELS];
+static int g_channel_count = 0;
+static AlertRule g_rules[MAX_RULES];
+static int g_rule_count = 0;
+static int g_alert_levels[MAX_ALERT_LEVELS] = {1, 1, 1, 1};
+
+static const char* s_alert_level_names[] = {"info", "warning", "error", "critical"};
+
+static int load_channel_config(const char* channel_name)
 {
-    IDCU_LOG_INFO("Alert Module: Initializing...");
-    
-    extern idcu_MicroKernel* idcu_get_kernel(void);
-    g_kernel = idcu_get_kernel();
-    
-    if (!g_kernel) {
-        IDCU_LOG_ERROR("Alert Module: Failed to get kernel");
-        return IDCU_ERR_NOT_INITIALIZED;
+    if (g_channel_count >= MAX_CHANNELS) {
+        return IDCU_ERR_QUEUE_FULL;
     }
     
-    int ret = idcu_alert_manager_init(&g_alert_manager);
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_ERROR("Alert Module: Failed to initialize alert manager");
-        return ret;
+    const char* config_prefix = "module.alert_module";
+    char prefix[128];
+    snprintf(prefix, sizeof(prefix), "channels.%s", channel_name);
+    
+    AlertChannel* channel = &g_channels[g_channel_count];
+    strncpy(channel->name, channel_name, sizeof(channel->name) - 1);
+    channel->enabled = idcu_config_get_nested_bool(config_prefix, prefix, "enabled", 0);
+    
+    if (channel->enabled) {
+        IDCU_LOG_INFO("Alert channel '%s' enabled", channel_name);
     }
     
-    ret = idcu_notifier_init(&g_notifier);
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_ERROR("Alert Module: Failed to initialize notifier");
-        idcu_alert_manager_destroy(&g_alert_manager);
-        return ret;
-    }
-    
-    ret = idcu_notifier_add_log_channel(&g_notifier);
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_WARN("Alert Module: Failed to add log channel");
-    }
-    
-    ret = idcu_notifier_add_file_channel(&g_notifier, "alerts.log");
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_WARN("Alert Module: Failed to add file channel");
-    }
-    
-    ret = idcu_alert_manager_set_callback(&g_alert_manager, 
-                                            idcu_notifier_alert_callback, 
-                                            &g_notifier);
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_WARN("Alert Module: Failed to set alert callback");
-    }
-    
-    idcu_AlertRule cpu_rule;
-    idcu_alert_rule_init(&cpu_rule, "high_cpu_usage", 
-                           IDCU_ALERT_LEVEL_WARNING, 
-                           "cpu_usage_percent", 
-                           IDCU_ALERT_COND_GREATER, 80);
-    idcu_alert_rule_set_message(&cpu_rule, "CPU usage is above 80%");
-    idcu_alert_rule_set_pending_duration(&cpu_rule, 5000);
-    idcu_alert_manager_add_rule(&g_alert_manager, &cpu_rule);
-    
-    idcu_AlertRule mem_rule;
-    idcu_alert_rule_init(&mem_rule, "high_memory_usage", 
-                           IDCU_ALERT_LEVEL_ERROR, 
-                           "memory_usage_percent", 
-                           IDCU_ALERT_COND_GREATER, 90);
-    idcu_alert_rule_set_message(&mem_rule, "Memory usage is above 90%");
-    idcu_alert_rule_set_pending_duration(&mem_rule, 3000);
-    idcu_alert_manager_add_rule(&g_alert_manager, &mem_rule);
-    
-    g_initialized = 1;
-    IDCU_LOG_INFO("Alert Module: Initialized successfully");
+    g_channel_count++;
     return IDCU_ERR_SUCCESS;
 }
 
-static int alert_module_run(void)
+static int load_rule_config(const char* rule_name)
 {
-    if (!g_initialized) {
-        IDCU_LOG_ERROR("Alert Module: Not initialized");
-        return IDCU_ERR_NOT_INITIALIZED;
+    if (g_rule_count >= MAX_RULES) {
+        return IDCU_ERR_QUEUE_FULL;
     }
     
-    extern idcu_MetricsCollector* idcu_get_metrics_collector(void);
-    g_metrics_collector = idcu_get_metrics_collector();
+    const char* config_prefix = "module.alert_module";
+    char prefix[128];
+    snprintf(prefix, sizeof(prefix), "rules.%s", rule_name);
     
-    if (g_metrics_collector) {
-        idcu_alert_manager_evaluate(&g_alert_manager, g_metrics_collector);
+    AlertRule* rule = &g_rules[g_rule_count];
+    strncpy(rule->name, rule_name, sizeof(rule->name) - 1);
+    rule->enabled = idcu_config_get_nested_bool(config_prefix, prefix, "enabled", 0);
+    rule->threshold = idcu_config_get_nested_int(config_prefix, prefix, "threshold", 90);
+    rule->duration_ms = idcu_config_get_nested_int(config_prefix, prefix, "duration_ms", 60000);
+    
+    const char* channels_str = idcu_config_get_nested_string(config_prefix, prefix, "channels", "");
+    strncpy(rule->channels, channels_str, sizeof(rule->channels) - 1);
+    
+    if (rule->enabled) {
+        IDCU_LOG_INFO("Alert rule '%s' enabled (threshold: %d, duration: %dms, channels: %s)", 
+                     rule_name, rule->threshold, rule->duration_ms, rule->channels);
     }
     
+    g_rule_count++;
     return IDCU_ERR_SUCCESS;
 }
 
-static int alert_module_stop(void)
+static int alert_module_init()
 {
-    IDCU_LOG_INFO("Alert Module: Stopping...");
+    const char* config_prefix = "module.alert_module";
     
-    if (g_initialized) {
-        idcu_notifier_destroy(&g_notifier);
-        idcu_alert_manager_destroy(&g_alert_manager);
-        g_initialized = 0;
-        g_metrics_collector = NULL;
-        g_kernel = NULL;
+    g_module_enabled = idcu_config_get_bool(config_prefix, "enabled", 1);
+    if (!g_module_enabled) {
+        IDCU_LOG_INFO("alert_module disabled by configuration");
+        return IDCU_ERR_SUCCESS;
     }
     
-    IDCU_LOG_INFO("Alert Module: Stopped successfully");
+    const char* url = idcu_config_get_string(config_prefix, "notification_url", "http://localhost:8080/alert");
+    strncpy(g_notification_url, url, sizeof(g_notification_url) - 1);
+    g_retry_count = idcu_config_get_int(config_prefix, "retry_count", 3);
+    
+    for (int i = 0; i < MAX_ALERT_LEVELS; i++) {
+        char level_key[64];
+        snprintf(level_key, sizeof(level_key), "alert_levels.%s", s_alert_level_names[i]);
+        g_alert_levels[i] = idcu_config_get_bool(config_prefix, level_key, 1);
+    }
+    
+    load_channel_config("email");
+    load_channel_config("webhook");
+    load_channel_config("sms");
+    load_channel_config("dingtalk");
+    
+    load_rule_config("cpu_high");
+    load_rule_config("memory_high");
+    load_rule_config("disk_full");
+    
+    IDCU_LOG_INFO("alert_module initialized (url: %s, retries: %d, channels: %d, rules: %d)", 
+                 g_notification_url, g_retry_count, g_channel_count, g_rule_count);
     return IDCU_ERR_SUCCESS;
 }
 
-IDCU_REGISTER_MODULE(alert, IDCU_MODULE_VERSION(1, 0, 0), 
-                    alert_module_init, alert_module_run, alert_module_stop);
+static int alert_module_run()
+{
+    if (!g_module_enabled) {
+        return IDCU_ERR_SUCCESS;
+    }
+    return IDCU_ERR_SUCCESS;
+}
+
+static int alert_module_stop()
+{
+    IDCU_LOG_INFO("alert_module stopped (total alerts: %d)", g_alert_count);
+    return IDCU_ERR_SUCCESS;
+}
+
+IDCU_REGISTER_MODULE(alert_module, IDCU_MODULE_VERSION(2, 0, 0), alert_module_init, alert_module_run, alert_module_stop);

@@ -30,6 +30,7 @@ typedef struct {
     uint64_t           last_health_check_ms;
     uint64_t           health_check_interval_ms;
     idcu_ModuleRegistry* registry;
+    char config_file[256];
 } idcu_MicroKernel;
 
 void idcu_kernel_init(idcu_MicroKernel *k);
@@ -41,6 +42,9 @@ void idcu_kernel_set_signal_handler(idcu_MicroKernel *k);
 int idcu_kernel_hotplug_load(idcu_MicroKernel *k, const char* name, const char* path);
 int idcu_kernel_hotplug_unload(idcu_MicroKernel *k, const char* name);
 int idcu_kernel_hotplug_restart(idcu_MicroKernel *k, const char* name);
+
+int idcu_kernel_set_config_file(idcu_MicroKernel *k, const char* config_file);
+int idcu_kernel_load_config(idcu_MicroKernel *k);
 
 idcu_HealthMonitor* idcu_kernel_get_health_monitor(idcu_MicroKernel *k);
 idcu_HealthStatus idcu_kernel_get_overall_health(idcu_MicroKernel *k);

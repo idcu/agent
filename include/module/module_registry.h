@@ -3,6 +3,7 @@
 
 #include "module/module_def.h"
 #include "module/module_version.h"
+#include "module/module_category.h"
 #include "common/error_code.h"
 #include "common/lock.h"
 #include <stdint.h>
@@ -22,6 +23,7 @@ typedef struct {
     uint32_t in_degree;
     uint32_t adjacency[IDCU_MAX_REGISTERED_MODULES];
     uint32_t adjacency_count;
+    int enabled;
 } idcu_RegisteredModule;
 
 typedef struct {
@@ -32,6 +34,8 @@ typedef struct {
     uint32_t topological_order[IDCU_MAX_REGISTERED_MODULES];
     uint32_t topological_count;
     int topological_valid;
+    idcu_ModuleCategoryManager category_mgr;
+    int use_config;
 } idcu_ModuleRegistry;
 
 int idcu_module_registry_init(idcu_ModuleRegistry* registry);
@@ -52,6 +56,9 @@ int idcu_module_registry_stop_all(idcu_ModuleRegistry* registry);
 int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry);
 int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry);
 int idcu_module_registry_topological_sort(idcu_ModuleRegistry* registry);
+
+int idcu_module_registry_load_config(idcu_ModuleRegistry* registry, const char* config_file);
+int idcu_module_registry_apply_config(idcu_ModuleRegistry* registry);
 
 // 版本管理相关函数
 int idcu_module_registry_check_dependency_versions(idcu_ModuleRegistry* registry);

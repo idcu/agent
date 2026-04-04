@@ -11,9 +11,11 @@ extern "C" {
 
 #define IDCU_MAX_CONFIG_SECTIONS 64
 #define IDCU_MAX_CONFIG_KEYS_PER_SECTION 128
-#define IDCU_CONFIG_KEY_MAX 64
-#define IDCU_CONFIG_VALUE_MAX 256
-#define IDCU_CONFIG_SECTION_MAX 64
+#define IDCU_CONFIG_KEY_MAX 128
+#define IDCU_CONFIG_VALUE_MAX 512
+#define IDCU_CONFIG_SECTION_MAX 128
+#define IDCU_MAX_LIST_ITEMS 32
+#define IDCU_LIST_ITEM_MAX 128
 
 typedef struct {
     char key[IDCU_CONFIG_KEY_MAX];
@@ -31,7 +33,14 @@ typedef struct {
     uint32_t section_count;
     idcu_Mutex lock;
     int loaded;
+    int env_var_enabled;
+    int validation_enabled;
 } idcu_ConfigManager;
+
+typedef struct {
+    char items[IDCU_MAX_LIST_ITEMS][IDCU_LIST_ITEM_MAX];
+    int count;
+} idcu_ConfigList;
 
 int idcu_config_init(const char* file_path);
 void idcu_config_shutdown(void);
@@ -55,6 +64,19 @@ int idcu_config_has_section(const char* section);
 int idcu_config_has_key(const char* section, const char* key);
 int idcu_config_remove_key(const char* section, const char* key);
 int idcu_config_remove_section(const char* section);
+
+int idcu_config_get_list(const char* section, const char* key, const char* delimiter, idcu_ConfigList* out_list);
+int idcu_config_list_contains(const char* section, const char* key, const char* delimiter, const char* value);
+
+int idcu_config_get_nested_bool(const char* section, const char* prefix, const char* subkey, int default_value);
+int idcu_config_get_nested_int(const char* section, const char* prefix, const char* subkey, int default_value);
+const char* idcu_config_get_nested_string(const char* section, const char* prefix, const char* subkey, const char* default_value);
+
+void idcu_config_enable_env_var(int enable);
+void idcu_config_enable_validation(int enable);
+int idcu_config_validate(void);
+
+int idcu_config_load_profile(const char* profile_name);
 
 #ifdef __cplusplus
 }

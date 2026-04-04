@@ -12,52 +12,10 @@ extern const idcu_ModuleInterface __stop_modules;
 extern const idcu_ModuleInterface __idcu_module_base_log;
 extern const idcu_ModuleInterface __idcu_module_biz_collect;
 extern const idcu_ModuleInterface __idcu_module_core_module;
-
-int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry)
-{
-    if (!registry) {
-        return IDCU_ERR_INVALID_PARAM;
-    }
-
-    int ret;
-#if defined(__GNUC__) && !defined(__MINGW32__)
-    const idcu_ModuleInterface* mod = &__start_modules;
-    while (mod < &__stop_modules) {
-        if (mod->name != NULL) {
-            ret = idcu_module_registry_register(registry, mod, IDCU_MOD_PRIO_NORMAL);
-            if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
-                return ret;
-            }
-        }
-        mod++;
-    }
-#else
-    ret = idcu_module_registry_register(registry, &__idcu_module_base_log, IDCU_MOD_PRIO_NORMAL);
-    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
-        return ret;
-    }
-    ret = idcu_module_registry_register(registry, &__idcu_module_biz_collect, IDCU_MOD_PRIO_NORMAL);
-    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
-        return ret;
-    }
-    ret = idcu_module_registry_register(registry, &__idcu_module_core_module, IDCU_MOD_PRIO_NORMAL);
-    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
-        return ret;
-    }
-#endif
-    
-    ret = idcu_module_registry_build_dependency_graph(registry);
-    if (ret != IDCU_ERR_SUCCESS) {
-        return ret;
-    }
-    
-    ret = idcu_module_registry_topological_sort(registry);
-    if (ret != IDCU_ERR_SUCCESS) {
-        return ret;
-    }
-    
-    return IDCU_ERR_SUCCESS;
-}
+extern const idcu_ModuleInterface __idcu_module_heartbeat_module;
+extern const idcu_ModuleInterface __idcu_module_healthcheck_module;
+extern const idcu_ModuleInterface __idcu_module_metrics_module;
+extern const idcu_ModuleInterface __idcu_module_alert_module;
 
 int idcu_module_registry_init(idcu_ModuleRegistry* registry)
 {
@@ -71,6 +29,15 @@ int idcu_module_registry_init(idcu_ModuleRegistry* registry)
     }
     registry->next_id = 1;
     registry->topological_valid = 0;
+    registry->use_config = 0;
+    
+    ret = idcu_module_category_manager_init(&registry->category_mgr);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("failed to init category manager");
+        idcu_mutex_destroy(&registry->lock);
+        return ret;
+    }
+    
     return IDCU_ERR_SUCCESS;
 }
 
@@ -80,6 +47,7 @@ void idcu_module_registry_destroy(idcu_ModuleRegistry* registry)
         return;
     }
     idcu_module_registry_stop_all(registry);
+    idcu_module_category_manager_destroy(&registry->category_mgr);
     idcu_mutex_destroy(&registry->lock);
     memset(registry, 0, sizeof(idcu_ModuleRegistry));
 }
@@ -119,6 +87,7 @@ int idcu_module_registry_register(idcu_ModuleRegistry* registry, const idcu_Modu
     mod->user_data = NULL;
     mod->in_degree = 0;
     mod->adjacency_count = 0;
+    mod->enabled = 1;
     registry->count++;
     registry->topological_valid = 0;
     idcu_mutex_unlock(&registry->lock);
@@ -380,6 +349,68 @@ int idcu_module_registry_stop_module(idcu_ModuleRegistry* registry, uint32_t mod
     return result;
 }
 
+int idcu_module_registry_discover_modules(idcu_ModuleRegistry* registry)
+{
+    if (!registry) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    int ret;
+#if defined(__GNUC__) && !defined(__MINGW32__)
+    const idcu_ModuleInterface* mod = &__start_modules;
+    while (mod < &__stop_modules) {
+        if (mod->name != NULL) {
+            ret = idcu_module_registry_register(registry, mod, IDCU_MOD_PRIO_NORMAL);
+            if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+                return ret;
+            }
+        }
+        mod++;
+    }
+#else
+    ret = idcu_module_registry_register(registry, &__idcu_module_base_log, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_biz_collect, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_core_module, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_heartbeat_module, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_healthcheck_module, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_metrics_module, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+    ret = idcu_module_registry_register(registry, &__idcu_module_alert_module, IDCU_MOD_PRIO_NORMAL);
+    if (ret != IDCU_ERR_SUCCESS && ret != IDCU_ERR_ALREADY_EXISTS) {
+        return ret;
+    }
+#endif
+    
+    ret = idcu_module_registry_build_dependency_graph(registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    ret = idcu_module_registry_topological_sort(registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    return IDCU_ERR_SUCCESS;
+}
+
 int idcu_module_registry_build_dependency_graph(idcu_ModuleRegistry* registry)
 {
     if (!registry) {
@@ -531,6 +562,13 @@ int idcu_module_registry_init_all(idcu_ModuleRegistry* registry)
     
     for (uint32_t i = 0; i < registry->topological_count; i++) {
         uint32_t module_id = registry->topological_order[i];
+        
+        const idcu_RegisteredModule* reg_mod = idcu_module_registry_find_by_id(registry, module_id);
+        if (reg_mod && !reg_mod->enabled) {
+            IDCU_LOG_INFO("skipping disabled module: %s", reg_mod->iface->name);
+            continue;
+        }
+        
         int init_ret = idcu_module_registry_init_module(registry, module_id);
         if (init_ret != IDCU_ERR_SUCCESS) {
             return init_ret;
@@ -571,6 +609,13 @@ int idcu_module_registry_run_all(idcu_ModuleRegistry* registry)
     
     for (uint32_t i = 0; i < registry->topological_count; i++) {
         uint32_t module_id = registry->topological_order[i];
+        
+        const idcu_RegisteredModule* reg_mod = idcu_module_registry_find_by_id(registry, module_id);
+        if (reg_mod && !reg_mod->enabled) {
+            IDCU_LOG_INFO("skipping disabled module: %s", reg_mod->iface->name);
+            continue;
+        }
+        
         int run_ret = idcu_module_registry_run_module(registry, module_id);
         if (run_ret != IDCU_ERR_SUCCESS) {
             return run_ret;
@@ -749,4 +794,63 @@ int idcu_module_registry_find_module_by_version(idcu_ModuleRegistry* registry, c
     *out_module = best_match;
     idcu_mutex_unlock(&registry->lock);
     return best_match ? IDCU_SUCCESS : IDCU_ERR_NOT_FOUND;
+}
+
+int idcu_module_registry_load_config(idcu_ModuleRegistry* registry, const char* config_file)
+{
+    if (!registry || !config_file) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    IDCU_LOG_INFO("loading module config from: %s", config_file);
+    
+    int ret = idcu_module_category_load_config(&registry->category_mgr, config_file);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_WARN("failed to load category config, continuing anyway");
+    }
+    
+    registry->use_config = 1;
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_module_registry_apply_config(idcu_ModuleRegistry* registry)
+{
+    if (!registry || !registry->use_config) {
+        return IDCU_ERR_SUCCESS;
+    }
+    
+    IDCU_LOG_INFO("applying module configuration...");
+    
+    int ret = idcu_mutex_lock(&registry->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    for (uint32_t i = 0; i < registry->count; i++) {
+        idcu_RegisteredModule* mod = &registry->modules[i];
+        
+        int enabled = idcu_module_category_is_module_enabled(&registry->category_mgr, mod->iface->name);
+        mod->enabled = enabled;
+        
+        idcu_ModulePrio prio = idcu_module_category_get_module_priority(&registry->category_mgr, mod->iface->name);
+        mod->priority = prio;
+        
+        IDCU_LOG_INFO("module %s: enabled=%d, priority=%d", mod->iface->name, enabled, prio);
+    }
+    
+    registry->topological_valid = 0;
+    idcu_mutex_unlock(&registry->lock);
+    
+    ret = idcu_module_registry_build_dependency_graph(registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    ret = idcu_module_registry_topological_sort(registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    IDCU_LOG_INFO("module configuration applied successfully");
+    return IDCU_ERR_SUCCESS;
 }

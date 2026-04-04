@@ -43,6 +43,7 @@ void idcu_kernel_init(idcu_MicroKernel *k)
 {
     IDCU_LOG_INFO("initializing micro kernel...");
     memset(k, 0, sizeof(idcu_MicroKernel));
+    strncpy(k->config_file, "config/agent.cfg", sizeof(k->config_file) - 1);
     idcu_msg_bus_init(&k->msg);
     idcu_ctx_init(&k->global, 0, 0);
     
@@ -79,12 +80,49 @@ void idcu_kernel_init(idcu_MicroKernel *k)
     IDCU_LOG_INFO("micro kernel initialized successfully");
 }
 
+int idcu_kernel_set_config_file(idcu_MicroKernel *k, const char* config_file)
+{
+    if (!k || !config_file) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    strncpy(k->config_file, config_file, sizeof(k->config_file) - 1);
+    IDCU_LOG_INFO("config file set to: %s", config_file);
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_kernel_load_config(idcu_MicroKernel *k)
+{
+    if (!k) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    IDCU_LOG_INFO("loading config from: %s", k->config_file);
+    
+    int ret = idcu_module_registry_load_config(&g_module_registry, k->config_file);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_WARN("failed to load module config, continuing with defaults");
+    }
+    
+    ret = idcu_module_registry_apply_config(&g_module_registry);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_WARN("failed to apply module config, continuing with defaults");
+    }
+    
+    return IDCU_ERR_SUCCESS;
+}
+
 void idcu_kernel_start_modules(idcu_MicroKernel *k)
 {
     uint32_t cnt = 0;
     
+    IDCU_LOG_INFO("loading module configuration...");
+    int ret = idcu_kernel_load_config(k);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_WARN("failed to load config, using defaults");
+    }
+    
     IDCU_LOG_INFO("starting to initialize modules...");
-    int ret = idcu_module_registry_init_all(&g_module_registry);
+    ret = idcu_module_registry_init_all(&g_module_registry);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("failed to init modules, error code: %d (%s)", ret, idcu_err_to_str(ret));
         return;
@@ -104,6 +142,11 @@ void idcu_kernel_start_modules(idcu_MicroKernel *k)
         const idcu_RegisteredModule* reg_mod = idcu_module_registry_get_at(&g_module_registry, i);
         if (!reg_mod) {
             IDCU_LOG_WARN("skipping invalid module at index %d", i);
+            continue;
+        }
+        
+        if (!reg_mod->enabled) {
+            IDCU_LOG_INFO("skipping disabled module: %s", reg_mod->iface->name);
             continue;
         }
         
