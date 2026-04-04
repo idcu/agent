@@ -7,6 +7,7 @@
 
 #define IDCU_MSG_BATCH_MAX 32
 #define IDCU_MSG_ZEROCOPY_POOL_SIZE 256
+#define IDCU_MSG_MOD_INDEX_SIZE 256
 
 typedef enum {
     IDCU_MSG_PRIO_LOW = 0,
@@ -40,13 +41,18 @@ typedef struct {
 #define IDCU_MSG_QUEUE_SIZE IDCU_CONFIG_MAX_MSG
 
 typedef struct {
-    idcu_Message queue[IDCU_MSG_PRIO_COUNT][IDCU_MSG_QUEUE_SIZE];
-    uint32_t head[IDCU_MSG_PRIO_COUNT];
-    uint32_t tail[IDCU_MSG_PRIO_COUNT];
-    uint32_t subs[16];
+    idcu_Message queue[IDCU_MSG_QUEUE_SIZE];
+    uint32_t head;
+    uint32_t tail;
     idcu_Mutex lock;
+} idcu_PriorityQueue;
+
+typedef struct {
+    idcu_PriorityQueue prio_queues[IDCU_MSG_PRIO_COUNT];
+    uint32_t subs[16];
     idcu_ZeroCopyPayload payload_pool[IDCU_MSG_ZEROCOPY_POOL_SIZE];
     uint8_t payload_in_use[IDCU_MSG_ZEROCOPY_POOL_SIZE];
+    uint32_t payload_free_head;
     idcu_Mutex payload_lock;
 } idcu_MessageBus;
 

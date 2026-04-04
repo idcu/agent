@@ -29,8 +29,18 @@ void idcu_msg_bus_init(idcu_MessageBus *bus)
     }
 
     memset(bus, 0, sizeof(idcu_MessageBus));
-    idcu_mutex_init(&bus->lock);
+    
+    for (int p = 0; p < IDCU_MSG_PRIO_COUNT; p++) {
+        idcu_mutex_init(&bus->prio_queues[p].lock);
+    }
+    
     idcu_mutex_init(&bus->payload_lock);
+    
+    for (uint32_t i = 0; i < IDCU_MSG_ZEROCOPY_POOL_SIZE - 1; i++) {
+        bus->payload_in_use[i] = i + 1;
+    }
+    bus->payload_in_use[IDCU_MSG_ZEROCOPY_POOL_SIZE - 1] = 0xFF;
+    bus->payload_free_head = 0;
 }
 
 void idcu_msg_bus_destroy(idcu_MessageBus *bus)
@@ -42,7 +52,7 @@ void idcu_msg_bus_destroy(idcu_MessageBus *bus)
     int ret = idcu_mutex_lock(&bus->payload_lock);
     if (ret == IDCU_ERR_SUCCESS) {
         for (uint32_t i = 0; i < IDCU_MSG_ZEROCOPY_POOL_SIZE; i++) {
-            if (bus->payload_in_use[i] && bus->payload_pool[i].data) {
+            if (bus->payload_pool[i].data) {
                 free(bus->payload_pool[i].data);
                 bus->payload_pool[i].data = NULL;
             }
@@ -51,17 +61,20 @@ void idcu_msg_bus_destroy(idcu_MessageBus *bus)
     }
     
     idcu_mutex_destroy(&bus->payload_lock);
-    idcu_mutex_destroy(&bus->lock);
+    
+    for (int p = 0; p < IDCU_MSG_PRIO_COUNT; p++) {
+        idcu_mutex_destroy(&bus->prio_queues[p].lock);
+    }
 }
 
-static int is_queue_full(idcu_MessageBus *bus, idcu_MsgPriority prio)
+static int is_queue_full(idcu_PriorityQueue *q)
 {
-    return ((bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE) == bus->head[prio];
+    return ((q->tail + 1) % IDCU_MSG_QUEUE_SIZE) == q->head;
 }
 
-static int is_queue_empty(idcu_MessageBus *bus, idcu_MsgPriority prio)
+static int is_queue_empty(idcu_PriorityQueue *q)
 {
-    return bus->head[prio] == bus->tail[prio];
+    return q->head == q->tail;
 }
 
 int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const idcu_StackContext *ctx)
@@ -76,19 +89,20 @@ int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = idcu_mutex_lock(&bus->lock);
+    idcu_PriorityQueue *q = &bus->prio_queues[prio];
+    int ret = idcu_mutex_lock(&q->lock);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("msg_send failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
         return ret;
     }
 
-    if (is_queue_full(bus, prio)) {
-        idcu_mutex_unlock(&bus->lock);
+    if (is_queue_full(q)) {
+        idcu_mutex_unlock(&q->lock);
         IDCU_LOG_WARN("msg_send failed: queue full (prio=%d)", prio);
         return IDCU_ERR_QUEUE_FULL;
     }
 
-    idcu_Message *msg = &bus->queue[prio][bus->tail[prio]];
+    idcu_Message *msg = &q->queue[q->tail];
     memset(msg, 0, sizeof(idcu_Message));
     msg->data = *ctx;
     msg->source_mod_id = src_mod;
@@ -98,12 +112,11 @@ int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu
     msg->retry_count = 0;
     msg->payload = NULL;
 
-    bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
+    q->tail = (q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
 
     idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, 1);
-    idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
 
-    idcu_mutex_unlock(&bus->lock);
+    idcu_mutex_unlock(&q->lock);
     IDCU_LOG_DEBUG("msg_send succeeded: src=%u, dst=%u, prio=%d", src_mod, dst_mod, prio);
     return IDCU_ERR_SUCCESS;
 }
@@ -115,33 +128,33 @@ int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg)
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = idcu_mutex_lock(&bus->lock);
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_ERROR("msg_recv failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
-        return ret;
-    }
-
     for (int p = IDCU_MSG_PRIO_COUNT - 1; p >= 0; p--) {
         idcu_MsgPriority prio = (idcu_MsgPriority)p;
+        idcu_PriorityQueue *q = &bus->prio_queues[prio];
         
-        if (!is_queue_empty(bus, prio)) {
-            idcu_Message *queue_msg = &bus->queue[prio][bus->head[prio]];
+        int ret = idcu_mutex_lock(&q->lock);
+        if (ret != IDCU_ERR_SUCCESS) {
+            continue;
+        }
+        
+        if (!is_queue_empty(q)) {
+            idcu_Message *queue_msg = &q->queue[q->head];
             
             if (queue_msg->target_mod_id == mod_id || queue_msg->target_mod_id == 0) {
                 *msg = *queue_msg;
-                bus->head[prio] = (bus->head[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
+                q->head = (q->head + 1) % IDCU_MSG_QUEUE_SIZE;
 
                 idcu_global_metrics_inc(IDCU_METRIC_MSG_RECEIVED, 1);
-                idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
 
-                idcu_mutex_unlock(&bus->lock);
+                idcu_mutex_unlock(&q->lock);
                 IDCU_LOG_DEBUG("msg_recv succeeded: mod=%u, src=%u, prio=%d", mod_id, queue_msg->source_mod_id, prio);
                 return IDCU_ERR_SUCCESS;
             }
         }
+        
+        idcu_mutex_unlock(&q->lock);
     }
 
-    idcu_mutex_unlock(&bus->lock);
     return IDCU_ERR_QUEUE_EMPTY;
 }
 
@@ -160,21 +173,23 @@ uint32_t idcu_msg_get_count(idcu_MessageBus *bus)
         return 0;
     }
 
-    int ret = idcu_mutex_lock(&bus->lock);
-    if (ret != IDCU_ERR_SUCCESS) {
-        return 0;
-    }
-
     uint32_t count = 0;
     for (int p = 0; p < IDCU_MSG_PRIO_COUNT; p++) {
-        if (bus->tail[p] >= bus->head[p]) {
-            count += bus->tail[p] - bus->head[p];
-        } else {
-            count += IDCU_MSG_QUEUE_SIZE - bus->head[p] + bus->tail[p];
+        idcu_PriorityQueue *q = &bus->prio_queues[p];
+        int ret = idcu_mutex_lock(&q->lock);
+        if (ret != IDCU_ERR_SUCCESS) {
+            continue;
         }
+        
+        if (q->tail >= q->head) {
+            count += q->tail - q->head;
+        } else {
+            count += IDCU_MSG_QUEUE_SIZE - q->head + q->tail;
+        }
+        
+        idcu_mutex_unlock(&q->lock);
     }
 
-    idcu_mutex_unlock(&bus->lock);
     return count;
 }
 
@@ -186,27 +201,30 @@ static idcu_ZeroCopyPayload* allocate_payload(idcu_MessageBus *bus, uint32_t siz
         return NULL;
     }
     
-    for (uint32_t i = 0; i < IDCU_MSG_ZEROCOPY_POOL_SIZE; i++) {
-        if (!bus->payload_in_use[i]) {
-            idcu_ZeroCopyPayload *payload = &bus->payload_pool[i];
-            payload->data = (uint8_t*)malloc(size);
-            if (!payload->data) {
-                idcu_mutex_unlock(&bus->payload_lock);
-                IDCU_LOG_ERROR("allocate_payload failed: out of memory (size=%u)", size);
-                return NULL;
-            }
-            payload->size = size;
-            payload->ref_count = 1;
-            bus->payload_in_use[i] = 1;
-            idcu_mutex_unlock(&bus->payload_lock);
-            IDCU_LOG_DEBUG("allocate_payload succeeded: slot=%u, size=%u", i, size);
-            return payload;
-        }
+    if (bus->payload_free_head == 0xFF) {
+        idcu_mutex_unlock(&bus->payload_lock);
+        IDCU_LOG_WARN("allocate_payload failed: no available slots in payload pool");
+        return NULL;
     }
     
+    uint32_t slot = bus->payload_free_head;
+    bus->payload_free_head = bus->payload_in_use[slot];
+    
+    idcu_ZeroCopyPayload *payload = &bus->payload_pool[slot];
+    payload->data = (uint8_t*)malloc(size);
+    if (!payload->data) {
+        bus->payload_in_use[slot] = (uint8_t)bus->payload_free_head;
+        bus->payload_free_head = slot;
+        idcu_mutex_unlock(&bus->payload_lock);
+        IDCU_LOG_ERROR("allocate_payload failed: out of memory (size=%u)", size);
+        return NULL;
+    }
+    payload->size = size;
+    payload->ref_count = 1;
+    
     idcu_mutex_unlock(&bus->payload_lock);
-    IDCU_LOG_WARN("allocate_payload failed: no available slots in payload pool");
-    return NULL;
+    IDCU_LOG_DEBUG("allocate_payload succeeded: slot=%u, size=%u", slot, size);
+    return payload;
 }
 
 int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const uint8_t *data, uint32_t size)
@@ -221,28 +239,30 @@ int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = idcu_mutex_lock(&bus->lock);
-    if (ret != IDCU_ERR_SUCCESS) {
-        IDCU_LOG_ERROR("msg_send_zerocopy failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
-        return ret;
-    }
-
-    if (is_queue_full(bus, prio)) {
-        idcu_mutex_unlock(&bus->lock);
-        IDCU_LOG_WARN("msg_send_zerocopy failed: queue full (prio=%d)", prio);
-        return IDCU_ERR_QUEUE_FULL;
-    }
-
     idcu_ZeroCopyPayload *payload = allocate_payload(bus, size);
     if (!payload) {
-        idcu_mutex_unlock(&bus->lock);
         IDCU_LOG_ERROR("msg_send_zerocopy failed: allocate payload failed");
         return IDCU_ERR_NO_MEMORY;
     }
 
     memcpy(payload->data, data, size);
 
-    idcu_Message *msg = &bus->queue[prio][bus->tail[prio]];
+    idcu_PriorityQueue *q = &bus->prio_queues[prio];
+    int ret = idcu_mutex_lock(&q->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        idcu_msg_release_payload(bus, payload);
+        IDCU_LOG_ERROR("msg_send_zerocopy failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
+        return ret;
+    }
+
+    if (is_queue_full(q)) {
+        idcu_mutex_unlock(&q->lock);
+        idcu_msg_release_payload(bus, payload);
+        IDCU_LOG_WARN("msg_send_zerocopy failed: queue full (prio=%d)", prio);
+        return IDCU_ERR_QUEUE_FULL;
+    }
+
+    idcu_Message *msg = &q->queue[q->tail];
     memset(msg, 0, sizeof(idcu_Message));
     msg->source_mod_id = src_mod;
     msg->target_mod_id = dst_mod;
@@ -251,13 +271,12 @@ int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_
     msg->retry_count = 0;
     msg->payload = payload;
 
-    bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
+    q->tail = (q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
 
     idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, 1);
     idcu_global_metrics_inc(IDCU_METRIC_MSG_ZEROCOPY_SENT, 1);
-    idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
 
-    idcu_mutex_unlock(&bus->lock);
+    idcu_mutex_unlock(&q->lock);
     IDCU_LOG_DEBUG("msg_send_zerocopy succeeded: src=%u, dst=%u, prio=%d, size=%u", src_mod, dst_mod, prio, size);
     return IDCU_ERR_SUCCESS;
 }
@@ -293,12 +312,9 @@ void idcu_msg_release_payload(idcu_MessageBus *bus, idcu_ZeroCopyPayload *payloa
             payload->data = NULL;
         }
         
-        for (uint32_t i = 0; i < IDCU_MSG_ZEROCOPY_POOL_SIZE; i++) {
-            if (&bus->payload_pool[i] == payload) {
-                bus->payload_in_use[i] = 0;
-                break;
-            }
-        }
+        uint32_t slot = (uint32_t)(payload - bus->payload_pool);
+        bus->payload_in_use[slot] = (uint8_t)bus->payload_free_head;
+        bus->payload_free_head = slot;
     }
 
     idcu_mutex_unlock(&bus->payload_lock);
@@ -310,32 +326,57 @@ int idcu_msg_send_batch(idcu_MessageBus *bus, idcu_MessageBatch *batch)
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    int ret = idcu_mutex_lock(&bus->lock);
-    if (ret != IDCU_ERR_SUCCESS) {
-        return ret;
-    }
+    uint32_t sent = 0;
+    idcu_MsgPriority last_prio = IDCU_MSG_PRIO_COUNT;
+    idcu_PriorityQueue *current_q = NULL;
+    int lock_held = 0;
 
     for (uint32_t i = 0; i < batch->count; i++) {
         idcu_Message *src_msg = &batch->msgs[i];
         idcu_MsgPriority prio = src_msg->priority;
         
-        if (prio >= IDCU_MSG_PRIO_COUNT || is_queue_full(bus, prio)) {
-            idcu_mutex_unlock(&bus->lock);
-            return i > 0 ? (int)i : IDCU_ERR_QUEUE_FULL;
+        if (prio >= IDCU_MSG_PRIO_COUNT) {
+            if (lock_held) {
+                idcu_mutex_unlock(&current_q->lock);
+                lock_held = 0;
+            }
+            return sent > 0 ? (int)sent : IDCU_ERR_INVALID_PARAM;
+        }
+        
+        if (prio != last_prio) {
+            if (lock_held) {
+                idcu_mutex_unlock(&current_q->lock);
+                lock_held = 0;
+            }
+            current_q = &bus->prio_queues[prio];
+            int ret = idcu_mutex_lock(&current_q->lock);
+            if (ret != IDCU_ERR_SUCCESS) {
+                return sent > 0 ? (int)sent : ret;
+            }
+            lock_held = 1;
+            last_prio = prio;
+        }
+        
+        if (is_queue_full(current_q)) {
+            idcu_mutex_unlock(&current_q->lock);
+            idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, sent);
+            return sent > 0 ? (int)sent : IDCU_ERR_QUEUE_FULL;
         }
 
-        idcu_Message *dst_msg = &bus->queue[prio][bus->tail[prio]];
+        idcu_Message *dst_msg = &current_q->queue[current_q->tail];
         *dst_msg = *src_msg;
         dst_msg->timestamp = get_timestamp_ms();
-        bus->tail[prio] = (bus->tail[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
+        current_q->tail = (current_q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
+        sent++;
+    }
+    
+    if (lock_held) {
+        idcu_mutex_unlock(&current_q->lock);
     }
 
-    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, batch->count);
+    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, sent);
     idcu_global_metrics_inc(IDCU_METRIC_MSG_BATCH_SENT, 1);
-    idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
-
-    idcu_mutex_unlock(&bus->lock);
-    return (int)batch->count;
+    return (int)sent;
 }
 
 int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch *batch, uint32_t max_count)
@@ -348,28 +389,32 @@ int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch
         max_count = IDCU_MSG_BATCH_MAX;
     }
 
-    int ret = idcu_mutex_lock(&bus->lock);
-    if (ret != IDCU_ERR_SUCCESS) {
-        return ret;
-    }
-
     batch->count = 0;
     for (uint32_t i = 0; i < max_count; i++) {
         int found = 0;
         for (int p = IDCU_MSG_PRIO_COUNT - 1; p >= 0; p--) {
             idcu_MsgPriority prio = (idcu_MsgPriority)p;
+            idcu_PriorityQueue *q = &bus->prio_queues[prio];
             
-            if (!is_queue_empty(bus, prio)) {
-                idcu_Message *queue_msg = &bus->queue[prio][bus->head[prio]];
+            int ret = idcu_mutex_lock(&q->lock);
+            if (ret != IDCU_ERR_SUCCESS) {
+                continue;
+            }
+            
+            if (!is_queue_empty(q)) {
+                idcu_Message *queue_msg = &q->queue[q->head];
                 
                 if (queue_msg->target_mod_id == mod_id || queue_msg->target_mod_id == 0) {
                     batch->msgs[i] = *queue_msg;
-                    bus->head[prio] = (bus->head[prio] + 1) % IDCU_MSG_QUEUE_SIZE;
+                    q->head = (q->head + 1) % IDCU_MSG_QUEUE_SIZE;
                     batch->count++;
                     found = 1;
+                    idcu_mutex_unlock(&q->lock);
                     break;
                 }
             }
+            
+            idcu_mutex_unlock(&q->lock);
         }
         if (!found) {
             break;
@@ -379,9 +424,7 @@ int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch
     if (batch->count > 0) {
         idcu_global_metrics_inc(IDCU_METRIC_MSG_RECEIVED, batch->count);
         idcu_global_metrics_inc(IDCU_METRIC_MSG_BATCH_RECEIVED, 1);
-        idcu_global_metrics_set(IDCU_METRIC_MSG_QUEUE_SIZE, idcu_msg_get_count(bus));
     }
 
-    idcu_mutex_unlock(&bus->lock);
     return (int)batch->count;
 }
