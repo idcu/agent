@@ -244,7 +244,7 @@ int idcu_metrics_export_prometheus(idcu_MetricsCollector* collector, char* buffe
     }
 
     int ret = idcu_mutex_lock(&collector->lock);
-    if (ret != IDCU_ERR_SUCCESS) {
+    if (ret != IDCU_ERR_OK) {
         return ret;
     }
 
@@ -272,16 +272,24 @@ int idcu_metrics_export_prometheus(idcu_MetricsCollector* collector, char* buffe
                         m->name, m->desc, m->name,
                         m->name, (unsigned long long)m->sum,
                         m->name, (unsigned long long)m->count);
+                } else {
+                    len = snprintf(buffer + offset, buffer_size - offset,
+                        "# HELP %s %s\n# TYPE %s summary\n",
+                        m->name, m->desc, m->name);
                 }
                 break;
         }
         
-        if (len < 0 || (size_t)len >= buffer_size - offset) {
+        if (len < 0) {
             break;
+        }
+        if ((size_t)len >= buffer_size - offset) {
+            idcu_mutex_unlock(&collector->lock);
+            return IDCU_ERR_BUFFER_TOO_SMALL;
         }
         offset += len;
     }
 
     idcu_mutex_unlock(&collector->lock);
-    return IDCU_ERR_SUCCESS;
+    return IDCU_ERR_OK;
 }

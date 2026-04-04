@@ -106,6 +106,8 @@ const char* idcu_err_to_str(int err_code) {
             return "Coroutine schedule failed";
         case IDCU_ERR_CORO_YIELD:
             return "Coroutine yield failed";
+        case IDCU_ERR_BUFFER_TOO_SMALL:
+            return "Buffer too small";
 
         default:
             return "Unknown error";

@@ -226,3 +226,16 @@ if(BUILD_DYNAMIC_LOADER_EXAMPLE)
         target_link_libraries(dynamic_module_example PRIVATE pthread dl)
     endif()
 endif()
+
+# 构建Prometheus导出器示例程序
+option(BUILD_PROMETHEUS_EXPORTER_EXAMPLE "Build Prometheus exporter example" ON)
+if(BUILD_PROMETHEUS_EXPORTER_EXAMPLE)
+    add_executable(prometheus_exporter_example examples/prometheus_exporter_example.c)
+    set_target_properties(prometheus_exporter_example PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+    )
+    target_link_libraries(prometheus_exporter_example PRIVATE idcu_core)
+    if(NOT WIN32)
+        target_link_libraries(prometheus_exporter_example PRIVATE pthread)
+    endif()
+endif()

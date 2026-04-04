@@ -73,7 +73,8 @@ typedef enum {
     IDCU_ERR_FILE_WRITE     = -46,  /**< 文件写入失败 */
     IDCU_ERR_FILE_DELETE    = -47,  /**< 文件删除失败 */
     IDCU_ERR_CORO_SCHEDULE  = -48,  /**< 协程调度失败 */
-    IDCU_ERR_CORO_YIELD     = -49   /**< 协程让出失败 */
+    IDCU_ERR_CORO_YIELD     = -49,  /**< 协程让出失败 */
+    IDCU_ERR_BUFFER_TOO_SMALL = -50  /**< 缓冲区太小 */
 } idcu_ErrorCode;
 
 /**
