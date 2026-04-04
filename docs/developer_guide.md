@@ -35,9 +35,15 @@
 │  └─────────┘ └─────────┘ └─────────┘              │
 ├─────────────────────────────────────────────────────┤
 │           微内核层 (Micro Kernel)                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │ 协程调度 │ │ 消息总线 │ │ 沙箱     │           │
-│  └──────────┘ └──────────┘ └──────────┘           │
+│  ┌──────────────────────────────────────────────┐  │
+│  │ 微内核 (Micro Kernel)                        │  │
+│  ├──────────────────────────────────────────────┤  │
+│  │ 调度器 + 模块系统                             │  │
+│  ├──────────────────────────────────────────────┤  │
+│  │ 工具组件 + 通用基础                           │  │
+│  ├──────────────────────────────────────────────┤  │
+│  │ SDK + 测试框架                                │  │
+│  └──────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -45,11 +51,17 @@
 
 | 组件 | 功能 | 头文件位置 |
 |------|------|-----------|
-| 协程调度器 | 管理任务执行 | `modules/services/monitor/` 和 `modules/services/network/` 中的实现 |
-| 消息总线 | 模块之间的消息传递 | 详见教程文档 |
-| 沙箱 | 模块隔离和安全 | `modules/services/security/include/sandbox.h` |
+| 微内核 | 系统核心管理 | `modules/core/micro-kernel/include/micro_kernel.h` |
+| 协程调度器 | 管理任务执行 | `modules/core/scheduler/include/coroutine.h` |
+| 消息总线 | 模块之间的消息传递 | `modules/core/scheduler/include/msg_bus.h` |
+| 模块管理系统 | 模块加载、注册、版本管理 | `modules/core/module-system/include/` |
+| 工具组件 | 日志、配置、JSON、内存池 | `modules/core/utils/include/` |
+| 通用基础 | 原子操作、锁、错误码 | `modules/core/common/include/` |
+| SDK | 简化模块开发接口 | `modules/core/sdk/include/sdk.h` |
+| 测试框架 | 单元测试支持 | `modules/core/test-framework/include/test_framework.h` |
 | 监控系统 | 健康检查、指标收集 | `modules/services/monitor/include/` |
 | 网络系统 | 网络通信、分布式节点 | `modules/services/network/include/` |
+| 沙箱 | 模块隔离和安全 | `modules/services/security/include/sandbox.h` |
 
 ---
 
@@ -61,6 +73,46 @@ idcu-agent/
 │   ├── main.c                    # 主程序入口
 │   └── benchmark.c               # 性能基准测试
 ├── modules/                      # 模块化结构
+│   ├── core/                     # 核心基础设施 (微内核架构基础)
+│   │   ├── common/               # 通用基础组件
+│   │   │   ├── include/          # 原子操作、锁、错误码、编译配置
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── utils/                # 通用工具组件
+│   │   │   ├── include/          # 日志、配置、JSON、内存池、权限
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── module-system/        # 模块管理系统
+│   │   │   ├── include/          # 模块定义、注册表、分类、动态加载、版本
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── scheduler/            # 调度器模块
+│   │   │   ├── include/          # 协程、消息总线、上下文
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── micro-kernel/         # 微内核核心
+│   │   │   ├── include/          # 微内核主接口
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── sdk/                  # 软件开发工具包
+│   │   │   ├── include/          # SDK 接口
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   └── test-framework/       # 测试框架
+│   │       ├── include/          # 测试框架接口
+│   │       ├── src/              # 源代码
+│   │       ├── CMakeLists.txt
+│   │       └── README.md
 │   ├── services/                 # 服务模块组
 │   │   ├── monitor/              # 监控系统
 │   │   │   ├── include/          # 头文件 (健康检查、指标、告警、通知、Prometheus导出)
@@ -129,6 +181,15 @@ idcu-agent/
 
 ### 关键文件说明
 
+#### core/ 目录 - 核心基础设施
+- `common/` - 通用基础组件（原子操作、锁机制、错误码、编译配置）
+- `utils/` - 通用工具组件（日志系统、配置管理、JSON 解析、内存池、权限管理）
+- `module-system/` - 模块管理系统（模块定义、注册表、分类、动态加载、版本管理）
+- `scheduler/` - 调度器模块（协程调度、消息总线、上下文管理）
+- `micro-kernel/` - 微内核核心（系统核心管理、模块生命周期、热插拔）
+- `sdk/` - 软件开发工具包（简化模块开发接口）
+- `test-framework/` - 测试框架（单元测试支持）
+
 #### services/ 目录 - 核心服务实现
 - `monitor/` - 监控系统，包括健康检查、指标收集、告警管理、Prometheus 导出
 - `network/` - 网络系统，包括网络层、HTTP 服务器、分布式节点、节点发现、管理 API
@@ -143,7 +204,77 @@ idcu-agent/
 
 ## 核心模块说明
 
-### 1. 服务模块
+### 1. 核心基础设施模块
+
+#### 通用基础组件 (common)
+**文件位置**: `modules/core/common/`
+
+提供项目通用的基础工具组件：
+- **原子操作** (`atomic.h/c`) - 原子变量操作、原子计数器、无锁数据结构支持
+- **锁机制** (`lock.h/c`) - 互斥锁、读写锁、条件变量
+- **错误码** (`error_code.h/c`) - 错误码定义、错误码转字符串、统一错误处理
+- **编译时配置** (`config.h`) - 编译时配置选项
+
+#### 工具组件 (utils)
+**文件位置**: `modules/core/utils/`
+
+提供项目通用的工具组件：
+- **日志系统** (`log.h/c`) - 多级别日志 (DEBUG/INFO/WARN/ERROR)、日志格式化、日志输出管理
+- **配置管理** (`config_manager.h/c`) - 配置文件读取、配置项查询、配置更新
+- **JSON 解析器** (`json_parser.h/c`) - JSON 解析、JSON 生成、JSON 数据操作
+- **内存池** (`memory_pool.h/c`) - 高效内存分配、内存复用、内存泄漏检测
+- **权限管理** (`permission_manager.h/c`) - 权限定义、权限检查、权限管理
+
+#### 模块管理系统 (module-system)
+**文件位置**: `modules/core/module-system/`
+
+提供完整的模块管理功能：
+- **模块定义** (`module_def.h`) - 模块接口定义、模块状态管理、模块注册宏
+- **模块注册表** (`module_registry.h/c`) - 模块注册和管理、依赖关系图构建、拓扑排序、配置应用
+- **模块分类** (`module_category.h/c`) - 模块分类和层级管理、模块配置加载
+- **动态模块** (`dynamic_module.h/c`) - 运行时加载 DLL/SO、热插拔支持
+- **模块版本** (`module_version.h/c`) - 版本号解析和比较、依赖版本检查
+
+#### 调度器模块 (scheduler)
+**文件位置**: `modules/core/scheduler/`
+
+提供核心调度功能：
+- **协程** (`coroutine.h/c`) - 轻量级协程调度、多优先级协程、时间片轮转调度、协程挂起和恢复、性能统计
+- **消息总线** (`msg_bus.h/c`) - 模块间通信、多优先级消息队列、零拷贝消息传输、消息广播、批量消息处理
+- **上下文** (`context.h/c`) - 协程上下文管理、上下文切换
+
+#### 微内核核心 (micro-kernel)
+**文件位置**: `modules/core/micro-kernel/`
+
+系统最核心的功能：
+- **微内核主接口** (`micro_kernel.h/c`)
+  - `idcu_kernel_init()` - 初始化微内核
+  - `idcu_kernel_start_modules()` - 启动所有模块
+  - `idcu_kernel_run()` - 运行主循环
+  - `idcu_kernel_stop()` - 停止所有模块
+  - `idcu_kernel_hotplug_load()` - 热加载模块
+  - `idcu_kernel_hotplug_unload()` - 热卸载模块
+
+功能包括：
+- 协程调度器的管理
+- 消息总线的初始化和维护
+- 沙箱环境的创建
+- 模块的加载、初始化和启动
+- 健康状态监控
+
+#### 软件开发工具包 (SDK)
+**文件位置**: `modules/core/sdk/`
+
+提供外部开发接口，封装底层复杂性：
+- **SDK 接口** (`sdk.h/c`) - 模块开发简化接口、消息发送/接收封装、常用工具函数
+
+#### 测试框架 (Test Framework)
+**文件位置**: `modules/core/test-framework/`
+
+提供单元测试框架支持：
+- **测试框架** (`test_framework.h/c`) - 测试用例注册、测试断言宏、测试运行器、测试结果统计
+
+### 2. 服务模块
 
 #### 监控系统 (monitor)
 **文件位置**: `modules/services/monitor/`
@@ -173,7 +304,7 @@ idcu-agent/
 - **沙箱基础版** (`sandbox.h/c`) - 基础权限控制和资源限制
 - **沙箱增强版** (`sandbox_enhanced.h/c`) - 增强的安全机制
 
-### 2. 现有业务模块示例
+### 3. 现有业务模块示例
 
 #### modules/business/log/src/log_module.c
 ```c

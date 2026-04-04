@@ -20,7 +20,7 @@ IDCU Agent 采用**配置驱动的模块化积木式架构**，核心思想是�
 ├─────────────────────────────────────────────────────────┤
 │  Level 2: 服务层 (Service)         监控/网络/安全      │
 ├─────────────────────────────────────────────────────────┤
-│  服务核心 (Services Core)         基础服务组件        │
+│  Level 1: 核心基础设施层 (Core)    微内核/调度/模块管理 │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -28,6 +28,7 @@ IDCU Agent 采用**配置驱动的模块化积木式架构**，核心思想是�
 
 | 层级 | 分类 | 说明 | 示例 |
 |------|------|------|------|
+| Level 1 | core | 核心基础设施，提供微内核架构基础 | common, utils, module-system, scheduler, micro-kernel, sdk, test-framework |
 | Level 2 | service | 服务层模块，提供特定服务 | monitor, network, security, plugin |
 | Level 3 | business | 业务功能模块，实现核心业务 | log, metrics, alert, collect |
 
@@ -77,6 +78,14 @@ export_enabled = true
 
 ```
 modules/
+├── core/                     # 核心基础设施组
+│   ├── common/               # 通用基础组件
+│   ├── utils/                # 通用工具组件
+│   ├── module-system/        # 模块管理系统
+│   ├── scheduler/            # 调度器模块
+│   ├── micro-kernel/         # 微内核核心
+│   ├── sdk/                  # 软件开发工具包
+│   └── test-framework/       # 测试框架
 ├── services/                 # 服务模块组
 │   ├── monitor/              # 监控系统
 │   ├── network/              # 网络相关

@@ -206,6 +206,14 @@ IDCU Agent 采用微内核架构设计，核心只负责基本的调度和通信
 idcu-agent/
 ├── app/                          # 应用程序入口
 ├── modules/                      # 模块化结构
+│   ├── core/                     # 核心基础设施
+│   │   ├── common/               # 通用基础组件 (原子操作、锁、错误码、配置)
+│   │   ├── utils/                # 通用工具组件 (日志、配置、JSON、内存池、权限)
+│   │   ├── module-system/        # 模块管理系统 (定义、注册表、分类、动态加载、版本)
+│   │   ├── scheduler/            # 调度器 (协程、消息总线、上下文)
+│   │   ├── micro-kernel/         # 微内核核心
+│   │   ├── sdk/                  # 软件开发工具包
+│   │   └── test-framework/       # 测试框架
 │   ├── services/                 # 服务模块组
 │   │   ├── monitor/              # 监控系统
 │   │   │   ├── include/          # 头文件
