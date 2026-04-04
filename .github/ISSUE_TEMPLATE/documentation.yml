@@ -1,0 +1,66 @@
+name: 文档问题
+description: 报告文档中的问题或建议改进文档
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你帮助我们改进文档！请填写以下信息。
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: 前提条件
+      description: 请先确认以下事项
+      options:
+        - label: 我已搜索过现有的 Issues，没有发现类似问题
+          required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: 问题类型
+      description: 这是什么类型的文档问题？
+      options:
+        - 拼写/语法错误
+        - 内容不准确
+        - 缺少说明
+        - 示例代码有问题
+        - 文档结构改进
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: 文档位置
+      description: 请指出有问题的文档位置
+      placeholder: 例如：README.md 第 20 行，或 docs/architecture.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 请描述文档中的问题
+      placeholder: 请详细描述...
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: 建议的修改
+      description: 你建议如何修改？
+      placeholder: 请提供你的建议...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 其他信息
+      description: 还有其他想补充的信息吗？

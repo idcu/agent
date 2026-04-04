@@ -1,0 +1,38 @@
+name: 问题/咨询
+description: 提出一个问题或需要帮助
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你的提问！请先搜索现有 Issues 和文档，看看是否已经有答案。
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: 前提条件
+      description: 请先确认以下事项
+      options:
+        - label: 我已搜索过现有的 Issues，没有发现类似问题
+          required: true
+        - label: 我已阅读过项目的 README 和相关文档
+          required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 你的问题
+      description: 请详细描述你的问题
+      placeholder: 请详细描述...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 背景信息
+      description: 请提供一些背景信息帮助我们理解
+      placeholder: 例如：你想做什么？你尝试了什么？
