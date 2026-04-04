@@ -29,6 +29,46 @@ idcu-agent/
 │   ├── main.c                    # 主程序入口
 │   └── benchmark.c               # 性能基准测试
 ├── modules/                      # 模块化结构
+│   ├── core/                     # 核心基础设施 (微内核架构的基础)
+│   │   ├── common/               # 通用基础组件
+│   │   │   ├── include/          # 原子操作、锁机制、错误码、编译配置
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── utils/                # 通用工具组件
+│   │   │   ├── include/          # 日志、配置管理、JSON解析、内存池、权限管理
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── module-system/        # 模块管理系统
+│   │   │   ├── include/          # 模块定义、注册表、分类、动态加载、版本管理
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── scheduler/            # 调度器模块
+│   │   │   ├── include/          # 协程、消息总线、上下文管理
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── micro-kernel/         # 微内核核心
+│   │   │   ├── include/          # 微内核主接口
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── tests/            # 测试
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   ├── sdk/                  # 软件开发工具包
+│   │   │   ├── include/          # SDK 接口
+│   │   │   ├── src/              # 源代码
+│   │   │   ├── CMakeLists.txt
+│   │   │   └── README.md
+│   │   └── test-framework/       # 测试框架
+│   │       ├── include/          # 测试框架接口
+│   │       ├── src/              # 源代码
+│   │       ├── CMakeLists.txt
+│   │       └── README.md
 │   ├── services/                 # 服务模块组
 │   │   ├── monitor/              # 监控系统
 │   │   │   ├── include/          # 头文件 (健康检查、指标、告警、通知、Prometheus导出)
