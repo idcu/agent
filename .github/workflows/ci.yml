@@ -106,3 +106,29 @@ jobs:
 
     - name: Build with Clang-Tidy
       run: cmake --build build --config Debug
+
+  performance:
+    name: Performance Regression Check
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Configure CMake with benchmarks
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_BENCHMARKS=ON
+
+    - name: Build benchmarks
+      run: cmake --build build --config Release
+
+    - name: Run performance benchmarks with regression check
+      run: |
+        cd out
+        ./idcu_benchmark --quick --baseline ../benchmark_baseline.json --check --threshold 15.0
+

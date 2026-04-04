@@ -352,17 +352,158 @@ static void bench_coro_schedule(uint64_t iterations) {
     }
 }
 
+static char* g_baseline_file = NULL;
+static char* g_save_baseline = NULL;
+static int g_check_regression = 0;
+static double g_regression_threshold = 10.0;
+
+static int bench_suite_save_baseline(BenchmarkSuite* suite, const char* filename) {
+    FILE* fp = fopen(filename, "w");
+    if (!fp) {
+        perror("Failed to open baseline file for writing");
+        return -1;
+    }
+    
+    fprintf(fp, "{\n");
+    fprintf(fp, "  \"suite\": \"%s\",\n", suite->name);
+    fprintf(fp, "  \"benchmarks\": [\n");
+    
+    for (int i = 0; i < suite->count; i++) {
+        Benchmark* b = &suite->benchmarks[i];
+        double ops_per_sec = (b->stats.mean_us > 0) ? 
+            (double)b->iterations * 1000000.0 / b->stats.mean_us : 0.0;
+        
+        fprintf(fp, "    {\n");
+        fprintf(fp, "      \"name\": \"%s\",\n", b->name);
+        fprintf(fp, "      \"mean_us\": %.2f,\n", b->stats.mean_us);
+        fprintf(fp, "      \"min_us\": %llu,\n", (unsigned long long)b->stats.min_us);
+        fprintf(fp, "      \"max_us\": %llu,\n", (unsigned long long)b->stats.max_us);
+        fprintf(fp, "      \"stddev_us\": %.2f,\n", b->stats.stddev_us);
+        fprintf(fp, "      \"ops_per_sec\": %.0f\n", ops_per_sec);
+        fprintf(fp, "    }%s\n", (i < suite->count - 1) ? "," : "");
+    }
+    
+    fprintf(fp, "  ]\n");
+    fprintf(fp, "}\n");
+    
+    fclose(fp);
+    return 0;
+}
+
+typedef struct {
+    char name[256];
+    double mean_us;
+    double ops_per_sec;
+} BaselineBenchmark;
+
+typedef struct {
+    BaselineBenchmark benchmarks[MAX_BENCHMARKS];
+    int count;
+} BaselineData;
+
+static int bench_suite_load_baseline(const char* filename, BaselineData* baseline) {
+    FILE* fp = fopen(filename, "r");
+    if (!fp) {
+        perror("Failed to open baseline file for reading");
+        return -1;
+    }
+    
+    baseline->count = 0;
+    char line[1024];
+    char name[256];
+    double mean_us, ops_per_sec;
+    
+    while (fgets(line, sizeof(line), fp)) {
+        if (sscanf(line, "      \"name\": \"%255[^\"]\",", name) == 1) {
+            strncpy(baseline->benchmarks[baseline->count].name, name, 255);
+            baseline->benchmarks[baseline->count].name[255] = '\0';
+        } else if (sscanf(line, "      \"mean_us\": %lf,", &mean_us) == 1) {
+            baseline->benchmarks[baseline->count].mean_us = mean_us;
+        } else if (sscanf(line, "      \"ops_per_sec\": %lf", &ops_per_sec) == 1) {
+            baseline->benchmarks[baseline->count].ops_per_sec = ops_per_sec;
+            baseline->count++;
+            if (baseline->count >= MAX_BENCHMARKS) break;
+        }
+    }
+    
+    fclose(fp);
+    return 0;
+}
+
+static int bench_suite_check_regression(BenchmarkSuite* suite, BaselineData* baseline, double threshold) {
+    int regressions_found = 0;
+    
+    printf("\n=== Performance Regression Check ===\n");
+    printf("Threshold: %.1f%%\n\n", threshold);
+    printf("%-20s %15s %15s %15s %10s\n", 
+           "Benchmark", "Baseline(ops/s)", "Current(ops/s)", "Change", "Status");
+    printf("--------------------------------------------------------------------------------\n");
+    
+    for (int i = 0; i < suite->count; i++) {
+        Benchmark* b = &suite->benchmarks[i];
+        double current_ops = (b->stats.mean_us > 0) ? 
+            (double)b->iterations * 1000000.0 / b->stats.mean_us : 0.0;
+        
+        BaselineBenchmark* base = NULL;
+        for (int j = 0; j < baseline->count; j++) {
+            if (strcmp(b->name, baseline->benchmarks[j].name) == 0) {
+                base = &baseline->benchmarks[j];
+                break;
+            }
+        }
+        
+        if (base) {
+            double change = 0.0;
+            if (base->ops_per_sec > 0) {
+                change = ((current_ops - base->ops_per_sec) / base->ops_per_sec) * 100.0;
+            }
+            
+            int is_regression = (change < -threshold);
+            if (is_regression) regressions_found++;
+            
+            printf("%-20s %15.0f %15.0f %14.1f%% %10s\n",
+                   b->name,
+                   base->ops_per_sec,
+                   current_ops,
+                   change,
+                   is_regression ? "REGRESSION" : "OK");
+        } else {
+            printf("%-20s %15s %15.0f %15s %10s\n",
+                   b->name,
+                   "N/A",
+                   current_ops,
+                   "N/A",
+                   "NEW");
+        }
+    }
+    
+    printf("--------------------------------------------------------------------------------\n");
+    if (regressions_found > 0) {
+        printf("Found %d performance regression(s)!\n", regressions_found);
+    } else {
+        printf("No performance regressions found.\n");
+    }
+    printf("====================================\n\n");
+    
+    return regressions_found;
+}
+
 static void print_usage(const char* program_name) {
     printf("Usage: %s [options]\n", program_name);
     printf("Options:\n");
     printf("  -h, --help              Show this help message\n");
     printf("  -f, --format <format>   Output format (text, csv, json) [default: text]\n");
     printf("  -q, --quick             Quick benchmark (fewer iterations)\n");
+    printf("  -s, --save <file>       Save baseline results to file\n");
+    printf("  -b, --baseline <file>   Load baseline from file\n");
+    printf("  -c, --check             Check for performance regression\n");
+    printf("  -t, --threshold <pct>   Regression threshold percentage [default: 10.0]\n");
     printf("\n");
 }
 
 int main(int argc, char* argv[]) {
     int quick_mode = 0;
+    int ret = 0;
     
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
@@ -381,6 +522,23 @@ int main(int argc, char* argv[]) {
             }
         } else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quick") == 0) {
             quick_mode = 1;
+        } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--save") == 0) {
+            if (i + 1 < argc) {
+                g_save_baseline = argv[i + 1];
+                i++;
+            }
+        } else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--baseline") == 0) {
+            if (i + 1 < argc) {
+                g_baseline_file = argv[i + 1];
+                i++;
+            }
+        } else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--check") == 0) {
+            g_check_regression = 1;
+        } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--threshold") == 0) {
+            if (i + 1 < argc) {
+                g_regression_threshold = atof(argv[i + 1]);
+                i++;
+            }
         }
     }
     
@@ -423,6 +581,29 @@ int main(int argc, char* argv[]) {
     
     bench_suite_run(&suite);
     bench_suite_print_summary(&suite);
+    
+    if (g_save_baseline) {
+        if (g_output_format == OUTPUT_FORMAT_TEXT) {
+            printf("\nSaving baseline to %s...\n", g_save_baseline);
+        }
+        if (bench_suite_save_baseline(&suite, g_save_baseline) != 0) {
+            ret = 1;
+        }
+    }
+    
+    if (g_check_regression && g_baseline_file) {
+        BaselineData baseline;
+        if (bench_suite_load_baseline(g_baseline_file, &baseline) == 0) {
+            int regressions = bench_suite_check_regression(&suite, &baseline, g_regression_threshold);
+            if (regressions > 0) {
+                ret = 1;
+            }
+        } else {
+            fprintf(stderr, "Failed to load baseline file: %s\n", g_baseline_file);
+            ret = 1;
+        }
+    }
+    
     bench_suite_destroy(&suite);
     
     idcu_mem_pool_destroy(&g_pool);
@@ -432,5 +613,5 @@ int main(int argc, char* argv[]) {
     if (g_output_format == OUTPUT_FORMAT_TEXT) {
         printf("\nBenchmark completed!\n");
     }
-    return 0;
+    return ret;
 }

@@ -1,0 +1,77 @@
+{
+  "suite": "Core Performance",
+  "benchmarks": [
+    {
+      "name": "msg_send",
+      "mean_us": 1000.00,
+      "min_us": 500,
+      "max_us": 2000,
+      "stddev_us": 200.00,
+      "ops_per_sec": 100000
+    },
+    {
+      "name": "msg_recv",
+      "mean_us": 800.00,
+      "min_us": 400,
+      "max_us": 1600,
+      "stddev_us": 150.00,
+      "ops_per_sec": 125000
+    },
+    {
+      "name": "msg_roundtrip",
+      "mean_us": 2000.00,
+      "min_us": 1000,
+      "max_us": 4000,
+      "stddev_us": 400.00,
+      "ops_per_sec": 50000
+    },
+    {
+      "name": "msg_batch_send",
+      "mean_us": 5000.00,
+      "min_us": 2500,
+      "max_us": 10000,
+      "stddev_us": 1000.00,
+      "ops_per_sec": 20000
+    },
+    {
+      "name": "memory_pool_alloc",
+      "mean_us": 500.00,
+      "min_us": 200,
+      "max_us": 1000,
+      "stddev_us": 100.00,
+      "ops_per_sec": 200000
+    },
+    {
+      "name": "memory_pool_alloc_free",
+      "mean_us": 800.00,
+      "min_us": 400,
+      "max_us": 1600,
+      "stddev_us": 150.00,
+      "ops_per_sec": 125000
+    },
+    {
+      "name": "coro_create_destroy",
+      "mean_us": 5000.00,
+      "min_us": 2500,
+      "max_us": 10000,
+      "stddev_us": 1000.00,
+      "ops_per_sec": 2000
+    },
+    {
+      "name": "coro_switch",
+      "mean_us": 100.00,
+      "min_us": 50,
+      "max_us": 200,
+      "stddev_us": 20.00,
+      "ops_per_sec": 1000000
+    },
+    {
+      "name": "coro_schedule",
+      "mean_us": 3000.00,
+      "min_us": 1500,
+      "max_us": 6000,
+      "stddev_us": 500.00,
+      "ops_per_sec": 3333
+    }
+  ]
+}
