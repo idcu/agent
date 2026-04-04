@@ -13,4 +13,4 @@ static int data_collector_module_run()   {
 }
 static int data_collector_module_stop()  { printf("[data_collector_module] stop\n"); return 0; }
 
-IDCU_REGISTER_MODULE(data_collector_module, data_collector_module_init, data_collector_module_run, data_collector_module_stop);
+IDCU_REGISTER_MODULE(data_collector_module, IDCU_MODULE_VERSION(1, 0, 0), data_collector_module_init, data_collector_module_run, data_collector_module_stop);

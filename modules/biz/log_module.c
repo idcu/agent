@@ -13,4 +13,4 @@ static int log_module_run()   {
 }
 static int log_module_stop()  { printf("[log_module] stop\n"); return 0; }
 
-IDCU_REGISTER_MODULE(log_module, log_module_init, log_module_run, log_module_stop);
+IDCU_REGISTER_MODULE(log_module, IDCU_MODULE_VERSION(1, 0, 0), log_module_init, log_module_run, log_module_stop);

@@ -13,4 +13,4 @@ static int healthcheck_module_run()   {
 }
 static int healthcheck_module_stop()  { printf("[healthcheck_module] stop\n"); return 0; }
 
-IDCU_REGISTER_MODULE(healthcheck_module, healthcheck_module_init, healthcheck_module_run, healthcheck_module_stop);
+IDCU_REGISTER_MODULE(healthcheck_module, IDCU_MODULE_VERSION(1, 0, 0), healthcheck_module_init, healthcheck_module_run, healthcheck_module_stop);

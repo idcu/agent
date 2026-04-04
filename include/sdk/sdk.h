@@ -102,7 +102,7 @@ int idcu_sdk_log(idcu_SdkContext* ctx, idcu_LogLevel level, const char* fmt, ...
         } \
     } \
     \
-    IDCU_REGISTER_MODULE(module_name, sdk_wrapper_init, sdk_wrapper_start, sdk_wrapper_stop)
+    IDCU_REGISTER_MODULE(module_name, IDCU_MODULE_VERSION(1, 0, 0), sdk_wrapper_init, sdk_wrapper_start, sdk_wrapper_stop)
 
 #ifdef __cplusplus
 }

@@ -13,4 +13,4 @@ static int heartbeat_module_run()   {
 }
 static int heartbeat_module_stop()  { printf("[heartbeat_module] stop\n"); return 0; }
 
-IDCU_REGISTER_MODULE(heartbeat_module, heartbeat_module_init, heartbeat_module_run, heartbeat_module_stop);
+IDCU_REGISTER_MODULE(heartbeat_module, IDCU_MODULE_VERSION(1, 0, 0), heartbeat_module_init, heartbeat_module_run, heartbeat_module_stop);

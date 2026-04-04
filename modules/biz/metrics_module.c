@@ -13,4 +13,4 @@ static int metrics_module_run()   {
 }
 static int metrics_module_stop()  { printf("[metrics_module] stop\n"); return 0; }
 
-IDCU_REGISTER_MODULE(metrics_module, metrics_module_init, metrics_module_run, metrics_module_stop);
+IDCU_REGISTER_MODULE(metrics_module, IDCU_MODULE_VERSION(1, 0, 0), metrics_module_init, metrics_module_run, metrics_module_stop);

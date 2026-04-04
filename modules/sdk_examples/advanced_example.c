@@ -99,4 +99,4 @@ static int advanced_example_stop(void)
     return 0;
 }
 
-IDCU_REGISTER_MODULE(advanced_example, advanced_example_init, advanced_example_run, advanced_example_stop);
+IDCU_REGISTER_MODULE(advanced_example, IDCU_MODULE_VERSION(1, 0, 0), advanced_example_init, advanced_example_run, advanced_example_stop);
