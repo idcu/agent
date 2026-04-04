@@ -264,6 +264,24 @@ int idcu_http_server_poll(idcu_HttpServer* server, int timeout_ms) {
         }
         
         if (!handled) {
+            for (int i = 0; i < server->route_count; i++) {
+                if (server->routes[i].method == request.method) {
+                    const char* route_path = server->routes[i].path;
+                    size_t route_len = strlen(route_path);
+                    
+                    if (route_len > 0 && route_path[route_len - 1] == '*') {
+                        size_t prefix_len = route_len - 1;
+                        if (strncmp(route_path, request.path, prefix_len) == 0) {
+                            ret = server->routes[i].handler(&request, &response, server->routes[i].user_data);
+                            handled = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!handled) {
             idcu_http_response_set_status(&response, 404);
             idcu_http_response_set_json_body(&response, "{\"error\":\"Not Found\"}");
         }
