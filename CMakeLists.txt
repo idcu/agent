@@ -42,7 +42,7 @@ add_subdirectory(modules/business/config)
 add_subdirectory(modules/business/data-collector)
 add_subdirectory(modules/business/healthcheck)
 add_subdirectory(modules/business/heartbeat)
-# add_subdirectory(modules/business/http-management)
+# add_subdirectory(modules/business/http-management)  # 暂时禁用，需要完整的 management_api 实现
 add_subdirectory(modules/business/http-client)
 add_subdirectory(modules/business/log)
 add_subdirectory(modules/business/metrics)
@@ -54,17 +54,15 @@ add_subdirectory(modules/business/examples/messaging-example)
 add_subdirectory(modules/business/examples/advanced-example)
 
 # ==================== 动态模块 ====================
-# 暂时禁用，需要修复 TMP/TEMP 环境变量问题
-option(BUILD_SAMPLE_DLL "Build sample dynamic module" OFF)
+option(BUILD_SAMPLE_DLL "Build sample dynamic module" ON)
 if(BUILD_SAMPLE_DLL)
     add_subdirectory(modules/business/dynamic/sample)
 endif()
 
 if(BUILD_TESTS)
-    # 暂时禁用，需要修复 TMP/TEMP 环境变量问题
-    # add_subdirectory(modules/business/dynamic/test-good)
-    # add_subdirectory(modules/business/dynamic/test-init-fail)
-    # add_subdirectory(modules/business/dynamic/test-no-interface)
+    add_subdirectory(modules/business/dynamic/test-good)
+    add_subdirectory(modules/business/dynamic/test-init-fail)
+    add_subdirectory(modules/business/dynamic/test-no-interface)
 endif()
 
 # ==================== 主程序 ====================

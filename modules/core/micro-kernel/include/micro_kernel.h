@@ -9,6 +9,9 @@
 #include "dynamic_module.h"
 #include "health_check.h"
 
+#define IDCU_DEFAULT_MODULE_CAPACITY 16
+#define IDCU_CONFIG_FILE_MAX 256
+
 typedef struct {
     const idcu_ModuleInterface* iface;
     idcu_ModuleState state;
@@ -19,18 +22,20 @@ typedef struct {
 typedef struct {
     idcu_CoroScheduler coro;
     idcu_MessageBus    msg;
-    idcu_Sandbox       sandbox[16];
+    idcu_Sandbox*      sandbox;
     uint32_t           sb_cnt;
+    uint32_t           sb_capacity;
     idcu_StackContext  global;
     volatile int       should_exit;
-    idcu_TrackedModule tracked_modules[16];
+    idcu_TrackedModule* tracked_modules;
     uint32_t           tracked_cnt;
+    uint32_t           tracked_capacity;
     idcu_DynamicLoader dynamic_loader;
     idcu_HealthMonitor health_monitor;
     uint64_t           last_health_check_ms;
     uint64_t           health_check_interval_ms;
     idcu_ModuleRegistry* registry;
-    char config_file[256];
+    char config_file[IDCU_CONFIG_FILE_MAX];
 } idcu_MicroKernel;
 
 void idcu_kernel_init(idcu_MicroKernel *k);

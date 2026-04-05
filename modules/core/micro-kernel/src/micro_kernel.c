@@ -4,6 +4,7 @@
 #include "error_code.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -14,6 +15,44 @@
 
 static idcu_MicroKernel *g_kernel = NULL;
 static idcu_ModuleRegistry g_module_registry;
+
+static int idcu_kernel_resize_sandbox(idcu_MicroKernel *k, uint32_t new_capacity)
+{
+    if (new_capacity <= k->sb_capacity) {
+        return IDCU_ERR_SUCCESS;
+    }
+    
+    idcu_Sandbox* new_sandbox = (idcu_Sandbox*)realloc(k->sandbox, new_capacity * sizeof(idcu_Sandbox));
+    if (!new_sandbox) {
+        IDCU_LOG_ERROR("Failed to resize sandbox array");
+        return IDCU_ERR_NO_MEMORY;
+    }
+    
+    memset(&new_sandbox[k->sb_capacity], 0, (new_capacity - k->sb_capacity) * sizeof(idcu_Sandbox));
+    k->sandbox = new_sandbox;
+    k->sb_capacity = new_capacity;
+    
+    return IDCU_ERR_SUCCESS;
+}
+
+static int idcu_kernel_resize_tracked(idcu_MicroKernel *k, uint32_t new_capacity)
+{
+    if (new_capacity <= k->tracked_capacity) {
+        return IDCU_ERR_SUCCESS;
+    }
+    
+    idcu_TrackedModule* new_tracked = (idcu_TrackedModule*)realloc(k->tracked_modules, new_capacity * sizeof(idcu_TrackedModule));
+    if (!new_tracked) {
+        IDCU_LOG_ERROR("Failed to resize tracked modules array");
+        return IDCU_ERR_NO_MEMORY;
+    }
+    
+    memset(&new_tracked[k->tracked_capacity], 0, (new_capacity - k->tracked_capacity) * sizeof(idcu_TrackedModule));
+    k->tracked_modules = new_tracked;
+    k->tracked_capacity = new_capacity;
+    
+    return IDCU_ERR_SUCCESS;
+}
 
 #ifdef _WIN32
 static BOOL WINAPI windows_signal_handler(DWORD fdwCtrlType)
@@ -43,7 +82,25 @@ void idcu_kernel_init(idcu_MicroKernel *k)
 {
     IDCU_LOG_INFO("initializing micro kernel...");
     memset(k, 0, sizeof(idcu_MicroKernel));
-    strncpy(k->config_file, "config/agent.cfg", sizeof(k->config_file) - 1);
+    
+    // Allocate initial capacity
+    k->sb_capacity = IDCU_DEFAULT_MODULE_CAPACITY;
+    k->sandbox = (idcu_Sandbox*)calloc(k->sb_capacity, sizeof(idcu_Sandbox));
+    if (!k->sandbox) {
+        IDCU_LOG_ERROR("Failed to allocate sandbox array");
+        return;
+    }
+    
+    k->tracked_capacity = IDCU_DEFAULT_MODULE_CAPACITY;
+    k->tracked_modules = (idcu_TrackedModule*)calloc(k->tracked_capacity, sizeof(idcu_TrackedModule));
+    if (!k->tracked_modules) {
+        IDCU_LOG_ERROR("Failed to allocate tracked modules array");
+        free(k->sandbox);
+        k->sandbox = NULL;
+        return;
+    }
+    
+    strncpy(k->config_file, "config/agent.cfg", IDCU_CONFIG_FILE_MAX - 1);
     idcu_msg_bus_init(&k->msg);
     idcu_ctx_init(&k->global, 0, 0);
     
@@ -138,7 +195,22 @@ void idcu_kernel_start_modules(idcu_MicroKernel *k)
     IDCU_LOG_INFO("modules running successfully");
     
     int module_count = idcu_module_registry_get_count(&g_module_registry);
-    for (int i = 0; i < module_count && cnt < 16; i++) {
+    
+    // Ensure we have enough capacity
+    if ((uint32_t)module_count > k->tracked_capacity) {
+        ret = idcu_kernel_resize_tracked(k, (uint32_t)module_count);
+        if (ret != IDCU_ERR_SUCCESS) {
+            IDCU_LOG_ERROR("Failed to resize tracked modules");
+            return;
+        }
+        ret = idcu_kernel_resize_sandbox(k, (uint32_t)module_count);
+        if (ret != IDCU_ERR_SUCCESS) {
+            IDCU_LOG_ERROR("Failed to resize sandbox");
+            return;
+        }
+    }
+    
+    for (int i = 0; i < module_count; i++) {
         const idcu_RegisteredModule* reg_mod = idcu_module_registry_get_at(&g_module_registry, i);
         if (!reg_mod) {
             IDCU_LOG_WARN("skipping invalid module at index %d", i);
@@ -191,6 +263,18 @@ void idcu_kernel_stop(idcu_MicroKernel *k)
     idcu_dynamic_loader_destroy(&k->dynamic_loader);
     idcu_health_monitor_destroy(&k->health_monitor);
     
+    // Free dynamically allocated arrays
+    if (k->sandbox) {
+        free(k->sandbox);
+        k->sandbox = NULL;
+        k->sb_capacity = 0;
+    }
+    if (k->tracked_modules) {
+        free(k->tracked_modules);
+        k->tracked_modules = NULL;
+        k->tracked_capacity = 0;
+    }
+    
     IDCU_LOG_INFO("all modules stopped");
 }
 
@@ -211,9 +295,22 @@ int idcu_kernel_hotplug_load(idcu_MicroKernel *k, const char* name, const char* 
         return IDCU_ERR_GENERAL;
     }
     
-    if (k->tracked_cnt >= 16) {
-        IDCU_LOG_WARN("No space left in tracked modules");
-        return IDCU_ERR_QUEUE_FULL;
+    // Ensure we have enough capacity
+    if (k->tracked_cnt >= k->tracked_capacity) {
+        uint32_t new_capacity = k->tracked_capacity * 2;
+        if (new_capacity < IDCU_DEFAULT_MODULE_CAPACITY) {
+            new_capacity = IDCU_DEFAULT_MODULE_CAPACITY;
+        }
+        ret = idcu_kernel_resize_tracked(k, new_capacity);
+        if (ret != IDCU_ERR_SUCCESS) {
+            IDCU_LOG_ERROR("Failed to resize tracked modules for hotplug");
+            return ret;
+        }
+        ret = idcu_kernel_resize_sandbox(k, new_capacity);
+        if (ret != IDCU_ERR_SUCCESS) {
+            IDCU_LOG_ERROR("Failed to resize sandbox for hotplug");
+            return ret;
+        }
     }
     
     uint32_t idx = k->tracked_cnt;

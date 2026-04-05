@@ -99,7 +99,7 @@ int idcu_audit_log_init(idcu_AuditLog** audit_log, const char* log_path) {
         
         (*audit_log)->log_file = fopen(log_path, "a");
         if (!(*audit_log)->log_file) {
-            IDCU_LOG_WARNING("[audit_log] Failed to open audit log file: %s", log_path);
+            IDCU_LOG_WARN("[audit_log] Failed to open audit log file: %s", log_path);
         }
     }
 

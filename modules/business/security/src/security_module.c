@@ -31,7 +31,7 @@ static int security_module_init() {
 
     ret = idcu_audit_log_init(&g_audit_log, "logs/audit.log");
     if (ret != IDCU_ERR_OK) {
-        IDCU_LOG_WARNING("[security_module] Failed to initialize audit log");
+        IDCU_LOG_WARN("[security_module] Failed to initialize audit log");
     }
 
     idcu_audit_log_log_simple(g_audit_log, IDCU_AUDIT_LEVEL_INFO, 

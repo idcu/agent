@@ -13,6 +13,7 @@ target_include_directories(${MODULE_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../core/utils/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../core/module-system/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../core/micro-kernel/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../services/monitor/include>
     $<INSTALL_INTERFACE:include>
 )
 
@@ -20,4 +21,5 @@ target_link_libraries(${MODULE_NAME} PRIVATE
     idcu_core_common
     idcu_core_utils
     idcu_core_micro_kernel
+    idcu_services_monitor
 )

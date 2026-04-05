@@ -44,6 +44,3 @@ Makefile
 # 性能测试数据
 *.prof
 *.out
-
-# 开发过程中的临时文档
-DEVELOPMENT_PLAN.md
