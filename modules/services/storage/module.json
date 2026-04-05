@@ -1,0 +1,12 @@
+{
+  "name": "storage_service",
+  "category": "service",
+  "version": "1.0.0",
+  "description": "Data persistence service module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": [],
+  "priority": "normal",
+  "type": "builtin",
+  "config_schema": {}
+}

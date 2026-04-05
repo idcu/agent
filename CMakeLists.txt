@@ -29,6 +29,7 @@ add_subdirectory(modules/core/micro-kernel)
 # ==================== 服务模块 ====================
 add_subdirectory(modules/services/monitor)
 add_subdirectory(modules/services/network)
+add_subdirectory(modules/services/storage)
 add_subdirectory(modules/services/security)
 add_subdirectory(modules/services/plugin)
 
@@ -44,6 +45,7 @@ add_subdirectory(modules/business/heartbeat)
 add_subdirectory(modules/business/http-client)
 add_subdirectory(modules/business/log)
 add_subdirectory(modules/business/metrics)
+add_subdirectory(modules/business/storage)
 add_subdirectory(modules/business/examples/simple-example)
 add_subdirectory(modules/business/examples/messaging-example)
 add_subdirectory(modules/business/examples/advanced-example)
@@ -80,6 +82,7 @@ if(WIN32)
             idcu_core_micro_kernel
             idcu_services_monitor
             idcu_services_network
+            idcu_services_storage
             idcu_services_security
             idcu_services_plugin
             idcu_business_core_module
@@ -92,6 +95,7 @@ if(WIN32)
             idcu_business_http_client
             idcu_business_log
             idcu_business_metrics
+            idcu_business_storage
             -Wl,--no-whole-archive)
     else()
         target_link_libraries(idcu_agent PRIVATE -lws2_32
@@ -102,6 +106,7 @@ if(WIN32)
             idcu_core_micro_kernel
             idcu_services_monitor
             idcu_services_network
+            idcu_services_storage
             idcu_services_security
             idcu_services_plugin
             idcu_business_core_module
@@ -113,7 +118,8 @@ if(WIN32)
             idcu_business_heartbeat
             idcu_business_http_client
             idcu_business_log
-            idcu_business_metrics)
+            idcu_business_metrics
+            idcu_business_storage)
     endif()
 else()
     target_link_libraries(idcu_agent PRIVATE pthread dl)
@@ -126,6 +132,7 @@ else()
             idcu_core_micro_kernel
             idcu_services_monitor
             idcu_services_network
+            idcu_services_storage
             idcu_services_security
             idcu_services_plugin
             idcu_business_core_module
@@ -138,6 +145,7 @@ else()
             idcu_business_http_client
             idcu_business_log
             idcu_business_metrics
+            idcu_business_storage
             -Wl,--no-whole-archive)
     else()
         target_link_libraries(idcu_agent PRIVATE
@@ -148,6 +156,7 @@ else()
             idcu_core_micro_kernel
             idcu_services_monitor
             idcu_services_network
+            idcu_services_storage
             idcu_services_security
             idcu_services_plugin
             idcu_business_core_module
@@ -159,7 +168,8 @@ else()
             idcu_business_heartbeat
             idcu_business_http_client
             idcu_business_log
-            idcu_business_metrics)
+            idcu_business_metrics
+            idcu_business_storage)
     endif()
 endif()
 
