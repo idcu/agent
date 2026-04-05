@@ -2,9 +2,9 @@ name: IDCU Agent CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, develop, refactor/* ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, develop, refactor/* ]
 
 jobs:
   build:
