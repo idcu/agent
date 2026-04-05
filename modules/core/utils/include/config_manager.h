@@ -9,27 +9,27 @@
 extern "C" {
 #endif // IDCU_UTILS_CONFIG_MANAGER_H
 
-#define IDCU_MAX_CONFIG_SECTIONS 64
-#define IDCU_MAX_CONFIG_KEYS_PER_SECTION 128
-#define IDCU_CONFIG_KEY_MAX 128
-#define IDCU_CONFIG_VALUE_MAX 512
-#define IDCU_CONFIG_SECTION_MAX 128
-#define IDCU_MAX_LIST_ITEMS 32
-#define IDCU_LIST_ITEM_MAX 128
+#define IDCU_MGR_CONFIG_MAX_SECTIONS 64
+#define IDCU_MGR_MAX_CONFIG_KEYS_PER_SECTION 128
+#define IDCU_MGR_CONFIG_KEY_MAX 128
+#define IDCU_MGR_CONFIG_VALUE_MAX 512
+#define IDCU_MGR_CONFIG_SECTION_MAX 128
+#define IDCU_MGR_MAX_LIST_ITEMS 32
+#define IDCU_MGR_LIST_ITEM_MAX 128
 
 typedef struct {
-    char key[IDCU_CONFIG_KEY_MAX];
-    char value[IDCU_CONFIG_VALUE_MAX];
+    char key[IDCU_MGR_CONFIG_KEY_MAX];
+    char value[IDCU_MGR_CONFIG_VALUE_MAX];
 } idcu_ConfigEntry;
 
 typedef struct {
-    char name[IDCU_CONFIG_SECTION_MAX];
-    idcu_ConfigEntry entries[IDCU_MAX_CONFIG_KEYS_PER_SECTION];
+    char name[IDCU_MGR_CONFIG_SECTION_MAX];
+    idcu_ConfigEntry entries[IDCU_MGR_MAX_CONFIG_KEYS_PER_SECTION];
     uint32_t entry_count;
 } idcu_ConfigSection;
 
 typedef struct {
-    idcu_ConfigSection sections[IDCU_MAX_CONFIG_SECTIONS];
+    idcu_ConfigSection sections[IDCU_MGR_CONFIG_MAX_SECTIONS];
     uint32_t section_count;
     idcu_Mutex lock;
     int loaded;
@@ -38,7 +38,7 @@ typedef struct {
 } idcu_ConfigManager;
 
 typedef struct {
-    char items[IDCU_MAX_LIST_ITEMS][IDCU_LIST_ITEM_MAX];
+    char items[IDCU_MGR_MAX_LIST_ITEMS][IDCU_MGR_LIST_ITEM_MAX];
     int count;
 } idcu_ConfigList;
 
@@ -77,6 +77,15 @@ void idcu_config_enable_validation(int enable);
 int idcu_config_validate(void);
 
 int idcu_config_load_profile(const char* profile_name);
+
+typedef void (*idcu_ConfigChangeCallback)(const char* section, const char* key, const char* old_value, const char* new_value, void* user_data);
+
+int idcu_config_register_change_callback(idcu_ConfigChangeCallback callback, void* user_data);
+int idcu_config_unregister_change_callback(idcu_ConfigChangeCallback callback);
+void idcu_config_notify_changes(void);
+
+int idcu_config_get_file_path(char* buffer, size_t buffer_size);
+int idcu_config_get_last_modified_time(uint64_t* timestamp);
 
 #ifdef __cplusplus
 }

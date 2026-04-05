@@ -9,9 +9,20 @@
 #include <windows.h>
 #else
 #include <stdlib.h>
+#include <sys/stat.h>
 #endif
 
+#define IDCU_CONFIG_MAX_CALLBACKS 32
+
+typedef struct {
+    idcu_ConfigChangeCallback callback;
+    void* user_data;
+} idcu_ConfigCallbackEntry;
+
 static idcu_ConfigManager g_config_mgr;
+static idcu_ConfigCallbackEntry g_callbacks[IDCU_CONFIG_MAX_CALLBACKS];
+static int g_callback_count = 0;
+static char g_config_file_path[IDCU_CONFIG_PATH_MAX];
 static int g_initialized = 0;
 
 static idcu_ConfigSection* find_section(const char* name)
@@ -42,12 +53,12 @@ static idcu_ConfigEntry* find_entry(idcu_ConfigSection* section, const char* key
 
 static idcu_ConfigSection* add_section(const char* name)
 {
-    if (!name || g_config_mgr.section_count >= IDCU_MAX_CONFIG_SECTIONS) {
+    if (!name || g_config_mgr.section_count >= IDCU_MGR_CONFIG_MAX_SECTIONS) {
         return NULL;
     }
     idcu_ConfigSection* section = &g_config_mgr.sections[g_config_mgr.section_count];
-    strncpy(section->name, name, IDCU_CONFIG_SECTION_MAX - 1);
-    section->name[IDCU_CONFIG_SECTION_MAX - 1] = '\0';
+    strncpy(section->name, name, IDCU_MGR_CONFIG_SECTION_MAX - 1);
+    section->name[IDCU_MGR_CONFIG_SECTION_MAX - 1] = '\0';
     section->entry_count = 0;
     g_config_mgr.section_count++;
     return section;
@@ -55,15 +66,15 @@ static idcu_ConfigSection* add_section(const char* name)
 
 static int add_entry(idcu_ConfigSection* section, const char* key, const char* value)
 {
-    if (!section || !key || section->entry_count >= IDCU_MAX_CONFIG_KEYS_PER_SECTION) {
+    if (!section || !key || section->entry_count >= IDCU_MGR_MAX_CONFIG_KEYS_PER_SECTION) {
         return IDCU_ERR_QUEUE_FULL;
     }
     idcu_ConfigEntry* entry = &section->entries[section->entry_count];
-    strncpy(entry->key, key, IDCU_CONFIG_KEY_MAX - 1);
-    entry->key[IDCU_CONFIG_KEY_MAX - 1] = '\0';
+    strncpy(entry->key, key, IDCU_MGR_CONFIG_KEY_MAX - 1);
+    entry->key[IDCU_MGR_CONFIG_KEY_MAX - 1] = '\0';
     if (value) {
-        strncpy(entry->value, value, IDCU_CONFIG_VALUE_MAX - 1);
-        entry->value[IDCU_CONFIG_VALUE_MAX - 1] = '\0';
+        strncpy(entry->value, value, IDCU_MGR_CONFIG_VALUE_MAX - 1);
+        entry->value[IDCU_MGR_CONFIG_VALUE_MAX - 1] = '\0';
     } else {
         entry->value[0] = '\0';
     }
@@ -97,7 +108,7 @@ static const char* get_env_var(const char* name)
         return NULL;
     }
 #ifdef _WIN32
-    static char env_buf[IDCU_CONFIG_VALUE_MAX];
+    static char env_buf[IDCU_MGR_CONFIG_VALUE_MAX];
     DWORD ret = GetEnvironmentVariableA(name, env_buf, sizeof(env_buf));
     if (ret > 0 && ret < sizeof(env_buf)) {
         return env_buf;
@@ -113,7 +124,7 @@ static int expand_env_vars(char* value, size_t max_len)
     if (!value || !g_config_mgr.env_var_enabled) {
         return 0;
     }
-    char temp[IDCU_CONFIG_VALUE_MAX];
+    char temp[IDCU_MGR_CONFIG_VALUE_MAX];
     char* src = value;
     char* dst = temp;
     size_t dst_remaining = sizeof(temp) - 1;
@@ -122,7 +133,7 @@ static int expand_env_vars(char* value, size_t max_len)
         if (*src == '$' && *(src + 1) == '{') {
             char* end_brace = strchr(src + 2, '}');
             if (end_brace) {
-                char var_name[IDCU_CONFIG_KEY_MAX];
+                char var_name[IDCU_MGR_CONFIG_KEY_MAX];
                 size_t var_len = end_brace - (src + 2);
                 if (var_len < sizeof(var_name)) {
                     strncpy(var_name, src + 2, var_len);
@@ -181,11 +192,11 @@ static int parse_file(const char* file_path)
             *equals = '\0';
             char* key = trim_whitespace(trimmed);
             char* value = trim_whitespace(equals + 1);
-            expand_env_vars(value, IDCU_CONFIG_VALUE_MAX);
+            expand_env_vars(value, IDCU_MGR_CONFIG_VALUE_MAX);
             idcu_ConfigEntry* existing = find_entry(current_section, key);
             if (existing) {
-                strncpy(existing->value, value, IDCU_CONFIG_VALUE_MAX - 1);
-                existing->value[IDCU_CONFIG_VALUE_MAX - 1] = '\0';
+                strncpy(existing->value, value, IDCU_MGR_CONFIG_VALUE_MAX - 1);
+                existing->value[IDCU_MGR_CONFIG_VALUE_MAX - 1] = '\0';
             } else {
                 add_entry(current_section, key, value);
             }
@@ -202,6 +213,9 @@ int idcu_config_init(const char* file_path)
         idcu_config_shutdown();
     }
     memset(&g_config_mgr, 0, sizeof(idcu_ConfigManager));
+    memset(g_callbacks, 0, sizeof(g_callbacks));
+    g_callback_count = 0;
+    g_config_file_path[0] = '\0';
     int ret = idcu_mutex_init(&g_config_mgr.lock);
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
@@ -210,6 +224,8 @@ int idcu_config_init(const char* file_path)
     g_config_mgr.validation_enabled = 1;
     g_initialized = 1;
     if (file_path) {
+        strncpy(g_config_file_path, file_path, IDCU_CONFIG_PATH_MAX - 1);
+        g_config_file_path[IDCU_CONFIG_PATH_MAX - 1] = '\0';
         ret = parse_file(file_path);
         if (ret == IDCU_ERR_SUCCESS) {
             g_config_mgr.loaded = 1;
@@ -233,8 +249,128 @@ int idcu_config_is_loaded(void)
     return g_initialized && g_config_mgr.loaded;
 }
 
+typedef struct {
+    char section[IDCU_MGR_CONFIG_SECTION_MAX];
+    char key[IDCU_MGR_CONFIG_KEY_MAX];
+    char old_value[IDCU_MGR_CONFIG_VALUE_MAX];
+    char new_value[IDCU_MGR_CONFIG_VALUE_MAX];
+} idcu_ConfigChange;
+
+#define IDCU_CONFIG_MAX_CHANGES 256
+
+static idcu_ConfigChange g_changes[IDCU_CONFIG_MAX_CHANGES];
+static int g_change_count = 0;
+
+static void record_change(const char* section, const char* key, const char* old_value, const char* new_value) {
+    if (g_change_count >= IDCU_CONFIG_MAX_CHANGES) return;
+    
+    idcu_ConfigChange* change = &g_changes[g_change_count];
+    strncpy(change->section, section, IDCU_MGR_CONFIG_SECTION_MAX - 1);
+    change->section[IDCU_MGR_CONFIG_SECTION_MAX - 1] = '\0';
+    strncpy(change->key, key, IDCU_MGR_CONFIG_KEY_MAX - 1);
+    change->key[IDCU_MGR_CONFIG_KEY_MAX - 1] = '\0';
+    if (old_value) {
+        strncpy(change->old_value, old_value, IDCU_MGR_CONFIG_VALUE_MAX - 1);
+        change->old_value[IDCU_MGR_CONFIG_VALUE_MAX - 1] = '\0';
+    } else {
+        change->old_value[0] = '\0';
+    }
+    if (new_value) {
+        strncpy(change->new_value, new_value, IDCU_MGR_CONFIG_VALUE_MAX - 1);
+        change->new_value[IDCU_MGR_CONFIG_VALUE_MAX - 1] = '\0';
+    } else {
+        change->new_value[0] = '\0';
+    }
+    g_change_count++;
+}
+
 int idcu_config_reload(void)
 {
+    if (!g_initialized || !g_config_file_path[0]) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    IDCU_LOG_INFO("[config] Reloading configuration from: %s", g_config_file_path);
+
+    int ret = idcu_mutex_lock(&g_config_mgr.lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+
+    idcu_ConfigManager old_config = g_config_mgr;
+    g_change_count = 0;
+    memset(g_changes, 0, sizeof(g_changes));
+
+    g_config_mgr.section_count = 0;
+
+    ret = parse_file(g_config_file_path);
+    if (ret != IDCU_ERR_SUCCESS) {
+        memcpy(&g_config_mgr, &old_config, sizeof(idcu_ConfigManager));
+        idcu_mutex_unlock(&g_config_mgr.lock);
+        return ret;
+    }
+
+    for (uint32_t i = 0; i < old_config.section_count; i++) {
+        idcu_ConfigSection* old_sec = &old_config.sections[i];
+        idcu_ConfigSection* new_sec = find_section(old_sec->name);
+
+        if (!new_sec) {
+            for (uint32_t j = 0; j < old_sec->entry_count; j++) {
+                record_change(old_sec->name, old_sec->entries[j].key, old_sec->entries[j].value, NULL);
+            }
+            continue;
+        }
+
+        for (uint32_t j = 0; j < old_sec->entry_count; j++) {
+            idcu_ConfigEntry* old_entry = &old_sec->entries[j];
+            idcu_ConfigEntry* new_entry = find_entry(new_sec, old_entry->key);
+            
+            if (!new_entry) {
+                record_change(old_sec->name, old_entry->key, old_entry->value, NULL);
+            } else if (strcmp(old_entry->value, new_entry->value) != 0) {
+                record_change(old_sec->name, old_entry->key, old_entry->value, new_entry->value);
+            }
+        }
+
+        for (uint32_t j = 0; j < new_sec->entry_count; j++) {
+            idcu_ConfigEntry* new_entry = &new_sec->entries[j];
+            int found = 0;
+            for (uint32_t k = 0; k < old_sec->entry_count; k++) {
+                if (strcmp(old_sec->entries[k].key, new_entry->key) == 0) {
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                record_change(new_sec->name, new_entry->key, NULL, new_entry->value);
+            }
+        }
+    }
+
+    for (uint32_t i = 0; i < g_config_mgr.section_count; i++) {
+        idcu_ConfigSection* new_sec = &g_config_mgr.sections[i];
+        int found = 0;
+        for (uint32_t j = 0; j < old_config.section_count; j++) {
+            if (strcmp(old_config.sections[j].name, new_sec->name) == 0) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            for (uint32_t j = 0; j < new_sec->entry_count; j++) {
+                record_change(new_sec->name, new_sec->entries[j].key, NULL, new_sec->entries[j].value);
+            }
+        }
+    }
+
+    idcu_mutex_unlock(&g_config_mgr.lock);
+
+    IDCU_LOG_INFO("[config] Configuration reloaded. %d changes detected.", g_change_count);
+
+    if (g_change_count > 0) {
+        idcu_config_notify_changes();
+    }
+
     return IDCU_ERR_SUCCESS;
 }
 
@@ -346,8 +482,8 @@ int idcu_config_set_string(const char* section, const char* key, const char* val
     idcu_ConfigEntry* entry = find_entry(sec, key);
     if (entry) {
         if (value) {
-            strncpy(entry->value, value, IDCU_CONFIG_VALUE_MAX - 1);
-            entry->value[IDCU_CONFIG_VALUE_MAX - 1] = '\0';
+            strncpy(entry->value, value, IDCU_MGR_CONFIG_VALUE_MAX - 1);
+            entry->value[IDCU_MGR_CONFIG_VALUE_MAX - 1] = '\0';
         } else {
             entry->value[0] = '\0';
         }
@@ -476,16 +612,16 @@ int idcu_config_get_list(const char* section, const char* key, const char* delim
         out_list->count = 0;
         return IDCU_ERR_SUCCESS;
     }
-    char temp[IDCU_CONFIG_VALUE_MAX];
+    char temp[IDCU_MGR_CONFIG_VALUE_MAX];
     strncpy(temp, value, sizeof(temp) - 1);
     temp[sizeof(temp) - 1] = '\0';
     out_list->count = 0;
     char* token = strtok(temp, delimiter);
-    while (token && out_list->count < IDCU_MAX_LIST_ITEMS) {
+    while (token && out_list->count < IDCU_MGR_MAX_LIST_ITEMS) {
         char* trimmed = trim_whitespace(token);
         if (*trimmed) {
-            strncpy(out_list->items[out_list->count], trimmed, IDCU_LIST_ITEM_MAX - 1);
-            out_list->items[out_list->count][IDCU_LIST_ITEM_MAX - 1] = '\0';
+            strncpy(out_list->items[out_list->count], trimmed, IDCU_MGR_LIST_ITEM_MAX - 1);
+            out_list->items[out_list->count][IDCU_MGR_LIST_ITEM_MAX - 1] = '\0';
             out_list->count++;
         }
         token = strtok(NULL, delimiter);
@@ -516,7 +652,7 @@ int idcu_config_get_nested_bool(const char* section, const char* prefix, const c
     if (!section || !prefix || !subkey) {
         return default_value;
     }
-    char full_key[IDCU_CONFIG_KEY_MAX];
+    char full_key[IDCU_MGR_CONFIG_KEY_MAX];
     snprintf(full_key, sizeof(full_key), "%s.%s", prefix, subkey);
     return idcu_config_get_bool(section, full_key, default_value);
 }
@@ -526,7 +662,7 @@ int idcu_config_get_nested_int(const char* section, const char* prefix, const ch
     if (!section || !prefix || !subkey) {
         return default_value;
     }
-    char full_key[IDCU_CONFIG_KEY_MAX];
+    char full_key[IDCU_MGR_CONFIG_KEY_MAX];
     snprintf(full_key, sizeof(full_key), "%s.%s", prefix, subkey);
     return idcu_config_get_int(section, full_key, default_value);
 }
@@ -536,7 +672,7 @@ const char* idcu_config_get_nested_string(const char* section, const char* prefi
     if (!section || !prefix || !subkey) {
         return default_value;
     }
-    char full_key[IDCU_CONFIG_KEY_MAX];
+    char full_key[IDCU_MGR_CONFIG_KEY_MAX];
     snprintf(full_key, sizeof(full_key), "%s.%s", prefix, subkey);
     return idcu_config_get_string(section, full_key, default_value);
 }
@@ -598,8 +734,8 @@ int idcu_config_load_profile(const char* profile_name)
         idcu_ConfigEntry* entry = &profile_sec->entries[i];
         char* dot_pos = strchr(entry->key, '.');
         if (dot_pos) {
-            char target_section[IDCU_CONFIG_SECTION_MAX];
-            char target_key[IDCU_CONFIG_KEY_MAX];
+            char target_section[IDCU_MGR_CONFIG_SECTION_MAX];
+            char target_key[IDCU_MGR_CONFIG_KEY_MAX];
             size_t section_len = dot_pos - entry->key;
             strncpy(target_section, entry->key, section_len);
             target_section[section_len] = '\0';
@@ -611,5 +747,108 @@ int idcu_config_load_profile(const char* profile_name)
         }
     }
     IDCU_LOG_INFO("Profile loaded successfully: %s", profile_name);
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_config_register_change_callback(idcu_ConfigChangeCallback callback, void* user_data) {
+    if (!g_initialized || !callback) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    for (int i = 0; i < g_callback_count; i++) {
+        if (g_callbacks[i].callback == callback) {
+            return IDCU_ERR_ALREADY_EXISTS;
+        }
+    }
+
+    if (g_callback_count >= IDCU_CONFIG_MAX_CALLBACKS) {
+        return IDCU_ERR_NO_MEMORY;
+    }
+
+    g_callbacks[g_callback_count].callback = callback;
+    g_callbacks[g_callback_count].user_data = user_data;
+    g_callback_count++;
+
+    IDCU_LOG_DEBUG("[config] Registered change callback");
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_config_unregister_change_callback(idcu_ConfigChangeCallback callback) {
+    if (!g_initialized || !callback) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    for (int i = 0; i < g_callback_count; i++) {
+        if (g_callbacks[i].callback == callback) {
+            if (i < g_callback_count - 1) {
+                memmove(&g_callbacks[i], &g_callbacks[i + 1],
+                       (g_callback_count - i - 1) * sizeof(idcu_ConfigCallbackEntry));
+            }
+            g_callback_count--;
+            IDCU_LOG_DEBUG("[config] Unregistered change callback");
+            return IDCU_ERR_SUCCESS;
+        }
+    }
+
+    return IDCU_ERR_NOT_FOUND;
+}
+
+void idcu_config_notify_changes(void) {
+    if (!g_initialized) {
+        return;
+    }
+
+    for (int i = 0; i < g_change_count; i++) {
+        idcu_ConfigChange* change = &g_changes[i];
+        IDCU_LOG_DEBUG("[config] Change: [%s] %s: '%s' -> '%s'",
+                      change->section, change->key,
+                      change->old_value[0] ? change->old_value : "(null)",
+                      change->new_value[0] ? change->new_value : "(null)");
+
+        for (int j = 0; j < g_callback_count; j++) {
+            g_callbacks[j].callback(change->section, change->key,
+                                   change->old_value[0] ? change->old_value : NULL,
+                                   change->new_value[0] ? change->new_value : NULL,
+                                   g_callbacks[j].user_data);
+        }
+    }
+}
+
+int idcu_config_get_file_path(char* buffer, size_t buffer_size) {
+    if (!g_initialized || !buffer) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    if (!g_config_file_path[0]) {
+        return IDCU_ERR_NOT_FOUND;
+    }
+
+    strncpy(buffer, g_config_file_path, buffer_size - 1);
+    buffer[buffer_size - 1] = '\0';
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_config_get_last_modified_time(uint64_t* timestamp) {
+    if (!g_initialized || !timestamp || !g_config_file_path[0]) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+#ifdef _WIN32
+    WIN32_FILE_ATTRIBUTE_DATA file_attr;
+    if (!GetFileAttributesExA(g_config_file_path, GetFileExInfoStandard, &file_attr)) {
+        return IDCU_ERR_NOT_FOUND;
+    }
+    ULARGE_INTEGER uli;
+    uli.LowPart = file_attr.ftLastWriteTime.dwLowDateTime;
+    uli.HighPart = file_attr.ftLastWriteTime.dwHighDateTime;
+    *timestamp = (uint64_t)uli.QuadPart;
+#else
+    struct stat stat_buf;
+    if (stat(g_config_file_path, &stat_buf) != 0) {
+        return IDCU_ERR_NOT_FOUND;
+    }
+    *timestamp = (uint64_t)stat_buf.st_mtime;
+#endif
+
     return IDCU_ERR_SUCCESS;
 }

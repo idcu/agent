@@ -8,6 +8,7 @@
 #define IDCU_AGENT_VERSION_STR "1.0.0"
 #define IDCU_CONFIG_FILE_PATH "config/agent.cfg"
 #define IDCU_CONFIG_SECTION_MAX 64
+#define IDCU_CONFIG_PATH_MAX 512
 
 // 权限定义
 #define IDCU_PERM_SEND        (1U << 0)
