@@ -41,6 +41,7 @@ add_subdirectory(modules/business/data-collector)
 add_subdirectory(modules/business/healthcheck)
 add_subdirectory(modules/business/heartbeat)
 # add_subdirectory(modules/business/http-management)
+add_subdirectory(modules/business/http-client)
 add_subdirectory(modules/business/log)
 add_subdirectory(modules/business/metrics)
 add_subdirectory(modules/business/examples/simple-example)
@@ -88,6 +89,7 @@ if(WIN32)
             idcu_business_data_collector
             idcu_business_healthcheck
             idcu_business_heartbeat
+            idcu_business_http_client
             idcu_business_log
             idcu_business_metrics
             -Wl,--no-whole-archive)
@@ -109,6 +111,7 @@ if(WIN32)
             idcu_business_data_collector
             idcu_business_healthcheck
             idcu_business_heartbeat
+            idcu_business_http_client
             idcu_business_log
             idcu_business_metrics)
     endif()
@@ -132,6 +135,7 @@ else()
             idcu_business_data_collector
             idcu_business_healthcheck
             idcu_business_heartbeat
+            idcu_business_http_client
             idcu_business_log
             idcu_business_metrics
             -Wl,--no-whole-archive)
@@ -153,6 +157,7 @@ else()
             idcu_business_data_collector
             idcu_business_healthcheck
             idcu_business_heartbeat
+            idcu_business_http_client
             idcu_business_log
             idcu_business_metrics)
     endif()
@@ -254,36 +259,9 @@ endif()
 # ==================== 动态模块示例 ====================
 # 动态模块通过子目录的 CMakeLists.txt 管理
 
-option(BUILD_DYNAMIC_LOADER_EXAMPLE "Build dynamic loader example" ON)
-if(BUILD_DYNAMIC_LOADER_EXAMPLE)
-    add_executable(dynamic_module_example examples/dynamic_module_example.c)
-    set_target_properties(dynamic_module_example PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-    )
-    target_link_libraries(dynamic_module_example PRIVATE
-        idcu_core_common
-        idcu_core_utils
-        idcu_core_module_system
-    )
-    if(NOT WIN32)
-        target_link_libraries(dynamic_module_example PRIVATE pthread dl)
-    endif()
-endif()
-
-option(BUILD_PROMETHEUS_EXPORTER_EXAMPLE "Build Prometheus exporter example" ON)
-if(BUILD_PROMETHEUS_EXPORTER_EXAMPLE)
-    add_executable(prometheus_exporter_example examples/prometheus_exporter_example.c)
-    set_target_properties(prometheus_exporter_example PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-    )
-    target_link_libraries(prometheus_exporter_example PRIVATE
-        idcu_core_common
-        idcu_core_utils
-        idcu_services_monitor
-    )
-    if(NOT WIN32)
-        target_link_libraries(prometheus_exporter_example PRIVATE pthread)
-    else()
-        target_link_libraries(prometheus_exporter_example PRIVATE -lws2_32)
-    endif()
+# ==================== 示例程序 ====================
+# 暂时禁用，需要更新 examples 目录结构
+option(BUILD_EXAMPLES "Build example programs" OFF)
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()

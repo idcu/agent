@@ -7,6 +7,7 @@ set(MODULE_NAME idcu_services_network)
 file(GLOB MODULE_SRCS
     src/connection_pool.c
     src/distributed_node.c
+    src/http_client.c
     src/http_server.c
     src/network_layer.c
     src/node_discovery.c

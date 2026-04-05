@@ -1,0 +1,12 @@
+{
+  "name": "http_client_module",
+  "category": "service",
+  "version": "1.0.0",
+  "description": "HTTP/REST client module for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["core_module"],
+  "priority": "normal",
+  "type": "builtin",
+  "config_schema": {}
+}
