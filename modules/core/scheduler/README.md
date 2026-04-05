@@ -1,5 +1,19 @@
 # Scheduler 模块
 
+## 模块信息
+
+| 属性 | 值 |
+|------|-----|
+| **名称** | scheduler_module |
+| **类别** | core |
+| **版本** | 1.0.0 |
+| **描述** | Scheduler module providing coroutine scheduling, message bus, and context management |
+| **作者** | IDCU Team |
+| **许可证** | MIT |
+| **优先级** | high |
+| **类型** | builtin |
+| **依赖** | common_module, utils_module |
+
 ## 功能说明
 
 调度器模块，提供：

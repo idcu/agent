@@ -1,5 +1,18 @@
 # Common 模块
 
+## 模块信息
+
+| 属性 | 值 |
+|------|-----|
+| **名称** | common_module |
+| **类别** | core |
+| **版本** | 1.0.0 |
+| **描述** | Common utilities module providing atomic operations, locks, error codes, and config definitions |
+| **作者** | IDCU Team |
+| **许可证** | MIT |
+| **优先级** | high |
+| **类型** | builtin |
+
 ## 功能说明
 
 提供项目通用的基础工具组件，包括：

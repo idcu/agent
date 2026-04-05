@@ -1,5 +1,19 @@
 # Utils 模块
 
+## 模块信息
+
+| 属性 | 值 |
+|------|-----|
+| **名称** | utils_module |
+| **类别** | core |
+| **版本** | 1.0.0 |
+| **描述** | Utilities module providing logging, config management, JSON parser, memory pool, and permission management |
+| **作者** | IDCU Team |
+| **许可证** | MIT |
+| **优先级** | high |
+| **类型** | builtin |
+| **依赖** | common_module |
+
 ## 功能说明
 
 提供项目通用的工具组件，包括：

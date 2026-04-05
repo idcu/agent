@@ -1,5 +1,19 @@
 # Module System 模块
 
+## 模块信息
+
+| 属性 | 值 |
+|------|-----|
+| **名称** | module_system_module |
+| **类别** | core |
+| **版本** | 1.0.0 |
+| **描述** | Module system providing module registry, category management, dynamic loading, and version control |
+| **作者** | IDCU Team |
+| **许可证** | MIT |
+| **优先级** | high |
+| **类型** | builtin |
+| **依赖** | common_module, utils_module |
+
 ## 功能说明
 
 模块管理系统，提供：
