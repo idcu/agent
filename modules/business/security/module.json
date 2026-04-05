@@ -1,0 +1,7 @@
+{
+    "name": "security_module",
+    "version": "1.0.0",
+    "description": "IDCU Security Business Module",
+    "type": "business",
+    "dependencies": ["core_module", "idcu_services_security"]
+}

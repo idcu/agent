@@ -1,0 +1,7 @@
+{
+    "name": "cache_module",
+    "version": "1.0.0",
+    "description": "IDCU Cache Business Module",
+    "type": "business",
+    "dependencies": ["core_module", "cache_service"]
+}

@@ -1,0 +1,7 @@
+{
+    "name": "cache_service",
+    "version": "1.0.0",
+    "description": "IDCU Cache Service Module",
+    "type": "service",
+    "dependencies": ["core_common", "core_log"]
+}
