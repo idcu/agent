@@ -1,0 +1,12 @@
+{
+  "name": "micro_kernel_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Micro kernel module managing coroutine scheduler, message bus, sandbox, and module lifecycle",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["common_module", "utils_module", "scheduler_module", "module_system_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {}
+}

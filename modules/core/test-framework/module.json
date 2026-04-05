@@ -1,0 +1,12 @@
+{
+  "name": "test_framework_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Test framework module providing unit test management, assertions, and report generation",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["common_module", "utils_module"],
+  "priority": "medium",
+  "type": "builtin",
+  "config_schema": {}
+}

@@ -1,0 +1,12 @@
+{
+  "name": "module_system_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Module system providing module registry, category management, dynamic loading, and version control",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["common_module", "utils_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {}
+}

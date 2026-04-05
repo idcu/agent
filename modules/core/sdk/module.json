@@ -1,0 +1,12 @@
+{
+  "name": "sdk_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "SDK module providing simplified development interfaces and utility wrappers",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["common_module", "utils_module"],
+  "priority": "medium",
+  "type": "builtin",
+  "config_schema": {}
+}

@@ -1,0 +1,12 @@
+{
+  "name": "scheduler_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Scheduler module providing coroutine scheduling, message bus, and context management",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["common_module", "utils_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {}
+}

@@ -1,0 +1,12 @@
+{
+  "name": "utils_module",
+  "category": "core",
+  "version": "1.0.0",
+  "description": "Utilities module providing logging, config management, JSON parser, memory pool, and permission management",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["common_module"],
+  "priority": "high",
+  "type": "builtin",
+  "config_schema": {}
+}

@@ -40,7 +40,6 @@ CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
-*.cmake
 
 # 性能测试数据
 *.prof
