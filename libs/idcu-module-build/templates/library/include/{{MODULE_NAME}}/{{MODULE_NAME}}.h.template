@@ -1,0 +1,24 @@
+#ifndef {{MODULE_NAME_UPPER}}_H
+#define {{MODULE_NAME_UPPER}}_H
+
+#ifdef _WIN32
+    #ifdef {{MODULE_NAME_UPPER}}_SHARED
+        #define {{MODULE_NAME_UPPER}}_API __declspec(dllexport)
+    #else
+        #define {{MODULE_NAME_UPPER}}_API __declspec(dllimport)
+    #endif
+#else
+    #define {{MODULE_NAME_UPPER}}_API
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+{{MODULE_NAME_UPPER}}_API int {{MODULE_NAME}}_hello(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

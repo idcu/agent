@@ -1,28 +1,58 @@
+---
 Checks: >
   -*,
   bugprone-*,
-  performance-*,
-  portability-*,
-  readability-*,
-  -readability-magic-numbers,
-  -readability-else-after-return,
-  -readability-named-parameter,
-  -readability-identifier-length,
+  clang-analyzer-*,
+  concurrency-*,
+  google-*,
   modernize-*,
+  performance-*,
+  readability-*,
+  -google-readability-braces-around-statements,
+  -google-readability-todo,
+  -google-runtime-int,
+  -modernize-use-auto,
   -modernize-use-trailing-return-type,
-  -modernize-use-nodiscard,
-  -modernize-use-equals-default,
-  -modernize-use-equals-delete
-
-WarningsAsErrors: ''
-HeaderFilterRegex: ''
+  -readability-braces-around-statements,
+  -readability-magic-numbers,
+  -bugprone-narrowing-conversions,
+  -bugprone-signed-char-use,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+WarningsAsErrors: >
+  bugprone-*,
+  clang-analyzer-*,
+  concurrency-*,
+  google-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -google-readability-braces-around-statements,
+  -google-readability-todo,
+  -google-runtime-int,
+  -modernize-use-auto,
+  -modernize-use-trailing-return-type,
+  -readability-braces-around-statements,
+  -readability-magic-numbers,
+  -bugprone-narrowing-conversions,
+  -bugprone-signed-char-use,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+HeaderFilterRegex: '.*\.h$'
 FormatStyle: file
 CheckOptions:
-  - key: readability-identifier-naming.VariableCase
-    value: lower_case
-  - key: readability-identifier-naming.FunctionCase
-    value: lower_case
-  - key: readability-identifier-naming.ConstantCase
-    value: UPPER_CASE
-  - key: readability-identifier-naming.MacroDefinitionCase
-    value: UPPER_CASE
+  - key: readability-function-size.StatementThreshold
+    value: 50
+  - key: readability-function-size.LineThreshold
+    value: 100
+  - key: readability-function-size.ParameterThreshold
+    value: 6
+  - key: readability-function-size.NestingThreshold
+    value: 4
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: false
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: false
+  - key: performance-no-int-to-ptr.AllowIntegerToPointerCast
+    value: false
+...

@@ -1,0 +1,48 @@
+{
+  "module": {
+    "name": "{{MODULE_NAME}}",
+    "version": "1.0.0",
+    "type": "{{LIBRARY_TYPE}}",
+    "auto_adapt": true
+  },
+  "build": {
+    "c_standard": "auto",
+    "src": "auto",
+    "type": "{{LIBRARY_TYPE}}",
+    "includes": ["include"],
+    "defines": [],
+    "deps": []
+  },
+  "dependencies": [
+    {
+      "name": "dependency-name",
+      "version": "1.0.0"
+    }
+  ],
+  "project": {
+    "idcu_agent": {},
+    "generic": {}
+  },
+  "plugins": {
+    "version_generator": false,
+    "signer": false,
+    "coverage": false,
+    "packager": false,
+    "publisher": false
+  },
+  "signer": {
+    "key_file": "",
+    "cert_file": "",
+    "gpg_key_id": ""
+  },
+  "coverage": {
+    "exclude": []
+  },
+  "packager": {
+    "formats": ["zip"],
+    "output_dir": ""
+  },
+  "publisher": {
+    "targets": []
+  }
+}

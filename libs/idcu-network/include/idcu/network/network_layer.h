@@ -18,6 +18,11 @@
 #define IDCU_ADDR_MAX 64
 #define IDCU_NET_BACKLOG 10
 
+#define IDCU_NET_DEFAULT_TIMEOUT_MS 30000
+#define IDCU_NET_DEFAULT_MAX_RETRIES 3
+#define IDCU_NET_DEFAULT_RETRY_DELAY_MS 1000
+#define IDCU_NET_DEFAULT_RECONNECT_DELAY_MS 2000
+
 #ifdef _WIN32
 typedef SOCKET idcu_socket_t;
 #define IDCU_INVALID_SOCKET INVALID_SOCKET
@@ -32,6 +37,16 @@ typedef int idcu_socket_t;
 #endif
 
 typedef struct {
+    uint32_t connect_timeout_ms;
+    uint32_t send_timeout_ms;
+    uint32_t recv_timeout_ms;
+    uint32_t max_retries;
+    uint32_t retry_delay_ms;
+    uint32_t reconnect_delay_ms;
+    uint32_t retry_count;
+} idcu_NetworkConfig;
+
+typedef struct {
     int protocol;
     idcu_socket_t fd;
     char local_addr[IDCU_ADDR_MAX];
@@ -39,6 +54,7 @@ typedef struct {
     char remote_addr[IDCU_ADDR_MAX];
     uint16_t remote_port;
     int connected;
+    idcu_NetworkConfig config;
 } idcu_NetworkSocket;
 
 typedef struct {
@@ -47,6 +63,7 @@ typedef struct {
     char bind_address[IDCU_ADDR_MAX];
     uint16_t bind_port;
     int listening;
+    idcu_NetworkConfig config;
 } idcu_NetworkServer;
 
 int idcu_network_init(void);
@@ -69,5 +86,12 @@ void idcu_network_server_destroy(idcu_NetworkServer* server);
 int idcu_network_server_listen(idcu_NetworkServer* server);
 int idcu_network_server_accept(idcu_NetworkServer* server, idcu_NetworkSocket* client_sock);
 int idcu_network_server_close(idcu_NetworkServer* server);
+
+int idcu_network_socket_set_config(idcu_NetworkSocket* sock, const idcu_NetworkConfig* config);
+int idcu_network_socket_get_config(idcu_NetworkSocket* sock, idcu_NetworkConfig* config);
+int idcu_network_socket_set_timeout(idcu_NetworkSocket* sock, uint32_t timeout_ms);
+int idcu_network_socket_reconnect(idcu_NetworkSocket* sock);
+int idcu_network_socket_send_with_retry(idcu_NetworkSocket* sock, const void* data, size_t len, size_t* sent);
+int idcu_network_socket_recv_with_retry(idcu_NetworkSocket* sock, void* data, size_t len, size_t* received);
 
 #endif // IDCU_NETWORK_NETWORK_LAYER_H

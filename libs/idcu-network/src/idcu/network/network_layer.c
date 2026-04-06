@@ -37,6 +37,14 @@ void idcu_network_cleanup(void) {
 #endif
 }
 
+static void sleep_ms(uint32_t ms) {
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
+}
+
 int idcu_network_socket_create(idcu_NetworkSocket* sock, int protocol) {
     if (!sock) return IDCU_ERR_INVALID_PARAM;
     if (protocol != IDCU_NET_PROTO_TCP && protocol != IDCU_NET_PROTO_UDP) return IDCU_ERR_INVALID_PARAM;
@@ -45,6 +53,14 @@ int idcu_network_socket_create(idcu_NetworkSocket* sock, int protocol) {
     sock->protocol = protocol;
     sock->fd = IDCU_INVALID_SOCKET;
     sock->connected = 0;
+    
+    sock->config.connect_timeout_ms = IDCU_NET_DEFAULT_TIMEOUT_MS;
+    sock->config.send_timeout_ms = IDCU_NET_DEFAULT_TIMEOUT_MS;
+    sock->config.recv_timeout_ms = IDCU_NET_DEFAULT_TIMEOUT_MS;
+    sock->config.max_retries = IDCU_NET_DEFAULT_MAX_RETRIES;
+    sock->config.retry_delay_ms = IDCU_NET_DEFAULT_RETRY_DELAY_MS;
+    sock->config.reconnect_delay_ms = IDCU_NET_DEFAULT_RECONNECT_DELAY_MS;
+    sock->config.retry_count = 0;
     
     int type = (protocol == IDCU_NET_PROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
     int iproto = (protocol == IDCU_NET_PROTO_TCP) ? IPPROTO_TCP : IPPROTO_UDP;
@@ -450,4 +466,116 @@ int idcu_network_server_close(idcu_NetworkServer* server) {
     server->fd = IDCU_INVALID_SOCKET;
     server->listening = 0;
     return IDCU_ERR_OK;
+}
+
+int idcu_network_socket_set_config(idcu_NetworkSocket* sock, const idcu_NetworkConfig* config) {
+    if (!sock || !config) return IDCU_ERR_INVALID_PARAM;
+    memcpy(&sock->config, config, sizeof(idcu_NetworkConfig));
+    return IDCU_ERR_OK;
+}
+
+int idcu_network_socket_get_config(idcu_NetworkSocket* sock, idcu_NetworkConfig* config) {
+    if (!sock || !config) return IDCU_ERR_INVALID_PARAM;
+    memcpy(config, &sock->config, sizeof(idcu_NetworkConfig));
+    return IDCU_ERR_OK;
+}
+
+int idcu_network_socket_set_timeout(idcu_NetworkSocket* sock, uint32_t timeout_ms) {
+    if (!sock) return IDCU_ERR_INVALID_PARAM;
+    sock->config.send_timeout_ms = timeout_ms;
+    sock->config.recv_timeout_ms = timeout_ms;
+    sock->config.connect_timeout_ms = timeout_ms;
+    return IDCU_ERR_OK;
+}
+
+int idcu_network_socket_reconnect(idcu_NetworkSocket* sock) {
+    if (!sock) return IDCU_ERR_INVALID_PARAM;
+    if (sock->fd == IDCU_INVALID_SOCKET) return IDCU_ERR_NOT_INITIALIZED;
+    if (sock->protocol != IDCU_NET_PROTO_TCP) return IDCU_ERR_INVALID_PARAM;
+    if (strlen(sock->remote_addr) == 0 || sock->remote_port == 0) return IDCU_ERR_INVALID_PARAM;
+    
+    idcu_network_socket_close(sock);
+    
+    int ret = idcu_network_socket_create(sock, sock->protocol);
+    if (ret != IDCU_ERR_OK) {
+        return ret;
+    }
+    
+    return idcu_network_socket_connect(sock, sock->remote_addr, sock->remote_port);
+}
+
+int idcu_network_socket_send_with_retry(idcu_NetworkSocket* sock, const void* data, size_t len, size_t* sent) {
+    if (!sock || !data) return IDCU_ERR_INVALID_PARAM;
+    
+    int ret;
+    uint32_t retry_count = 0;
+    size_t total_sent = 0;
+    const uint8_t* ptr = (const uint8_t*)data;
+    
+    while (retry_count <= sock->config.max_retries) {
+        size_t current_sent = 0;
+        ret = idcu_network_socket_send(sock, ptr + total_sent, len - total_sent, &current_sent);
+        
+        if (ret == IDCU_ERR_OK) {
+            total_sent += current_sent;
+            if (total_sent >= len) {
+                if (sent) *sent = total_sent;
+                sock->config.retry_count = retry_count;
+                return IDCU_ERR_OK;
+            }
+        } else {
+            if (retry_count >= sock->config.max_retries) {
+                if (sent) *sent = total_sent;
+                sock->config.retry_count = retry_count;
+                return ret;
+            }
+            
+            IDCU_LOG_WARNING("Send failed, retrying %u/%u...", retry_count + 1, sock->config.max_retries);
+            sleep_ms(sock->config.retry_delay_ms);
+        }
+        
+        retry_count++;
+    }
+    
+    if (sent) *sent = total_sent;
+    sock->config.retry_count = retry_count;
+    return IDCU_ERR_NETWORK_SEND;
+}
+
+int idcu_network_socket_recv_with_retry(idcu_NetworkSocket* sock, void* data, size_t len, size_t* received) {
+    if (!sock || !data) return IDCU_ERR_INVALID_PARAM;
+    
+    int ret;
+    uint32_t retry_count = 0;
+    size_t total_received = 0;
+    uint8_t* ptr = (uint8_t*)data;
+    
+    while (retry_count <= sock->config.max_retries) {
+        size_t current_received = 0;
+        ret = idcu_network_socket_recv(sock, ptr + total_received, len - total_received, &current_received);
+        
+        if (ret == IDCU_ERR_OK) {
+            total_received += current_received;
+            if (total_received > 0 || retry_count > 0) {
+                if (received) *received = total_received;
+                sock->config.retry_count = retry_count;
+                return IDCU_ERR_OK;
+            }
+        } else {
+            if (retry_count >= sock->config.max_retries) {
+                if (received) *received = total_received;
+                sock->config.retry_count = retry_count;
+                return ret;
+            }
+            
+            IDCU_LOG_WARNING("Recv failed, retrying %u/%u...", retry_count + 1, sock->config.max_retries);
+            sleep_ms(sock->config.retry_delay_ms);
+        }
+        
+        retry_count++;
+    }
+    
+    if (received) *received = total_received;
+    sock->config.retry_count = retry_count;
+    return IDCU_ERR_NETWORK_RECV;
 }

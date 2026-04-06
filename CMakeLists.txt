@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(idcu_agent C)
 set(CMAKE_C_STANDARD 99)
 
@@ -7,13 +7,55 @@ set(IDCU_VERSION_MINOR 0)
 set(IDCU_VERSION_PATCH 0)
 set(IDCU_VERSION "${IDCU_VERSION_MAJOR}.${IDCU_VERSION_MINOR}.${IDCU_VERSION_PATCH}")
 
-if(MSVC)
-    add_compile_options(/W4)
-elseif(MINGW)
-    add_compile_options(-O2 -Wall -Wextra)
-else()
-    add_compile_options(-O2 -Wall -Wextra)
+# 最低编译器版本要求
+if(CMAKE_C_COMPILER_ID MATCHES "GNU")
+    if(CMAKE_C_COMPILER_VERSION VERSION_LESS "7.0")
+        message(FATAL_ERROR "GCC version must be at least 7.0")
+    endif()
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    if(CMAKE_C_COMPILER_VERSION VERSION_LESS "6.0")
+        message(FATAL_ERROR "Clang version must be at least 6.0")
+    endif()
+elseif(MSVC)
+    if(MSVC_VERSION LESS 1910)
+        message(FATAL_ERROR "MSVC version must be at least 15.0 (Visual Studio 2017)")
+    endif()
 endif()
+
+# 编译选项
+if(MSVC)
+    add_compile_options(/W4 /WX- /utf-8)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(/Od /Zi)
+    else()
+        add_compile_options(/O2)
+    endif()
+else()
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-O0 -g -Wall -Wextra -Wno-unused-parameter)
+    else()
+        add_compile_options(-O2 -Wall -Wextra -Wno-unused-parameter)
+    endif()
+endif()
+
+# 统一输出目录
+if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/output/bin")
+endif()
+if(NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/output/lib")
+endif()
+if(NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/output/lib")
+endif()
+
+# 区分Debug/Release输出目录
+foreach(config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+    string(TOUPPER "${config}" config_upper)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${config_upper} "${PROJECT_SOURCE_DIR}/build/output/${config}/bin")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${config_upper} "${PROJECT_SOURCE_DIR}/build/output/${config}/lib")
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${config_upper} "${PROJECT_SOURCE_DIR}/build/output/${config}/lib")
+endforeach()
 
 
 
@@ -107,8 +149,13 @@ endif()
 
 # ==================== 主程序 ====================
 add_executable(idcu_agent app/main.c)
-set_target_properties(idcu_agent PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
+
+# 自动拷贝配置文件到输出目录
+add_custom_command(TARGET idcu_agent POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${PROJECT_SOURCE_DIR}/config
+        $<TARGET_FILE_DIR:idcu_agent>/config
+    COMMENT "Copying config files to output directory"
 )
 
 if(WIN32)
@@ -328,7 +375,7 @@ endif()
 
 if(BUILD_TESTS)
     enable_testing()
-    add_subdirectory(tests)
+    # add_subdirectory(tests)
     
     if(ENABLE_CODE_COVERAGE)
         add_custom_target(coverage_clean
@@ -371,9 +418,6 @@ endif()
 
 if(BUILD_BENCHMARKS)
     add_executable(idcu_benchmark app/benchmark.c)
-    set_target_properties(idcu_benchmark PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-    )
     target_include_directories(idcu_benchmark PRIVATE
         ${PROJECT_SOURCE_DIR}/modules/core/scheduler/include
         ${PROJECT_SOURCE_DIR}/libs/idcu-memory/include

@@ -1,0 +1,5 @@
+#include "{{MODULE_NAME}}/{{MODULE_NAME}}.h"
+
+int {{MODULE_NAME}}_hello(void) {
+    return 42;
+}

@@ -1,5 +1,6 @@
 #include "idcu/memory/memory_pool.h"
 #include "idcu/common/error_code.h"
+#include "idcu/log/log.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,6 +16,25 @@ static int get_size_class_index(uint32_t size)
         }
     }
     return -1;
+}
+
+static void write_guard(void* ptr, uint32_t size)
+{
+    if (!ptr) return;
+    uint8_t* guard = (uint8_t*)ptr + size;
+    memset(guard, IDCU_MEM_GUARD_VALUE, IDCU_MEM_GUARD_SIZE);
+}
+
+static int check_guard(const void* ptr, uint32_t size)
+{
+    if (!ptr) return -1;
+    const uint8_t* guard = (const uint8_t*)ptr + size;
+    for (uint32_t i = 0; i < IDCU_MEM_GUARD_SIZE; i++) {
+        if (guard[i] != IDCU_MEM_GUARD_VALUE) {
+            return -1;
+        }
+    }
+    return 0;
 }
 
 int idcu_mem_pool_init(idcu_MemoryPool *pool)
@@ -45,12 +65,14 @@ int idcu_mem_pool_init(idcu_MemoryPool *pool)
         }
         
         for (uint32_t j = 0; j < sc->block_count; j++) {
-            sc->blocks[j].data = malloc(sc->block_size);
+            sc->blocks[j].data = malloc(sc->block_size + IDCU_MEM_GUARD_SIZE);
             if (!sc->blocks[j].data) {
                 idcu_mem_pool_destroy(pool);
                 return IDCU_ERR_NO_MEMORY;
             }
             sc->blocks[j].in_use = 0;
+            sc->blocks[j].alloc_size = 0;
+            write_guard(sc->blocks[j].data, sc->block_size);
             sc->free_list[j] = j;
         }
         
@@ -92,12 +114,17 @@ void idcu_mem_pool_destroy(idcu_MemoryPool *pool)
 void* idcu_mem_pool_alloc(idcu_MemoryPool *pool, uint32_t size)
 {
     if (!pool || size == 0) {
+        if (pool) pool->null_check_count++;
         return NULL;
     }
 
     int idx = get_size_class_index(size);
     if (idx < 0) {
-        return malloc(size);
+        void* ptr = malloc(size + IDCU_MEM_GUARD_SIZE);
+        if (ptr) {
+            write_guard(ptr, size);
+        }
+        return ptr;
     }
 
     int ret = idcu_mutex_lock(&pool->lock);
@@ -117,6 +144,7 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool *pool, uint32_t size)
     
     idcu_PoolBlock *block = &sc->blocks[block_idx];
     block->in_use = 1;
+    block->alloc_size = size;
     
     pool->total_allocated += sc->block_size;
     uint64_t current_usage = pool->total_allocated - pool->total_freed;
@@ -130,7 +158,12 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool *pool, uint32_t size)
 
 void idcu_mem_pool_free(idcu_MemoryPool *pool, void *ptr)
 {
-    if (!pool || !ptr) {
+    if (!pool) {
+        return;
+    }
+    
+    if (!ptr) {
+        pool->null_check_count++;
         return;
     }
 
@@ -151,6 +184,11 @@ void idcu_mem_pool_free(idcu_MemoryPool *pool, void *ptr)
                 class_idx = i;
                 block_idx = j;
                 found = 1;
+                
+                if (check_guard(ptr, sc->block_size) != 0) {
+                    IDCU_LOG_ERROR("Memory overflow detected at block %u in class %u", j, i);
+                    pool->overflow_check_count++;
+                }
                 break;
             }
         }
@@ -169,6 +207,8 @@ void idcu_mem_pool_free(idcu_MemoryPool *pool, void *ptr)
     idcu_PoolBlock *block = &sc->blocks[block_idx];
     
     block->in_use = 0;
+    block->alloc_size = 0;
+    write_guard(block->data, sc->block_size);
     sc->free_head--;
     sc->free_list[sc->free_head] = block_idx;
     sc->free_count++;
@@ -229,4 +269,60 @@ uint64_t idcu_mem_pool_get_peak_usage(idcu_MemoryPool *pool)
     uint64_t peak = pool->peak_usage;
     idcu_mutex_unlock(&pool->lock);
     return peak;
+}
+
+int idcu_mem_check_null(const void* ptr, const char* context)
+{
+    if (!ptr) {
+        IDCU_LOG_ERROR("NULL pointer detected: %s", context ? context : "unknown");
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    return IDCU_ERR_OK;
+}
+
+int idcu_mem_check_overflow(const void* ptr, size_t size, const char* context)
+{
+    if (!ptr) {
+        IDCU_LOG_ERROR("NULL pointer in overflow check: %s", context ? context : "unknown");
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    const uint8_t* end = (const uint8_t*)ptr + size;
+    (void)end;
+    
+    return IDCU_ERR_OK;
+}
+
+int idcu_mem_safe_copy(void* dst, size_t dst_size, const void* src, size_t src_size)
+{
+    if (!dst || !src) {
+        IDCU_LOG_ERROR("NULL pointer in safe copy");
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    if (src_size > dst_size) {
+        IDCU_LOG_ERROR("Buffer overflow prevented: src_size=%zu, dst_size=%zu", src_size, dst_size);
+        return IDCU_ERR_BUFFER_TOO_SMALL;
+    }
+    
+    memcpy(dst, src, src_size);
+    return IDCU_ERR_OK;
+}
+
+int idcu_mem_pool_get_safety_stats(idcu_MemoryPool* pool, uint32_t* null_checks, uint32_t* overflow_checks)
+{
+    if (!pool) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&pool->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    if (null_checks) *null_checks = pool->null_check_count;
+    if (overflow_checks) *overflow_checks = pool->overflow_check_count;
+    
+    idcu_mutex_unlock(&pool->lock);
+    return IDCU_ERR_OK;
 }

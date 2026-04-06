@@ -98,8 +98,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Install Clang-Tidy
-      run: sudo apt-get update && sudo apt-get install -y clang-tidy
+    - name: Install Clang Tools
+      run: sudo apt-get update && sudo apt-get install -y clang-format clang-tidy
+
+    - name: Run clang-format check
+      run: |
+        find libs modules app -name "*.c" -o -name "*.h" | xargs clang-format --dry-run --Werror
+        if [ $? -ne 0 ]; then
+          echo "Code style check failed. Please run clang-format on your code."
+          exit 1
+        fi
 
     - name: Configure CMake
       run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_CLANG_TIDY=ON

@@ -1,0 +1,114 @@
+name: IDCU Module Build CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'libs/idcu-module-build/**'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'libs/idcu-module-build/**'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Build with Python script
+      working-directory: libs/idcu-module-build
+      run: |
+        python scripts/build.py release
+
+    - name: Build examples
+      working-directory: libs/idcu-module-build
+      run: |
+        python scripts/build.py release --module examples/demo-shared
+        python scripts/build.py release --module examples/demo-static
+        python scripts/build.py release --module examples/demo-custom
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.os }}
+        path: libs/idcu-module-build/build/
+
+  test:
+    name: Test Template Generator
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Test IDCU Agent module template
+      working-directory: libs/idcu-module-build
+      run: |
+        mkdir -p test-templates
+        python scripts/generate_template.py --type idcu-agent --name test-agent-module --output test-templates
+        ls -la test-templates/test-agent-module/
+
+    - name: Test C library template
+      working-directory: libs/idcu-module-build
+      run: |
+        python scripts/generate_template.py --type library --name test-library --output test-templates
+        ls -la test-templates/test-library/
+
+    - name: Test custom project template
+      working-directory: libs/idcu-module-build
+      run: |
+        python scripts/generate_template.py --type custom --name test-custom-project --output test-templates
+        ls -la test-templates/test-custom-project/
+
+    - name: Upload generated templates
+      uses: actions/upload-artifact@v4
+      with:
+        name: generated-templates
+        path: libs/idcu-module-build/test-templates/
+
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Python scripts
+      run: |
+        cd libs/idcu-module-build/scripts
+        python -m py_compile build.py generate_template.py
+        echo "Python syntax check passed"
+
+    - name: Check file encodings
+      run: |
+        cd libs/idcu-module-build
+        echo "Checking file encodings..."
+        find . -name "*.py" -o -name "*.md" -o -name "*.json" -o -name "*.yaml" -o -name "*.yml" | while read file; do
+          if file -i "$file" | grep -q "charset=utf-8"; then
+            echo "✓ $file is UTF-8"
+          else
+            echo "✗ $file may not be UTF-8"
+          fi
+        done

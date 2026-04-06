@@ -1,0 +1,23 @@
+{
+  "name": "idcu-management",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU 运维管理库，提供 CLI 工具、HTTP 接口和日志管理功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-log", "idcu-module-system", "idcu-coroutine", "idcu-metrics", "idcu-config", "idcu-http-server", "idcu-json"],
+  "priority": "high",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/management/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-module-system", "idcu-coroutine", "idcu-metrics", "idcu-config"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
+}

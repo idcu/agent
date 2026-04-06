@@ -1,0 +1,70 @@
+# auto-adapter.yaml - 项目自动识别适配规则
+# 自动匹配项目类型，无需手动指定
+
+adapters:
+  # IDCU Agent 项目适配
+  - name: idcu_agent
+    priority: 100
+    detect:
+      - exists: "config/agent.cfg"
+      - exists: "modules/core/sdk/"
+      - file_contains: "CMakeLists.txt" "idcu"
+    config:
+      type: "shared_library"
+      sdk_path: "modules/core/sdk"
+      output_dir: "agent-modules"
+      c_standard: "11"
+      namespace: "idcu"
+
+  # 通用 C 动态库项目
+  - name: c_shared_library
+    priority: 50
+    detect:
+      - exists: "CMakeLists.txt"
+      - exists: "include/"
+      - file_contains: "CMakeLists.txt" "DEMO-SHARED"
+    config:
+      type: "shared_library"
+      output_dir: "build/lib"
+      c_standard: "99"
+
+  # 通用 C 静态库项目
+  - name: c_static_library
+    priority: 40
+    detect:
+      - exists: "CMakeLists.txt"
+      - exists: "include/"
+      - file_contains: "CMakeLists.txt" "DEMO-STATIC"
+    config:
+      type: "static_library"
+      output_dir: "build/lib"
+      c_standard: "99"
+
+  # 通用 C 可执行项目
+  - name: c_executable
+    priority: 30
+    detect:
+      - exists: "CMakeLists.txt"
+      - exists: "src/main.c"
+    config:
+      type: "executable"
+      output_dir: "build/bin"
+      c_standard: "99"
+
+  # 自定义项目（兜底）
+  - name: custom
+    priority: 0
+    detect:
+      - exists: "CMakeLists.txt"
+    config:
+      type: "auto"
+      output_dir: "build"
+      c_standard: "99"
+
+# 项目类型定义
+project_types:
+  - idcu_agent
+  - c_shared_library
+  - c_static_library
+  - c_executable
+  - custom

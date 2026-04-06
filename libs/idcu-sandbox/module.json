@@ -5,7 +5,7 @@
   "description": "IDCU Agent 沙箱模块，提供安全的模块隔离和权限控制功能",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["idcu-common"],
+  "dependencies": ["idcu-common", "idcu-log"],
   "priority": "normal",
   "type": "library",
   "build": {
@@ -14,7 +14,7 @@
     "type": "static",
     "sources": ["src/idcu/sandbox/*.c"],
     "includes": ["include"],
-    "link_libraries": ["idcu-common"],
+    "link_libraries": ["idcu-common", "idcu-log"],
     "platform_deps": {
       "win32": [],
       "unix": ["pthread"]

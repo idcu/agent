@@ -1,0 +1,8 @@
+{
+  "name": "idcu-module-isolation",
+  "version": "1.0.0",
+  "description": "Module isolation library for crash detection and recovery",
+  "author": "IDCU Team",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "type": "library"
+}

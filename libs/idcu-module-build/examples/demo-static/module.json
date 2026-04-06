@@ -1,0 +1,19 @@
+{
+  "module": {
+    "name": "demo-static",
+    "version": "1.0.0",
+    "type": "static",
+    "auto_adapt": true
+  },
+  "build": {
+    "c_standard": "auto",
+    "src": "auto",
+    "type": "static",
+    "includes": ["include"],
+    "deps": []
+  },
+  "project": {
+    "idcu_agent": {},
+    "generic": {}
+  }
+}

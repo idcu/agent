@@ -81,7 +81,9 @@ typedef enum {
     IDCU_ERR_LIMIT_EXCEEDED = -55, /**< 超出限制 */
     IDCU_ERR_IO_ERROR = -56, /**< IO错误 */
     IDCU_ERR_FILE_ERROR = -56, /**< IO错误（别名） */
-    IDCU_ERR_SECURITY_ERROR = -57 /**< 安全错误 */
+    IDCU_ERR_SECURITY_ERROR = -57, /**< 安全错误 */
+    IDCU_ERR_RESOURCE_EXHAUSTED = -58, /**< 资源耗尽 */
+    IDCU_ERR_VERIFICATION_FAILED = -59 /**< 校验失败 */
 } idcu_ErrorCode;
 
 // 为了向后兼容，同时定义不带 _ERR_ 前缀的版本

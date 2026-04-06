@@ -1,0 +1,35 @@
+{
+  "module": {
+    "name": "demo-custom",
+    "version": "1.0.0",
+    "type": "both",
+    "description": "Custom project with advanced configuration",
+    "author": "IDCU Team",
+    "license": "MIT",
+    "auto_adapt": false
+  },
+  "build": {
+    "c_standard": "11",
+    "src": ["src/*.c", "src/utils/*.c"],
+    "type": "both",
+    "includes": ["include", "src"],
+    "defines": ["DEMO_CUSTOM=1", "CUSTOM_BUILD"],
+    "deps": [],
+    "link_libraries": ["m"],
+    "platform_deps": {
+      "win32": ["ws2_32", "advapi32"],
+      "unix": ["pthread", "dl"]
+    }
+  },
+  "plugins": {
+    "sign": false,
+    "package": true,
+    "coverage": true,
+    "version_generator": true
+  },
+  "output": {
+    "dir": "build/output",
+    "prefix": "custom_",
+    "with_version": true
+  }
+}

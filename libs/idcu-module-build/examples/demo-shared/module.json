@@ -1,0 +1,20 @@
+{
+  "module": {
+    "name": "demo-shared",
+    "version": "1.0.0",
+    "type": "shared",
+    "auto_adapt": true
+  },
+  "build": {
+    "c_standard": "auto",
+    "src": "auto",
+    "type": "shared",
+    "includes": ["include"],
+    "defines": ["DEMO_SHARED"],
+    "deps": []
+  },
+  "project": {
+    "idcu_agent": {},
+    "generic": {}
+  }
+}

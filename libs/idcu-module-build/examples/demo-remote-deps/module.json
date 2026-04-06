@@ -1,0 +1,42 @@
+{
+  "module": {
+    "name": "demo-remote-deps",
+    "version": "1.0.0",
+    "type": "shared",
+    "auto_adapt": true
+  },
+  "build": {
+    "c_standard": "auto",
+    "src": "auto",
+    "type": "shared",
+    "includes": ["include"],
+    "deps": ["demo-shared"]
+  },
+  "dependencies": [
+    {
+      "name": "demo-shared",
+      "version": "1.0.0"
+    },
+    {
+      "name": "some-git-lib",
+      "version": "2.0.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/example/some-git-lib.git",
+        "tag": "v2.0.0"
+      }
+    },
+    {
+      "name": "some-http-lib",
+      "version": "1.5.0",
+      "source": {
+        "type": "http",
+        "url": "https://example.com/releases/some-http-lib-1.5.0.tar.gz"
+      }
+    }
+  ],
+  "project": {
+    "idcu_agent": {},
+    "generic": {}
+  }
+}

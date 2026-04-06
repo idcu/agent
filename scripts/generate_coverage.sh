@@ -12,6 +12,13 @@ BUILD_DIR="${PROJECT_ROOT}/build"
 echo "========================================="
 echo "  IDCU Agent - 代码覆盖率生成工具"
 echo "========================================="
+echo ""
+echo "覆盖率目标:"
+echo "  - 微内核 (modules/core/micro-kernel): ≥85%"
+echo "  - 模块系统 (modules/core/module-system): ≥80%"
+echo "  - 调度器 (modules/core/scheduler): ≥80%"
+echo "  - 核心库 (libs/): ≥75%"
+echo ""
 
 # 检查系统是否支持
 if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
@@ -55,6 +62,12 @@ echo ""
 if [ -d "$BUILD_DIR/coverage_report" ]; then
     echo "HTML 报告位置: $BUILD_DIR/coverage_report/index.html"
     echo "你可以在浏览器中打开该文件查看报告"
+    echo ""
+    echo "请检查核心模块的覆盖率是否达到目标:"
+    echo "  - modules/core/micro-kernel: ≥85%"
+    echo "  - modules/core/module-system: ≥80%"
+    echo "  - modules/core/scheduler: ≥80%"
+    echo "  - libs/: ≥75%"
 else
     echo "覆盖率数据文件: $BUILD_DIR/coverage_filtered.info"
 fi

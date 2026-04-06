@@ -1,0 +1,8 @@
+{
+  "name": "idcu-module-verifier",
+  "version": "1.0.0",
+  "description": "Module verification library for DLL/SO hash and signature checking",
+  "author": "IDCU Team",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "type": "library"
+}

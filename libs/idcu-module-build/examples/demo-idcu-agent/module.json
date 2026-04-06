@@ -1,0 +1,24 @@
+{
+  "module": {
+    "name": "demo-idcu-agent",
+    "version": "1.0.0",
+    "type": "shared",
+    "description": "Example IDCU Agent module",
+    "author": "IDCU Team",
+    "license": "MIT",
+    "auto_adapt": true
+  },
+  "build": {
+    "c_standard": "auto",
+    "src": "auto",
+    "type": "shared",
+    "includes": ["include"],
+    "defines": [],
+    "deps": ["idcu-common"]
+  },
+  "project": {
+    "idcu_agent": {
+      "sdk_path": "../../../../modules/core/sdk"
+    }
+  }
+}
