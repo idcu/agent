@@ -1,0 +1,23 @@
+{
+  "name": "idcu-json",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU Agent JSON 解析和序列化模块",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common"],
+  "priority": "high",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/json/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common"],
+    "platform_deps": {
+      "win32": [],
+      "unix": ["pthread"]
+    }
+  }
+}

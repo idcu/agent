@@ -1,0 +1,11 @@
+{
+  "name": "idcu-module-build",
+  "category": "tool",
+  "version": "1.0.0",
+  "description": "IDCU Agent 通用模块构建工具，基于 module.json 自动构建模块",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": [],
+  "priority": "high",
+  "type": "tool"
+}

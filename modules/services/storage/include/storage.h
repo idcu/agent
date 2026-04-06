@@ -1,7 +1,7 @@
 #ifndef IDCU_STORAGE_STORAGE_H
 #define IDCU_STORAGE_STORAGE_H
 
-#include "error_code.h"
+#include "idcu/common/error_code.h"
 #include <stdint.h>
 #include <stddef.h>
 

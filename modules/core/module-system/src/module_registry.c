@@ -1,7 +1,7 @@
 #include "module_registry.h"
 #include "module_version.h"
-#include "log.h"
-#include "error_code.h"
+#include "idcu/log/log.h"
+#include "idcu/common/error_code.h"
 #include <string.h>
 
 #if defined(__GNUC__) && !defined(__MINGW32__)

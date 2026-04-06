@@ -3,8 +3,8 @@
 
 #include "module_def.h"
 #include "msg_bus.h"
-#include "log.h"
-#include "error_code.h"
+#include "idcu/log/log.h"
+#include "idcu/common/error_code.h"
 #include <stdint.h>
 #include <stdbool.h>
 

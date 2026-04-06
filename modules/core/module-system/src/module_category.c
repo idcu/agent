@@ -1,6 +1,6 @@
 #include "module_category.h"
-#include "config_manager.h"
-#include "log.h"
+#include "idcu/config/config.h"
+#include "idcu/log/log.h"
 #include <string.h>
 
 static const char* s_level_names[] = {

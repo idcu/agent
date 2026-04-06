@@ -1,0 +1,23 @@
+{
+  "name": "idcu-metrics",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU Agent 指标模块，提供指标收集和 Prometheus 导出功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-http-server"],
+  "priority": "normal",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/metrics/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-http-server"],
+    "platform_deps": {
+      "win32": ["ws2_32"],
+      "unix": ["pthread"]
+    }
+  }
+}

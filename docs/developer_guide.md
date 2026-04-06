@@ -88,107 +88,147 @@ idcu-agent/
 │   └── benchmark.c               # 性能基准测试
 ├── config/                       # 配置文件
 │   └── agent.cfg                 # 主配置文件
+├── libs/                         # 独立库模块（可复用的基础组件）
+│   ├── idcu-module-build/        # 模块构建工具
+│   ├── idcu-common/              # 通用基础组件（原子操作、锁、错误码等）
+│   ├── idcu-log/                 # 日志系统
+│   ├── idcu-config/              # 配置管理
+│   ├── idcu-json/                # JSON 解析
+│   ├── idcu-network/             # 网络层（TCP/UDP Socket）
+│   ├── idcu-http-server/         # HTTP 服务器
+│   ├── idcu-http-client/         # HTTP 客户端
+│   ├── idcu-conn-pool/           # 连接池
+│   ├── idcu-distributed/         # 分布式节点
+│   ├── idcu-discovery/           # 节点发现
+│   ├── idcu-metrics/             # 指标收集
+│   ├── idcu-healthcheck/         # 健康检查
+│   ├── idcu-alert/               # 告警系统
+│   ├── idcu-memory/              # 内存池
+│   ├── idcu-permission/          # 权限管理
+│   └── idcu-sandbox/             # 沙箱安全
 ├── modules/                      # 模块化结构（最重要的目录！）
 │   ├── core/                     # 核心基础设施
-│   │   ├── common/               # 通用基础组件
-│   │   ├── utils/                # 通用工具组件
 │   │   ├── module-system/        # 模块管理系统
 │   │   ├── scheduler/            # 调度器模块
 │   │   ├── micro-kernel/         # 微内核核心
 │   │   ├── sdk/                  # 软件开发工具包
 │   │   └── test-framework/       # 测试框架
 │   ├── services/                 # 服务模块组（提供基础服务）
-│   │   ├── monitor/              # 监控系统
-│   │   ├── network/              # 网络系统
 │   │   ├── storage/              # 存储服务
 │   │   ├── cache/                # 缓存服务
 │   │   ├── security/             # 安全系统
 │   │   └── plugin/               # 插件系统
+│   ├── integrations/             # 集成模块（连接库和模块系统）
+│   │   ├── config-integration/
+│   │   ├── healthcheck-integration/
+│   │   ├── http-client-integration/
+│   │   ├── http-server-integration/
+│   │   ├── json-integration/
+│   │   ├── log-integration/
+│   │   ├── metrics-integration/
+│   │   ├── network-integration/
+│   │   └── network-monitor-integration/
 │   └── business/                 # 业务模块组（具体功能在这里！）
 │       ├── core-module/          # 核心基础模块
 │       ├── log/                  # 日志模块
 │       ├── alert/                # 告警模块
 │       ├── collect/              # 采集模块
 │       ├── config/               # 配置模块
+│       ├── data-collector/       # 数据采集模块
+│       ├── healthcheck/          # 健康检查模块
+│       ├── heartbeat/            # 心跳模块
+│       ├── http-client/          # HTTP客户端模块
+│       ├── metrics/              # 指标模块
+│       ├── storage/              # 存储模块
+│       ├── cache/                # 缓存模块
+│       ├── security/             # 安全模块
 │       ├── examples/             # 示例模块（看这里学习！）
 │       │   ├── simple-example/   # 简单示例
-│       │   ├── messaging-example/ # 消息示例
-│       │   └── advanced-example/ # 高级示例
+│       │   └── messaging-example/ # 消息示例
 │       └── dynamic/              # 动态加载模块示例
 ├── module-repo/                  # 模块仓库
+│   ├── official/                 # 官方模块
+│   │   ├── core/                 # 核心模块
+│   │   ├── monitoring/           # 监控模块
+│   │   ├── networking/           # 网络模块
+│   │   └── security/             # 安全模块
+│   └── templates/                # 模块模板（照着写模块）
 ├── tests/                        # 测试用例
 │   ├── unit/                     # 单元测试
 │   └── integration/              # 集成测试
 ├── examples/                     # 示例程序
 ├── docs/                         # 文档目录
 ├── scripts/                      # 构建脚本
+│   ├── build.bat                 # Windows 编译脚本
+│   ├── build.sh                  # Linux 编译脚本
+│   └── generate_coverage.sh      # 覆盖率生成脚本
 └── CMakeLists.txt                # CMake 构建配置
 ```
 
 ### 关键文件说明
 
-#### core/ 目录 - 核心基础设施
+#### libs/ 目录 - 独立库模块
 
-这是整个系统的基石，建议先看懂这些代码：
+这些是独立的、可复用的基础组件库：
 
-**common/ - 通用基础组件**
+**idcu-common/ - 通用基础组件**
 - `atomic.h/c` - 原子操作（多线程安全的变量操作）
 - `lock.h/c` - 锁机制（互斥锁、读写锁、条件变量）
 - `error_code.h/c` - 错误码定义和处理
-- `config.h` - 编译时配置
+- `vector.h/c` - 动态数组
+- `linked_list.h/c` - 双向链表
+- `hash_map.h/c` - 哈希表
+- `string_buf.h/c` - 字符串缓冲区
+- `option.h/c` - 可选值类型
 
-**utils/ - 通用工具组件**
+**idcu-log/ - 日志系统**
 - `log.h/c` - 日志系统（多级别日志、格式化输出）
-- `config_manager.h/c` - 配置管理（读写配置文件）
-- `json_parser.h/c` - JSON 解析器
-- `memory_pool.h/c` - 内存池（高效内存分配）
-- `permission_manager.h/c` - 权限管理
 
-**module-system/ - 模块管理系统**
-- `module_def.h` - 模块接口定义（重点看！）
-- `module_registry.h/c` - 模块注册和管理
-- `module_category.h/c` - 模块分类
-- `dynamic_module.h/c` - 动态模块加载
-- `module_version.h/c` - 版本管理
+**idcu-config/ - 配置管理**
+- `config.h/c` - 配置管理（读写配置文件）
 
-**scheduler/ - 调度器模块**
-- `coroutine.h/c` - 协程调度（轻量级线程）
-- `msg_bus.h/c` - 消息总线（模块间通信）
-- `context.h/c` - 上下文管理
+**idcu-json/ - JSON 解析器**
+- `json.h/c` - JSON 解析和生成
 
-**micro-kernel/ - 微内核核心**
-- `micro_kernel.h/c` - 微内核主接口（系统的心脏！）
+**idcu-network/ - 网络层**
+- `network_layer.h/c` - TCP/UDP Socket 封装
 
-**sdk/ - 软件开发工具包**
-- `sdk.h/c` - 简化模块开发的接口
+**idcu-http-server/ - HTTP 服务器**
+- `http_server.h/c` - 轻量级 HTTP 服务器
 
-**test-framework/ - 测试框架**
-- `test_framework.h/c` - 单元测试框架
+**idcu-http-client/ - HTTP 客户端**
+- `http_client.h/c` - HTTP 客户端
 
-#### services/ 目录 - 核心服务实现
+**idcu-conn-pool/ - 连接池**
+- `conn_pool.h/c` - 连接复用管理
 
-这些是可复用的服务组件：
+**idcu-distributed/ - 分布式节点**
+- `distributed.h/c` - 多节点通信
 
-**monitor/ - 监控系统**
-- `health_check.h/c` - 健康检查
+**idcu-discovery/ - 节点发现**
+- `discovery.h/c` - 节点自动发现
+
+**idcu-metrics/ - 指标收集**
 - `metrics.h/c` - 指标收集
-- `alert_manager.h/c` - 告警管理
+- `prometheus_exporter.h/c` - Prometheus 导出器
+
+**idcu-healthcheck/ - 健康检查**
+- `healthcheck.h/c` - 健康状态检查
+
+**idcu-alert/ - 告警系统**
+- `alert.h/c` - 告警管理
 - `notifier.h/c` - 通知器
-- `prometheus_exporter.h/c` - Prometheus 指标导出
 
-**network/ - 网络系统**
-- `network_layer.h/c` - 网络层（TCP/UDP Socket）
-- `connection_pool.h/c` - 连接池
-- `http_server.h/c` - HTTP 服务器
-- `management_api.h/c` - 管理 API
-- `distributed_node.h/c` - 分布式节点
-- `node_discovery.h/c` - 节点发现
+**idcu-memory/ - 内存池**
+- `memory_pool.h/c` - 高效内存分配
 
-**security/ - 安全系统**
-- `sandbox.h/c` - 沙箱基础版
-- `sandbox_enhanced.h/c` - 沙箱增强版
+**idcu-permission/ - 权限管理**
+- `permission.h/c` - 权限检查和管理
 
-#### business/ 目录 - 业务模块
+**idcu-sandbox/ - 沙箱安全**
+- `sandbox.h/c` - 沙箱安全机制
+
+#### modules/core/ 目录 - 核心基础设施
 
 这里是具体的功能模块，也是你最可能添加代码的地方：
 
@@ -205,9 +245,9 @@ idcu-agent/
 
 让我们深入了解一些核心模块的工作原理。
 
-### 1. 通用基础组件 (common)
+### 1. 通用基础库 (idcu-common)
 
-**文件位置**: `modules/core/common/`
+**文件位置**: `libs/idcu-common/`
 
 #### 原子操作 (atomic.h/c)
 
@@ -215,10 +255,21 @@ idcu-agent/
 
 **常用函数：**
 ```c
-idcu_atomic_init(&var, 0);           // 初始化原子变量
-idcu_atomic_inc(&var);                // 原子加 1
-idcu_atomic_dec(&var);                // 原子减 1
-int val = idcu_atomic_get(&var);      // 获取值
+// int32_t 操作
+int32_t idcu_atomic_fetch_add_int32(volatile int32_t* ptr, int32_t value);
+int32_t idcu_atomic_fetch_sub_int32(volatile int32_t* ptr, int32_t value);
+int32_t idcu_atomic_exchange_int32(volatile int32_t* ptr, int32_t value);
+int idcu_atomic_compare_exchange_int32(volatile int32_t* ptr, int32_t* expected, int32_t desired);
+int32_t idcu_atomic_load_int32(volatile int32_t* ptr);
+void idcu_atomic_store_int32(volatile int32_t* ptr, int32_t value);
+
+// int64_t 操作
+int64_t idcu_atomic_fetch_add_int64(volatile int64_t* ptr, int64_t value);
+int64_t idcu_atomic_fetch_sub_int64(volatile int64_t* ptr, int64_t value);
+int64_t idcu_atomic_exchange_int64(volatile int64_t* ptr, int64_t value);
+int idcu_atomic_compare_exchange_int64(volatile int64_t* ptr, int64_t* expected, int64_t desired);
+int64_t idcu_atomic_load_int64(volatile int64_t* ptr);
+void idcu_atomic_store_int64(volatile int64_t* ptr, int64_t value);
 ```
 
 #### 锁机制 (lock.h/c)
@@ -244,49 +295,36 @@ idcu_mutex_destroy(&mutex);
 ```c
 typedef enum {
     IDCU_ERR_OK           =  0,  // 成功
-    IDCU_ERR_FAIL         = -1,  // 通用失败
-    IDCU_ERR_NO_MEMORY    = -2,  // 内存不足
-    IDCU_ERR_INVALID_ARG  = -3,  // 参数无效
-    IDCU_ERR_TIMEOUT      = -4,  // 超时
+    IDCU_ERR_GENERAL      = -1,  // 通用错误
+    IDCU_ERR_INVALID_PARAM = -2, // 参数无效
+    IDCU_ERR_NO_MEMORY    = -3,  // 内存不足
+    IDCU_ERR_PERM_DENIED  = -4,  // 权限拒绝
     // ... 更多错误码
 } idcu_ErrorCode;
 ```
 
-### 2. 工具组件 (utils)
+### 2. 日志系统库 (idcu-log)
 
-**文件位置**: `modules/core/utils/`
+**文件位置**: `libs/idcu-log/`
 
 #### 日志系统 (log.h/c)
 
 日志系统支持多个级别：
 
 ```c
+#include <idcu/log/log.h>
+
 // 初始化日志
 idcu_log_init("agent.log", IDCU_LOG_INFO);
 
 // 输出日志
-idcu_log_debug("Debug message: %d", 123);
-idcu_log_info("Info message");
-idcu_log_warn("Warning message");
-idcu_log_error("Error message");
+IDCU_LOG_DEBUG("Debug message: %d", 123);
+IDCU_LOG_INFO("Info message");
+IDCU_LOG_WARN("Warning message");
+IDCU_LOG_ERROR("Error message");
 
 // 关闭日志
 idcu_log_shutdown();
-```
-
-#### 配置管理 (config_manager.h/c)
-
-读取和管理配置文件：
-
-```c
-idcu_ConfigManager* cfg = idcu_config_create();
-idcu_config_load(cfg, "config/agent.cfg");
-
-// 读取配置
-const char* log_level = idcu_config_get(cfg, "general", "log_level");
-int max_modules = idcu_config_get_int(cfg, "general", "max_modules", 32);
-
-idcu_config_destroy(cfg);
 ```
 
 ### 3. 模块管理系统 (module-system)

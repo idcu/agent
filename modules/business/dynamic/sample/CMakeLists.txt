@@ -23,7 +23,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 target_link_libraries(${MODULE_NAME} PRIVATE
-    idcu_core_common
-    idcu_core_utils
+    idcu::common
+    idcu::log
     idcu_core_module_system
 )

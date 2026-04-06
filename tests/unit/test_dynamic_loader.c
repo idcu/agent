@@ -1,6 +1,6 @@
 #include "test/test_framework.h"
 #include "dynamic_module.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

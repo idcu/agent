@@ -2,8 +2,8 @@
 #define IDCU_SECURITY_SANDBOX_H
 
 #include "context.h"
-#include "config.h"
-#include "error_code.h"
+#include "idcu/common/config.h"
+#include "idcu/common/error_code.h"
 #include <stdint.h>
 
 #define IDCU_PERM_SEND    (1U << 0)

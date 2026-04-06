@@ -1,0 +1,23 @@
+{
+  "name": "idcu-conn-pool",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU Agent 连接池模块，提供连接管理和复用功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-network"],
+  "priority": "normal",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/conn_pool/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-network"],
+    "platform_deps": {
+      "win32": ["ws2_32"],
+      "unix": ["pthread"]
+    }
+  }
+}

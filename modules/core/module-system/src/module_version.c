@@ -71,7 +71,7 @@ idcu_VersionCompareResult idcu_version_compare(const idcu_ModuleVersion* v1, con
     if (v1->patch < v2->patch) return IDCU_VERSION_LESS;
     if (v1->patch > v2->patch) return IDCU_VERSION_GREATER;
 
-    // 预发布版本处理: 有预发布标签的版本比没有的版本旧
+    // 预发布版本处�? 有预发布标签的版本比没有的版本旧
     if (v1->pre_release && !v2->pre_release) return IDCU_VERSION_LESS;
     if (!v1->pre_release && v2->pre_release) return IDCU_VERSION_GREATER;
 

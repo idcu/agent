@@ -1,6 +1,6 @@
 #include "test/test_framework.h"
 #include "health_check.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

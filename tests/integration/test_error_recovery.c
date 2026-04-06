@@ -3,7 +3,7 @@
 #include "health_check.h"
 #include "module_registry.h"
 #include "module_def.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -17,9 +17,30 @@ endif()
 
 
 
+# ==================== 独立库 ====================
+add_subdirectory(libs/idcu-module-build)
+
+# 暂时禁用示例构建，专注于核心库
+set(BUILD_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)
+
+add_subdirectory(libs/idcu-common)
+add_subdirectory(libs/idcu-log)
+add_subdirectory(libs/idcu-network)
+add_subdirectory(libs/idcu-http-server)
+add_subdirectory(libs/idcu-http-client)
+add_subdirectory(libs/idcu-json)
+add_subdirectory(libs/idcu-config)
+add_subdirectory(libs/idcu-conn-pool)
+add_subdirectory(libs/idcu-distributed)
+add_subdirectory(libs/idcu-discovery)
+add_subdirectory(libs/idcu-metrics)
+add_subdirectory(libs/idcu-healthcheck)
+add_subdirectory(libs/idcu-alert)
+add_subdirectory(libs/idcu-memory)
+add_subdirectory(libs/idcu-permission)
+add_subdirectory(libs/idcu-sandbox)
+
 # ==================== 核心模块 ====================
-add_subdirectory(modules/core/common)
-add_subdirectory(modules/core/utils)
 add_subdirectory(modules/core/test-framework)
 add_subdirectory(modules/core/sdk)
 add_subdirectory(modules/core/scheduler)
@@ -27,12 +48,21 @@ add_subdirectory(modules/core/module-system)
 add_subdirectory(modules/core/micro-kernel)
 
 # ==================== 服务模块 ====================
-add_subdirectory(modules/services/monitor)
-add_subdirectory(modules/services/network)
 add_subdirectory(modules/services/storage)
 add_subdirectory(modules/services/cache)
 add_subdirectory(modules/services/security)
 add_subdirectory(modules/services/plugin)
+
+# ==================== 集成模块 ====================
+add_subdirectory(modules/integrations/network-monitor-integration)
+add_subdirectory(modules/integrations/log-integration)
+add_subdirectory(modules/integrations/config-integration)
+add_subdirectory(modules/integrations/json-integration)
+add_subdirectory(modules/integrations/network-integration)
+add_subdirectory(modules/integrations/http-server-integration)
+add_subdirectory(modules/integrations/http-client-integration)
+add_subdirectory(modules/integrations/metrics-integration)
+add_subdirectory(modules/integrations/healthcheck-integration)
 
 # ==================== 业务模块 ====================
 add_subdirectory(modules/business/core-module)
@@ -51,7 +81,7 @@ add_subdirectory(modules/business/cache)
 add_subdirectory(modules/business/security)
 add_subdirectory(modules/business/examples/simple-example)
 add_subdirectory(modules/business/examples/messaging-example)
-add_subdirectory(modules/business/examples/advanced-example)
+# add_subdirectory(modules/business/examples/advanced-example)  # 暂时禁用，需要完整的依赖
 
 # ==================== 动态模块 ====================
 option(BUILD_SAMPLE_DLL "Build sample dynamic module" ON)
@@ -76,17 +106,35 @@ if(WIN32)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_link_libraries(idcu_agent PRIVATE -lws2_32
             -Wl,--whole-archive 
-            idcu_core_common
-            idcu_core_utils
+            idcu::common
+            idcu::log
+            idcu::json
+            idcu::config
+            idcu::network
+            idcu::http-server
+            idcu::http-client
+            idcu::conn-pool
+            idcu::distributed
+            idcu::discovery
+            idcu::metrics
+            idcu::healthcheck
+            idcu::alert
             idcu_core_scheduler
             idcu_core_module_system
             idcu_core_micro_kernel
-            idcu_services_monitor
-            idcu_services_network
             idcu_services_storage
             idcu_services_cache
             idcu_services_security
             idcu_services_plugin
+            idcu_integrations_network_monitor
+            idcu_integrations_log
+            idcu_integrations_config
+            idcu_integrations_json
+            idcu_integrations_network
+            idcu_integrations_http_server
+            idcu_integrations_http_client
+            idcu_integrations_metrics
+            idcu_integrations_healthcheck
             idcu_business_core_module
             idcu_business_alert
             idcu_business_collect
@@ -103,17 +151,35 @@ if(WIN32)
             -Wl,--no-whole-archive)
     else()
         target_link_libraries(idcu_agent PRIVATE -lws2_32
-            idcu_core_common
-            idcu_core_utils
+            idcu::common
+            idcu::log
+            idcu::json
+            idcu::config
+            idcu::network
+            idcu::http-server
+            idcu::http-client
+            idcu::conn-pool
+            idcu::distributed
+            idcu::discovery
+            idcu::metrics
+            idcu::healthcheck
+            idcu::alert
             idcu_core_scheduler
             idcu_core_module_system
             idcu_core_micro_kernel
-            idcu_services_monitor
-            idcu_services_network
             idcu_services_storage
             idcu_services_cache
             idcu_services_security
             idcu_services_plugin
+            idcu_integrations_network_monitor
+            idcu_integrations_log
+            idcu_integrations_config
+            idcu_integrations_json
+            idcu_integrations_network
+            idcu_integrations_http_server
+            idcu_integrations_http_client
+            idcu_integrations_metrics
+            idcu_integrations_healthcheck
             idcu_business_core_module
             idcu_business_alert
             idcu_business_collect
@@ -131,17 +197,35 @@ else()
     target_link_libraries(idcu_agent PRIVATE pthread dl)
     if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_link_options(idcu_agent PRIVATE -Wl,--whole-archive 
-            idcu_core_common
-            idcu_core_utils
+            idcu::common
+            idcu::log
+            idcu::json
+            idcu::config
+            idcu::network
+            idcu::http-server
+            idcu::http-client
+            idcu::conn-pool
+            idcu::distributed
+            idcu::discovery
+            idcu::metrics
+            idcu::healthcheck
+            idcu::alert
             idcu_core_scheduler
             idcu_core_module_system
             idcu_core_micro_kernel
-            idcu_services_monitor
-            idcu_services_network
             idcu_services_storage
             idcu_services_cache
             idcu_services_security
             idcu_services_plugin
+            idcu_integrations_network_monitor
+            idcu_integrations_log
+            idcu_integrations_config
+            idcu_integrations_json
+            idcu_integrations_network
+            idcu_integrations_http_server
+            idcu_integrations_http_client
+            idcu_integrations_metrics
+            idcu_integrations_healthcheck
             idcu_business_core_module
             idcu_business_alert
             idcu_business_collect
@@ -158,17 +242,35 @@ else()
             -Wl,--no-whole-archive)
     else()
         target_link_libraries(idcu_agent PRIVATE
-            idcu_core_common
-            idcu_core_utils
+            idcu::common
+            idcu::log
+            idcu::json
+            idcu::config
+            idcu::network
+            idcu::http-server
+            idcu::http-client
+            idcu::conn-pool
+            idcu::distributed
+            idcu::discovery
+            idcu::metrics
+            idcu::healthcheck
+            idcu::alert
             idcu_core_scheduler
             idcu_core_module_system
             idcu_core_micro_kernel
-            idcu_services_monitor
-            idcu_services_network
             idcu_services_storage
             idcu_services_cache
             idcu_services_security
             idcu_services_plugin
+            idcu_integrations_network_monitor
+            idcu_integrations_log
+            idcu_integrations_config
+            idcu_integrations_json
+            idcu_integrations_network
+            idcu_integrations_http_server
+            idcu_integrations_http_client
+            idcu_integrations_metrics
+            idcu_integrations_healthcheck
             idcu_business_core_module
             idcu_business_alert
             idcu_business_collect
@@ -262,10 +364,15 @@ if(BUILD_BENCHMARKS)
     set_target_properties(idcu_benchmark PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
     )
+    target_include_directories(idcu_benchmark PRIVATE
+        ${PROJECT_SOURCE_DIR}/modules/core/scheduler/include
+        ${PROJECT_SOURCE_DIR}/libs/idcu-memory/include
+    )
     target_link_libraries(idcu_benchmark PRIVATE
-        idcu_core_common
-        idcu_core_utils
+        idcu::common
+        idcu::memory
         idcu_core_micro_kernel
+        idcu_core_scheduler
         idcu_business_core_module
     )
     if(NOT WIN32)

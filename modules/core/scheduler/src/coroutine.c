@@ -1,6 +1,6 @@
 #include "coroutine.h"
-#include "error_code.h"
-#include "metrics.h"
+#include "idcu/common/error_code.h"
+#include "idcu/metrics/metrics.h"
 #include <string.h>
 
 #ifdef _WIN32
@@ -151,8 +151,10 @@ int idcu_coro_create(idcu_CoroScheduler *sched, idcu_CoroState (*func)(idcu_Coro
     add_to_ready_queue(sched, idx);
     sched->count++;
 
-    idcu_global_metrics_set(IDCU_METRIC_CORO_TOTAL, sched->count);
-    idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_set("coro_total", sched->count);
+    idcu_global_metrics_set("coro_ready", idcu_coro_get_ready_count(sched));
+    */
 
     idcu_mutex_unlock(&sched->lock);
     return coro->id;
@@ -188,8 +190,10 @@ int idcu_coro_destroy(idcu_CoroScheduler *sched, uint32_t id)
     sched->id_to_index[id] = 0;
     sched->count--;
 
-    idcu_global_metrics_set(IDCU_METRIC_CORO_TOTAL, sched->count);
-    idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_set("coro_total", sched->count);
+    idcu_global_metrics_set("coro_ready", idcu_coro_get_ready_count(sched));
+    */
 
     idcu_mutex_unlock(&sched->lock);
     return IDCU_ERR_SUCCESS;
@@ -216,7 +220,9 @@ int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id)
         coro->state = IDCU_CORO_SUSPENDED;
     }
 
-    idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_set("coro_ready", idcu_coro_get_ready_count(sched));
+    */
 
     idcu_mutex_unlock(&sched->lock);
     return IDCU_ERR_SUCCESS;
@@ -241,7 +247,9 @@ int idcu_coro_resume(idcu_CoroScheduler *sched, uint32_t id)
         add_to_ready_queue(sched, idx);
     }
 
-    idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_set("coro_ready", idcu_coro_get_ready_count(sched));
+    */
 
     idcu_mutex_unlock(&sched->lock);
     return IDCU_ERR_SUCCESS;
@@ -293,8 +301,10 @@ idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
     sched->current_prio = coro->prio;
     coro->state = IDCU_CORO_RUNNING;
 
-    idcu_global_metrics_set(IDCU_METRIC_CORO_RUNNING, 1);
-    idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_set("coro_running", 1);
+    idcu_global_metrics_set("coro_ready", idcu_coro_get_ready_count(sched));
+    */
 
     uint64_t start_ts = get_timestamp_us();
     coro->stats.last_switch_ts = start_ts;
@@ -312,9 +322,11 @@ idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
     coro->stats.switch_count++;
     coro->stats.timeslice_used++;
 
-    idcu_global_metrics_inc(IDCU_METRIC_CORO_SWITCHES, 1);
-    idcu_global_metrics_inc(IDCU_METRIC_CORO_RUNTIME_US, runtime);
-    idcu_global_metrics_set(IDCU_METRIC_CORO_RUNNING, 0);
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_inc("coro_switches", 1);
+    idcu_global_metrics_inc("coro_runtime_us", runtime);
+    idcu_global_metrics_set("coro_running", 0);
+    */
 
     if (result == IDCU_CORO_RUNNING || result == IDCU_CORO_READY) {
         coro->state = IDCU_CORO_READY;
@@ -333,7 +345,9 @@ idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
         coro->state = result;
     }
 
-    idcu_global_metrics_set(IDCU_METRIC_CORO_READY, idcu_coro_get_ready_count(sched));
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_set("coro_ready", idcu_coro_get_ready_count(sched));
+    */
 
     idcu_mutex_unlock(&sched->lock);
     return result;

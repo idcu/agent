@@ -1,14 +1,9 @@
 #include <stdio.h>
 #include "module_def.h"
 #include "micro_kernel.h"
-#include "log.h"
+#include "idcu/log/log.h"
 
 static idcu_MicroKernel g_kernel;
-
-idcu_MicroKernel* idcu_get_kernel(void)
-{
-    return &g_kernel;
-}
 
 int main(void)
 {

@@ -1,6 +1,6 @@
 #include "module_def.h"
 #include "storage.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
-#include "config.h"
+#include "idcu/common/config.h"
 
 typedef struct {
     uint32_t module_id;

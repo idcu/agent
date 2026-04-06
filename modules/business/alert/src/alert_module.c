@@ -1,6 +1,6 @@
 #include "module_def.h"
-#include "config_manager.h"
-#include "log.h"
+#include "idcu/config/config.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

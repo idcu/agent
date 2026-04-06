@@ -2,8 +2,8 @@
 #define IDCU_MODULE_MODULE_MANAGER_H
 
 #include "module_def.h"
-#include "error_code.h"
-#include "lock.h"
+#include "idcu/common/error_code.h"
+#include "idcu/common/lock.h"
 #include <stdint.h>
 #include <stddef.h>
 

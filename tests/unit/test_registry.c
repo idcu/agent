@@ -1,7 +1,7 @@
 #include "test/test_framework.h"
 #include "module_registry.h"
 #include "module_def.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

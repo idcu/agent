@@ -42,43 +42,46 @@ idcu-agent/
 │   └── benchmark.c               # 性能测试程序
 ├── config/                       # 配置文件目录
 │   └── agent.cfg                 # 主配置文件（可以在这里调整各种设置）
+├── libs/                         # 独立库模块（可复用的基础组件）
+│   ├── idcu-module-build/        # 模块构建工具
+│   ├── idcu-common/              # 通用基础组件（原子操作、锁、错误码）
+│   ├── idcu-log/                 # 日志系统
+│   ├── idcu-config/              # 配置管理
+│   ├── idcu-json/                # JSON 解析
+│   ├── idcu-network/             # 网络层（TCP/UDP Socket）
+│   ├── idcu-http-server/         # HTTP 服务器
+│   ├── idcu-http-client/         # HTTP 客户端
+│   ├── idcu-conn-pool/           # 连接池
+│   ├── idcu-distributed/         # 分布式节点
+│   ├── idcu-discovery/           # 节点发现
+│   ├── idcu-metrics/             # 指标收集
+│   ├── idcu-healthcheck/         # 健康检查
+│   ├── idcu-alert/               # 告警系统
+│   ├── idcu-memory/              # 内存池
+│   ├── idcu-permission/          # 权限管理
+│   └── idcu-sandbox/             # 沙箱安全
 ├── modules/                      # 模块化结构（这里是所有功能模块的家）
 │   ├── core/                     # 核心基础设施（微内核的基础）
-│   │   ├── common/               # 通用基础工具
-│   │   │   ├── include/          # 头文件（原子操作、锁、错误码）
-│   │   │   ├── src/              # 源代码
-│   │   │   └── CMakeLists.txt
-│   │   ├── utils/                # 通用工具组件
-│   │   │   ├── include/          # 日志、配置、JSON解析、内存池
-│   │   │   ├── src/              # 源代码
-│   │   │   └── CMakeLists.txt
-│   │   ├── module-system/        # 模块管理系统
-│   │   │   ├── include/          # 模块定义、注册、版本管理
-│   │   │   ├── src/              # 源代码
-│   │   │   └── CMakeLists.txt
-│   │   ├── scheduler/            # 调度器模块
-│   │   │   ├── include/          # 协程、消息总线、上下文管理
-│   │   │   ├── src/              # 源代码
-│   │   │   └── CMakeLists.txt
 │   │   ├── micro-kernel/         # 微内核核心（最重要的部分）
-│   │   │   ├── include/          # 微内核主接口
-│   │   │   ├── src/              # 源代码
-│   │   │   └── CMakeLists.txt
+│   │   ├── module-system/        # 模块管理系统
+│   │   ├── scheduler/            # 调度器模块（协程、消息总线）
 │   │   ├── sdk/                  # 软件开发工具包（帮你更容易写模块）
-│   │   │   ├── include/          # SDK 接口
-│   │   │   ├── src/              # 源代码
-│   │   │   └── CMakeLists.txt
 │   │   └── test-framework/       # 测试框架
-│   │       ├── include/          # 测试框架接口
-│   │       ├── src/              # 源代码
-│   │       └── CMakeLists.txt
-│   ├── services/                 # 服务模块组（提供各种基础服务）
-│   │   ├── monitor/              # 监控系统（健康检查、指标收集）
-│   │   ├── network/              # 网络系统（HTTP、分布式节点）
+│   ├── services/                 # 服务模块组（提供基础服务）
 │   │   ├── storage/              # 存储服务
 │   │   ├── cache/                # 缓存服务
-│   │   ├── security/             # 安全系统（沙箱）
+│   │   ├── security/             # 安全系统
 │   │   └── plugin/               # 插件系统
+│   ├── integrations/             # 集成模块（连接库和模块系统）
+│   │   ├── config-integration/
+│   │   ├── healthcheck-integration/
+│   │   ├── http-client-integration/
+│   │   ├── http-server-integration/
+│   │   ├── json-integration/
+│   │   ├── log-integration/
+│   │   ├── metrics-integration/
+│   │   ├── network-integration/
+│   │   └── network-monitor-integration/
 │   └── business/                 # 业务模块组（具体的功能模块）
 │       ├── core-module/          # 核心基础模块
 │       ├── log/                  # 日志模块
@@ -95,17 +98,23 @@ idcu-agent/
 │       ├── security/             # 安全模块
 │       ├── examples/             # 示例模块（学习参考）
 │       │   ├── simple-example/   # 简单示例
-│       │   ├── messaging-example/ # 消息通信示例
-│       │   └── advanced-example/ # 高级示例
+│       │   └── messaging-example/# 消息通信示例
 │       └── dynamic/              # 动态加载模块示例
 ├── module-repo/                  # 模块仓库（存放官方模块）
 │   ├── official/                 # 官方模块
+│   │   ├── core/                 # 核心模块
+│   │   ├── monitoring/           # 监控模块
+│   │   ├── networking/           # 网络模块
+│   │   └── security/             # 安全模块
 │   └── templates/                # 模块模板（照着写模块）
 ├── examples/                     # 示例程序
 ├── tests/                        # 测试用例
 │   ├── unit/                     # 单元测试
 │   └── integration/              # 集成测试
 ├── docs/                         # 文档目录（这里有详细的教程）
+│   ├── api/                     # API 文档
+│   │   ├── idcu-common.md
+│   │   └── idcu-log.md
 │   ├── user_guide.md             # 用户指南
 │   ├── developer_guide.md        # 开发者指南
 │   ├── architecture.md           # 架构设计文档
@@ -113,12 +122,22 @@ idcu-agent/
 │   ├── tutorial_02_module_development.md  # 教程二：模块开发
 │   ├── tutorial_03_message_bus.md      # 教程三：消息总线
 │   ├── tutorial_04_coroutine.md         # 教程四：协程
-│   └── tutorial_05_sandbox.md           # 教程五：沙箱
+│   ├── tutorial_05_sandbox.md           # 教程五：沙箱
+│   ├── sdk_guide.md             # SDK 指南
+│   ├── management_api.md        # 管理 API
+│   ├── refactoring_plan.md      # 重构计划
+│   ├── roadmap.md               # 路线图
+│   └── community_guide.md       # 社区指南
 ├── scripts/                      # 构建脚本
 │   ├── build.bat                 # Windows 编译脚本（双击就能编译）
-│   └── build.sh                  # Linux 编译脚本
+│   ├── build.sh                  # Linux 编译脚本
+│   └── generate_coverage.sh      # 覆盖率生成脚本
 ├── out/                          # 编译输出目录（程序会生成在这里）
 ├── CMakeLists.txt                # CMake 构建配置
+├── CMakeLists_benchmark.txt      # 性能测试配置
+├── Doxyfile                      # Doxygen 配置
+├── CODE_OF_CONDUCT.md            # 行为准则
+├── CONTRIBUTING.md               # 贡献指南
 └── README.md                     # 你正在看的这个文件
 ```
 

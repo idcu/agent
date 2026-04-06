@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdint.h>
 #include "msg_bus.h"
 #include "coroutine.h"
-#include "memory_pool.h"
+#include "idcu/memory/memory_pool.h"
 
 #ifdef _WIN32
 #include <windows.h>

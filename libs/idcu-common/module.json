@@ -1,0 +1,23 @@
+{
+  "name": "idcu-common",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU Agent 基础公共库，提供原子操作、锁、数据结构等基础功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": [],
+  "priority": "high",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/common/*.c"],
+    "includes": ["include"],
+    "link_libraries": [],
+    "platform_deps": {
+      "win32": [],
+      "unix": ["pthread"]
+    }
+  }
+}

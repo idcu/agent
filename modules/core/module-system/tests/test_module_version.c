@@ -1,7 +1,7 @@
 #include "test_framework.h"
 #include "micro_kernel.h"
 #include "module_version.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <string.h>
 #include <stdio.h>
 

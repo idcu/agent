@@ -1,0 +1,23 @@
+{
+  "name": "idcu-healthcheck",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU Agent 健康检查模块，提供服务健康检测功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "priority": "normal",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/healthcheck/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log"],
+    "platform_deps": {
+      "win32": [],
+      "unix": ["pthread"]
+    }
+  }
+}

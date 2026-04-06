@@ -1,7 +1,6 @@
 /**
  * @file network_layer_example.c
- * @brief 网络层使用示例
- * 
+ * @brief 网络层使用示�? * 
  * 演示如何使用网络层服务进行基本的网络通信
  */
 

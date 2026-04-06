@@ -2,7 +2,7 @@
 #include "http_server.h"
 #include "management_api.h"
 #include "micro_kernel.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 
 static idcu_HttpServer g_http_server;

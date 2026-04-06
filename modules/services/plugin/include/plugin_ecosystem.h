@@ -1,7 +1,7 @@
 #ifndef IDCU_PLUGIN_PLUGIN_ECOSYSTEM_H
 #define IDCU_PLUGIN_PLUGIN_ECOSYSTEM_H
 
-#include "error_code.h"
+#include "idcu/common/error_code.h"
 #include <stdint.h>
 #include <stddef.h>
 

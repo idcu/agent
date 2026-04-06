@@ -15,7 +15,7 @@ function(add_integration_test test_name source_file)
         if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
             target_link_libraries(${test_name} PRIVATE -lws2_32
                 -Wl,--whole-archive 
-                idcu_core_common
+                idcu::common
                 idcu_core_utils
                 idcu_core_scheduler
                 idcu_core_module_system
@@ -37,7 +37,7 @@ function(add_integration_test test_name source_file)
                 -Wl,--no-whole-archive)
         else()
             target_link_libraries(${test_name} PRIVATE -lws2_32
-                idcu_core_common
+                idcu::common
                 idcu_core_utils
                 idcu_core_scheduler
                 idcu_core_module_system

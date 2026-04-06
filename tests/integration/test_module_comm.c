@@ -3,7 +3,7 @@
 #include "msg_bus.h"
 #include "module_def.h"
 #include "module_registry.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

@@ -1,7 +1,7 @@
 
 #include "module_def.h"
-#include "error_code.h"
-#include "log.h"
+#include "idcu/common/error_code.h"
+#include "idcu/log/log.h"
 #include "prometheus_exporter.h"
 #include "metrics.h"
 

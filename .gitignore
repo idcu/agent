@@ -1,6 +1,11 @@
 # 构建目录
 build/
+build_*/
+build-*/
+_build/
 out/
+bin/
+lib/
 
 # 编译产物
 *.o
@@ -11,11 +16,30 @@ out/
 *.dylib
 *.a
 *.lib
+*.la
+*.lo
+*.slo
+*.loT
+
+# 静态库和动态库
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.bundle
+
+# 可执行文件
+*.exe
+*.out
+*.app
 
 # 日志和临时文件
 *.log
 temp/
 tmp/
+*.tmp
+*.temp
 
 # IDE/编辑器配置
 .vscode/
@@ -26,21 +50,123 @@ tmp/
 *~
 .DS_Store
 Thumbs.db
+*.sublime-*
+*.kate-swp
+.project
+.cproject
+.settings/
+.clangd/
+.cache/
 
 # 配置备份
 *.cfg.bak
 *.conf.bak
+*.bak
+*~
 
 # 调试文件
 *.gdb
 *.dSYM/
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.ipdb
+*.iobj
 
 # CMake
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
+cmake_uninstall.cmake
+CTestTestfile.cmake
+Testing/
+*.cmake.in
+!cmake/*.cmake.in
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+compile_commands.json
+
+# CMake 配置文件
+*-config.cmake
+*-config-version.cmake
+
+# 覆盖率报告
+*.gcda
+*.gcno
+*.gcov
+coverage.info
+coverage_filtered.info
+coverage_report/
+lcov-report/
+
+# Doxygen
+docs/html/
+docs/latex/
+docs/man/
+docs/xml/
+doxygen_sqlite3.db
+*.tag
 
 # 性能测试数据
 *.prof
 *.out
+benchmark_results.json
+*.benchmark
+
+# 测试
+Testing/
+test_results/
+*.xml
+
+# 打包文件
+*.tar.gz
+*.zip
+*.7z
+*.rar
+
+# 环境变量和本地配置
+.env
+.env.local
+.env.*.local
+config/local.cfg
+
+# 模块构建产物
+modules/**/build/
+modules/**/out/
+libs/**/build/
+libs/**/out/
+
+# Clang-tidy
+.clang-tidy-*
+*.clang-tidy
+
+# ccache
+.ccache/
+
+# distcc
+.distcc/
+
+# 自动生成的头文件
+*.h.gch
+*.pch
+
+# 链接器脚本
+*.ld
+*.lds
+
+# Windows 特定
+*.manifest
+*.res
+*.rc
+
+# macOS 特定
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+DerivedData/
+
+# Linux 特定
+*.pid
+*.lock

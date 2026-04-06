@@ -2,8 +2,8 @@
 #define IDCU_SCHEDULER_MSG_BUS_H
 
 #include "context.h"
-#include "config.h"
-#include "lock.h"
+#include "idcu/common/config.h"
+#include "idcu/common/lock.h"
 
 #define IDCU_MSG_BATCH_MAX 32
 #define IDCU_MSG_ZEROCOPY_POOL_SIZE 256

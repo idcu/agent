@@ -1,6 +1,6 @@
 #include "test/test_framework.h"
 #include "config_manager.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

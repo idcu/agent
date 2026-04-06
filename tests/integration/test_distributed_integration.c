@@ -3,7 +3,7 @@
 #include "distributed_node.h"
 #include "node_discovery.h"
 #include "network_layer.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

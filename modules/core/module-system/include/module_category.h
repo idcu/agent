@@ -1,8 +1,8 @@
 #ifndef IDCU_MODULE_MODULE_CATEGORY_H
 #define IDCU_MODULE_MODULE_CATEGORY_H
 
-#include "config.h"
-#include "error_code.h"
+#include "idcu/common/config.h"
+#include "idcu/common/error_code.h"
 #include "module_def.h"
 #include <stdint.h>
 

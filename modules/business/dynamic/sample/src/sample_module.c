@@ -1,5 +1,5 @@
 #include "module_def.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 
 static int g_initialized = 0;

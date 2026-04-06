@@ -1,7 +1,7 @@
 #include "msg_bus.h"
-#include "error_code.h"
-#include "metrics.h"
-#include "log.h"
+#include "idcu/common/error_code.h"
+#include "idcu/metrics/metrics.h"
+#include "idcu/log/log.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -114,7 +114,9 @@ int idcu_msg_send(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu
 
     q->tail = (q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
 
-    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, 1);
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_inc("msg_sent", 1);
+    */
 
     idcu_mutex_unlock(&q->lock);
     IDCU_LOG_DEBUG("msg_send succeeded: src=%u, dst=%u, prio=%d", src_mod, dst_mod, prio);
@@ -144,7 +146,9 @@ int idcu_msg_recv(idcu_MessageBus *bus, uint32_t mod_id, idcu_Message *msg)
                 *msg = *queue_msg;
                 q->head = (q->head + 1) % IDCU_MSG_QUEUE_SIZE;
 
-                idcu_global_metrics_inc(IDCU_METRIC_MSG_RECEIVED, 1);
+                /* TODO: Re-enable metrics when new API is fully integrated
+                idcu_global_metrics_inc("msg_received", 1);
+                */
 
                 idcu_mutex_unlock(&q->lock);
                 IDCU_LOG_DEBUG("msg_recv succeeded: mod=%u, src=%u, prio=%d", mod_id, queue_msg->source_mod_id, prio);
@@ -162,7 +166,9 @@ int idcu_msg_broadcast(idcu_MessageBus *bus, uint32_t src_mod, idcu_MsgPriority 
 {
     int ret = idcu_msg_send(bus, src_mod, 0, prio, ctx);
     if (ret == IDCU_ERR_SUCCESS) {
-        idcu_global_metrics_inc(IDCU_METRIC_MSG_BROADCAST, 1);
+        /* TODO: Re-enable metrics when new API is fully integrated
+        idcu_global_metrics_inc("msg_broadcast", 1);
+        */
     }
     return ret;
 }
@@ -273,8 +279,10 @@ int idcu_msg_send_zerocopy(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_
 
     q->tail = (q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
 
-    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, 1);
-    idcu_global_metrics_inc(IDCU_METRIC_MSG_ZEROCOPY_SENT, 1);
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_inc("msg_sent", 1);
+    idcu_global_metrics_inc("msg_zerocopy_sent", 1);
+    */
 
     idcu_mutex_unlock(&q->lock);
     IDCU_LOG_DEBUG("msg_send_zerocopy succeeded: src=%u, dst=%u, prio=%d, size=%u", src_mod, dst_mod, prio, size);
@@ -359,7 +367,9 @@ int idcu_msg_send_batch(idcu_MessageBus *bus, idcu_MessageBatch *batch)
         
         if (is_queue_full(current_q)) {
             idcu_mutex_unlock(&current_q->lock);
-            idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, sent);
+            /* TODO: Re-enable metrics when new API is fully integrated
+            idcu_global_metrics_inc("msg_sent", sent);
+            */
             return sent > 0 ? (int)sent : IDCU_ERR_QUEUE_FULL;
         }
 
@@ -374,8 +384,10 @@ int idcu_msg_send_batch(idcu_MessageBus *bus, idcu_MessageBatch *batch)
         idcu_mutex_unlock(&current_q->lock);
     }
 
-    idcu_global_metrics_inc(IDCU_METRIC_MSG_SENT, sent);
-    idcu_global_metrics_inc(IDCU_METRIC_MSG_BATCH_SENT, 1);
+    /* TODO: Re-enable metrics when new API is fully integrated
+    idcu_global_metrics_inc("msg_sent", sent);
+    idcu_global_metrics_inc("msg_batch_sent", 1);
+    */
     return (int)sent;
 }
 
@@ -422,8 +434,10 @@ int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch
     }
 
     if (batch->count > 0) {
-        idcu_global_metrics_inc(IDCU_METRIC_MSG_RECEIVED, batch->count);
-        idcu_global_metrics_inc(IDCU_METRIC_MSG_BATCH_RECEIVED, 1);
+        /* TODO: Re-enable metrics when new API is fully integrated
+        idcu_global_metrics_inc("msg_received", batch->count);
+        idcu_global_metrics_inc("msg_batch_received", 1);
+        */
     }
 
     return (int)batch->count;

@@ -1,7 +1,7 @@
 #include "test_framework.h"
 #include "msg_bus.h"
-#include "log.h"
-#include "error_code.h"
+#include "idcu/log/log.h"
+#include "idcu/common/error_code.h"
 #include <stdio.h>
 #include <string.h>
 

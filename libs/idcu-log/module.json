@@ -1,0 +1,23 @@
+{
+  "name": "idcu-log",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU Agent 日志模块，提供结构化日志和文件日志功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common"],
+  "priority": "high",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/log/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common"],
+    "platform_deps": {
+      "win32": [],
+      "unix": ["pthread"]
+    }
+  }
+}

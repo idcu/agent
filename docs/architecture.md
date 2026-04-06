@@ -81,9 +81,9 @@ IDCU Agent 采用微内核架构设计，核心只负责基本的调度和通信
 
 这是整个系统的基石，提供微内核架构的基础功能。
 
-### 1. 通用基础组件 (Common)
+### 1. 通用基础库 (idcu-common)
 
-**文件位置**: `modules/core/common/`
+**文件位置**: `libs/idcu-common/`
 
 提供项目通用的基础工具组件：
 
@@ -106,36 +106,180 @@ IDCU Agent 采用微内核架构设计，核心只负责基本的调度和通信
   - 编译时配置选项
   - 平台相关定义
 
-### 2. 工具组件 (Utils)
+- **数据结构**
+  - 向量 (`vector.h/c`) - 动态数组
+  - 链表 (`linked_list.h/c`) - 双向链表
+  - 哈希表 (`hash_map.h/c`) - 哈希表
+  - 字符串缓冲区 (`string_buf.h/c`) - 动态字符串
+  - 选项类型 (`option.h/c`) - 可选值类型
 
-**文件位置**: `modules/core/utils/`
+### 2. 日志系统库 (idcu-log)
 
-提供项目通用的工具组件：
+**文件位置**: `libs/idcu-log/`
+
+提供灵活高效的日志功能：
 
 - **日志系统** (`log.h/c`)
-  - 多级别日志 (DEBUG/INFO/WARN/ERROR)
+  - 多级别日志 (DEBUG/INFO/WARN/ERROR/FATAL)
   - 日志格式化
   - 日志输出管理（控制台/文件）
 
-- **配置管理** (`config_manager.h/c`)
+### 3. 配置管理库 (idcu-config)
+
+**文件位置**: `libs/idcu-config/`
+
+提供配置文件管理功能：
+
+- **配置管理** (`config.h/c`)
   - INI 格式配置文件读取
   - 配置项查询
   - 配置更新
 
-- **JSON 解析器** (`json_parser.h/c`)
+### 4. JSON 解析库 (idcu-json)
+
+**文件位置**: `libs/idcu-json/`
+
+提供 JSON 数据处理功能：
+
+- **JSON 解析器** (`json.h/c`)
   - JSON 解析
   - JSON 生成
   - JSON 数据操作
+
+### 5. 网络层库 (idcu-network)
+
+**文件位置**: `libs/idcu-network/`
+
+提供网络通信功能：
+
+- **网络层** (`network_layer.h/c`)
+  - TCP/UDP Socket 封装
+  - 网络连接管理
+  - 数据收发接口
+
+### 6. HTTP 服务器库 (idcu-http-server)
+
+**文件位置**: `libs/idcu-http-server/`
+
+提供轻量级 HTTP 服务：
+
+- **HTTP 服务器** (`http_server.h/c`)
+  - 轻量级 HTTP 服务实现
+  - 请求路由
+  - 响应处理
+
+### 7. HTTP 客户端库 (idcu-http-client)
+
+**文件位置**: `libs/idcu-http-client/`
+
+提供 HTTP 客户端功能：
+
+- **HTTP 客户端** (`http_client.h/c`)
+  - HTTP 请求发送
+  - 响应接收和解析
+
+### 8. 连接池库 (idcu-conn-pool)
+
+**文件位置**: `libs/idcu-conn-pool/`
+
+提供连接复用管理：
+
+- **连接池** (`conn_pool.h/c`)
+  - 连接复用管理
+  - 连接生命周期管理
+  - 连接健康检查
+
+### 9. 分布式节点库 (idcu-distributed)
+
+**文件位置**: `libs/idcu-distributed/`
+
+提供分布式节点通信：
+
+- **分布式节点** (`distributed.h/c`)
+  - 多节点通信
+  - 节点状态同步
+  - 数据同步机制
+
+### 10. 节点发现库 (idcu-discovery)
+
+**文件位置**: `libs/idcu-discovery/`
+
+提供节点自动发现功能：
+
+- **节点发现** (`discovery.h/c`)
+  - 节点自动发现
+  - 节点广播
+  - 发现协议实现
+
+### 11. 指标收集库 (idcu-metrics)
+
+**文件位置**: `libs/idcu-metrics/`
+
+提供性能指标收集：
+
+- **指标收集** (`metrics.h/c`)
+  - 性能指标收集
+  - 指标分类管理
+  - 指标查询接口
+  - Prometheus 格式指标导出 (`prometheus_exporter.h/c`)
+
+### 12. 健康检查库 (idcu-healthcheck)
+
+**文件位置**: `libs/idcu-healthcheck/`
+
+提供健康状态检查：
+
+- **健康检查** (`healthcheck.h/c`)
+  - 模块心跳检测
+  - 健康状态管理
+  - 健康状态查询接口
+
+### 13. 告警系统库 (idcu-alert)
+
+**文件位置**: `libs/idcu-alert/`
+
+提供告警通知功能：
+
+- **告警管理** (`alert.h/c`)
+  - 告警规则定义
+  - 告警条件判断
+  - 告警状态管理
+- **通知器** (`notifier.h/c`)
+  - 告警通知发送
+  - 多渠道通知支持
+
+### 14. 内存池库 (idcu-memory)
+
+**文件位置**: `libs/idcu-memory/`
+
+提供高效内存管理：
 
 - **内存池** (`memory_pool.h/c`)
   - 高效内存分配
   - 内存复用
   - 内存泄漏检测
 
-- **权限管理** (`permission_manager.h/c`)
+### 15. 权限管理库 (idcu-permission)
+
+**文件位置**: `libs/idcu-permission/`
+
+提供权限管理功能：
+
+- **权限管理** (`permission.h/c`)
   - 权限定义
   - 权限检查
   - 权限管理
+
+### 16. 沙箱安全库 (idcu-sandbox)
+
+**文件位置**: `libs/idcu-sandbox/`
+
+提供模块隔离和安全机制：
+
+- **沙箱基础版** (`sandbox.h/c`)
+  - 权限控制 (发送、接收、运行、硬件访问等)
+  - 内存区域保护
+  - 资源限制 (CPU、内存、文件描述符)
 
 ### 3. 模块管理系统 (Module System)
 
@@ -379,36 +523,89 @@ idcu-agent/
 │   └── benchmark.c               # 性能基准测试
 ├── config/                       # 配置文件
 │   └── agent.cfg                 # 主配置文件
+├── libs/                         # 独立库模块（可复用的基础组件）
+│   ├── idcu-module-build/        # 模块构建工具
+│   ├── idcu-common/              # 通用基础组件（原子操作、锁、错误码等）
+│   ├── idcu-log/                 # 日志系统
+│   ├── idcu-config/              # 配置管理
+│   ├── idcu-json/                # JSON 解析
+│   ├── idcu-network/             # 网络层（TCP/UDP Socket）
+│   ├── idcu-http-server/         # HTTP 服务器
+│   ├── idcu-http-client/         # HTTP 客户端
+│   ├── idcu-conn-pool/           # 连接池
+│   ├── idcu-distributed/         # 分布式节点
+│   ├── idcu-discovery/           # 节点发现
+│   ├── idcu-metrics/             # 指标收集
+│   ├── idcu-healthcheck/         # 健康检查
+│   ├── idcu-alert/               # 告警系统
+│   ├── idcu-memory/              # 内存池
+│   ├── idcu-permission/          # 权限管理
+│   └── idcu-sandbox/             # 沙箱安全
 ├── modules/                      # 模块化结构
 │   ├── core/                     # 核心基础设施
-│   │   ├── common/               # 通用基础组件
-│   │   ├── utils/                # 通用工具组件
+│   │   ├── micro-kernel/         # 微内核核心
 │   │   ├── module-system/        # 模块管理系统
 │   │   ├── scheduler/            # 调度器模块
-│   │   ├── micro-kernel/         # 微内核核心
 │   │   ├── sdk/                  # 软件开发工具包
 │   │   └── test-framework/       # 测试框架
 │   ├── services/                 # 服务模块组
-│   │   ├── monitor/              # 监控系统
-│   │   ├── network/              # 网络系统
 │   │   ├── storage/              # 存储服务
 │   │   ├── cache/                # 缓存服务
 │   │   ├── security/             # 安全系统
 │   │   └── plugin/               # 插件系统
+│   ├── integrations/             # 集成模块（连接库和模块系统）
+│   │   ├── config-integration/
+│   │   ├── healthcheck-integration/
+│   │   ├── http-client-integration/
+│   │   ├── http-server-integration/
+│   │   ├── json-integration/
+│   │   ├── log-integration/
+│   │   ├── metrics-integration/
+│   │   ├── network-integration/
+│   │   └── network-monitor-integration/
 │   └── business/                 # 业务模块组
 │       ├── core-module/          # 核心基础模块
 │       ├── alert/                # 告警模块
 │       ├── collect/              # 采集模块
+│       ├── config/               # 配置模块
+│       ├── data-collector/       # 数据采集模块
+│       ├── healthcheck/          # 健康检查模块
+│       ├── heartbeat/            # 心跳模块
+│       ├── http-client/          # HTTP客户端模块
+│       ├── log/                  # 日志模块
+│       ├── metrics/              # 指标模块
+│       ├── storage/              # 存储模块
+│       ├── cache/                # 缓存模块
+│       ├── security/             # 安全模块
 │       ├── examples/             # 示例模块
+│       │   ├── simple-example/   # 简单示例
+│       │   └── messaging-example/# 消息示例
 │       └── dynamic/              # 动态加载模块示例
 ├── module-repo/                  # 模块仓库
+│   ├── official/                 # 官方模块
+│   │   ├── core/                 # 核心模块
+│   │   ├── monitoring/           # 监控模块
+│   │   ├── networking/           # 网络模块
+│   │   └── security/             # 安全模块
+│   └── templates/                # 模块模板
 ├── tests/                        # 测试用例
 │   ├── unit/                     # 单元测试
 │   └── integration/              # 集成测试
 ├── examples/                     # 示例程序
 ├── docs/                         # 文档目录
+│   ├── api/                     # API 文档
+│   └── ...                      # 其他文档
 ├── scripts/                      # 构建脚本
-└── CMakeLists.txt                # CMake 构建配置
+│   ├── build.bat                 # Windows 编译脚本
+│   ├── build.sh                  # Linux 编译脚本
+│   └── generate_coverage.sh      # 覆盖率生成脚本
+├── out/                          # 编译输出目录
+├── CMakeLists.txt                # CMake 构建配置
+├── CMakeLists_benchmark.txt      # 性能测试配置
+├── Doxyfile                      # Doxygen 配置
+├── CODE_OF_CONDUCT.md            # 行为准则
+├── CONTRIBUTING.md               # 贡献指南
+└── README.md                     # 项目说明
 ```
 
 ---

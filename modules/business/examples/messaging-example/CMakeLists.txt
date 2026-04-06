@@ -19,7 +19,7 @@ target_include_directories(${MODULE_NAME} PUBLIC
 )
 
 target_link_libraries(${MODULE_NAME} PRIVATE
-    idcu_core_common
+    idcu::common
     idcu_core_utils
     idcu_core_micro_kernel
     idcu_core_scheduler

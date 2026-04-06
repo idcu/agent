@@ -1,5 +1,5 @@
 #include "dynamic_module.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <string.h>
 #include <stdio.h>
 

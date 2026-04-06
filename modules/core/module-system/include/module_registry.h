@@ -4,8 +4,8 @@
 #include "module_def.h"
 #include "module_version.h"
 #include "module_category.h"
-#include "error_code.h"
-#include "lock.h"
+#include "idcu/common/error_code.h"
+#include "idcu/common/lock.h"
 #include <stdint.h>
 
 #ifdef __cplusplus

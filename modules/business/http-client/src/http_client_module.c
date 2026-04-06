@@ -1,6 +1,6 @@
 #include "module_def.h"
-#include "http_client.h"
-#include "log.h"
+#include "idcu/http_client/http_client.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
 

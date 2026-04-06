@@ -20,12 +20,22 @@ target_include_directories(${MODULE_NAME} PUBLIC
 
 # 依赖
 target_link_libraries(${MODULE_NAME} PUBLIC
-    idcu_core_common
-    idcu_core_utils
+    idcu::common
+    idcu::log
+    idcu::config
+    idcu::json
+    idcu::network
+    idcu::http-server
+    idcu::http-client
+    idcu::conn-pool
+    idcu::distributed
+    idcu::discovery
+    idcu::metrics
+    idcu::healthcheck
+    idcu::alert
     idcu_core_scheduler
     idcu_core_module_system
     idcu_services_security
-    idcu_services_monitor
 )
 
 # 模块测试

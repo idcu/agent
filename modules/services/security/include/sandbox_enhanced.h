@@ -2,7 +2,7 @@
 #define IDCU_SECURITY_SANDBOX_ENHANCED_H
 
 #include "sandbox.h"
-#include "error_code.h"
+#include "idcu/common/error_code.h"
 #include <stdint.h>
 #include <stddef.h>
 

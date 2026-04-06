@@ -14,7 +14,7 @@ foreach(test_src ${TEST_SRCS})
         if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
             target_link_libraries(${test_name} PRIVATE -lws2_32
                 -Wl,--whole-archive 
-                idcu_core_common
+                idcu::common
                 idcu_core_utils
                 idcu_core_scheduler
                 idcu_core_module_system
@@ -36,7 +36,7 @@ foreach(test_src ${TEST_SRCS})
                 -Wl,--no-whole-archive)
         else()
             target_link_libraries(${test_name} PRIVATE -lws2_32
-                idcu_core_common
+                idcu::common
                 idcu_core_utils
                 idcu_core_scheduler
                 idcu_core_module_system
@@ -58,7 +58,7 @@ foreach(test_src ${TEST_SRCS})
         endif()
     else()
         target_link_libraries(${test_name} PRIVATE pthread dl
-            idcu_core_common
+            idcu::common
             idcu_core_utils
             idcu_core_scheduler
             idcu_core_module_system

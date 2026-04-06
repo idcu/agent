@@ -1,5 +1,5 @@
 #include "module_def.h"
-#include "log.h"
+#include "idcu/log/log.h"
 #include <stdio.h>
 
 static int test_init_fail_module_init(void)
