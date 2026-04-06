@@ -1,29 +1,6 @@
-# Scheduler 模块 CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
-
-# 模块名称
-set(MODULE_NAME idcu_core_scheduler)
-
-# 收集源文件
-file(GLOB_RECURSE MODULE_SRCS
-    src/*.c
-)
-
-# 创建静态库
-add_library(${MODULE_NAME} STATIC ${MODULE_SRCS})
-
-# 公共头文件目录
-target_include_directories(${MODULE_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-# 私有依赖
-target_link_libraries(${MODULE_NAME} PRIVATE
-    idcu::common
-    idcu::log
-    idcu::metrics
-)
+include("${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake/idcu_module_build.cmake")
+idcu_build_module()
 
 # 模块测试
 if(BUILD_TESTS)

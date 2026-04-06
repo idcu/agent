@@ -5,7 +5,7 @@
   "description": "IDCU Agent 网络层模块，提供 TCP/UDP 套接字和网络通信功能",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["idcu-common"],
+  "dependencies": ["idcu-common", "idcu-log"],
   "priority": "high",
   "type": "library",
   "build": {
@@ -14,7 +14,7 @@
     "type": "static",
     "sources": ["src/idcu/network/*.c"],
     "includes": ["include"],
-    "link_libraries": ["idcu-common"],
+    "link_libraries": ["idcu-common", "idcu-log"],
     "platform_deps": {
       "win32": ["ws2_32"],
       "unix": ["pthread"]

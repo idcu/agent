@@ -1,12 +1,24 @@
 {
-  "name": "sdk_module",
+  "name": "idcu_core_sdk",
   "category": "core",
   "version": "1.0.0",
   "description": "SDK module providing simplified development interfaces and utility wrappers",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["common_module", "utils_module"],
+  "dependencies": ["idcu-common", "idcu-log", "idcu-core-module-system", "idcu-core-scheduler"],
   "priority": "medium",
   "type": "builtin",
-  "config_schema": {}
+  "config_schema": {},
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/*.c"],
+    "includes": ["include", "../scheduler/include", "../module-system/include"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-core-module-system", "idcu-core-scheduler"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
 }

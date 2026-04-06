@@ -5,7 +5,7 @@
   "description": "IDCU Agent 服务发现模块，提供节点发现和注册功能",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["idcu-common", "idcu-network", "idcu-distributed"],
+  "dependencies": ["idcu-common", "idcu-log", "idcu-network", "idcu-distributed"],
   "priority": "normal",
   "type": "library",
   "build": {
@@ -14,7 +14,7 @@
     "type": "static",
     "sources": ["src/idcu/discovery/*.c"],
     "includes": ["include"],
-    "link_libraries": ["idcu-common", "idcu-network", "idcu-distributed"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-network", "idcu-distributed"],
     "platform_deps": {
       "win32": ["ws2_32"],
       "unix": ["pthread"]

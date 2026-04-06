@@ -1,13 +1,13 @@
 {
-  "name": "idcu_business_log",
-  "category": "core",
+  "name": "idcu_integrations_healthcheck",
+  "category": "integration",
   "version": "1.0.0",
-  "description": "Logging management module for IDCU Agent",
+  "description": "Healthcheck integration module",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["idcu-common", "idcu-log", "idcu-integrations-log", "idcu-business-core-module"],
-  "priority": "high",
-  "type": "builtin",
+  "dependencies": ["idcu-common", "idcu-healthcheck", "idcu-log"],
+  "priority": "normal",
+  "type": "integration",
   "config_schema": {},
   "build": {
     "language": "C",
@@ -15,7 +15,7 @@
     "type": "static",
     "sources": ["src/*.c"],
     "includes": ["include", "../../core/module-system/include", "../../core/micro-kernel/include"],
-    "link_libraries": ["idcu-common", "idcu-log", "idcu-integrations-log", "idcu-business-core-module"],
+    "link_libraries": ["idcu-common", "idcu-healthcheck", "idcu-log"],
     "platform_deps": {
       "win32": [],
       "unix": []

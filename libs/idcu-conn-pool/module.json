@@ -5,7 +5,7 @@
   "description": "IDCU Agent 连接池模块，提供连接管理和复用功能",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["idcu-common", "idcu-network"],
+  "dependencies": ["idcu-common", "idcu-log", "idcu-network"],
   "priority": "normal",
   "type": "library",
   "build": {
@@ -14,7 +14,7 @@
     "type": "static",
     "sources": ["src/idcu/conn_pool/*.c"],
     "includes": ["include"],
-    "link_libraries": ["idcu-common", "idcu-network"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-network"],
     "platform_deps": {
       "win32": ["ws2_32"],
       "unix": ["pthread"]

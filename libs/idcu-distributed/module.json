@@ -5,7 +5,7 @@
   "description": "IDCU Agent 分布式节点模块，提供分布式系统功能",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["idcu-common", "idcu-network", "idcu-conn-pool"],
+  "dependencies": ["idcu-common", "idcu-log", "idcu-network", "idcu-conn-pool"],
   "priority": "normal",
   "type": "library",
   "build": {
@@ -14,7 +14,7 @@
     "type": "static",
     "sources": ["src/idcu/distributed/*.c"],
     "includes": ["include"],
-    "link_libraries": ["idcu-common", "idcu-network", "idcu-conn-pool"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-network", "idcu-conn-pool"],
     "platform_deps": {
       "win32": ["ws2_32"],
       "unix": ["pthread"]

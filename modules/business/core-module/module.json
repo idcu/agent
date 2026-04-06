@@ -1,12 +1,24 @@
 {
-  "name": "core_module",
+  "name": "idcu_business_core_module",
   "category": "core",
   "version": "1.0.0",
   "description": "Core functionality module for IDCU Agent",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": [],
+  "dependencies": ["idcu-common", "idcu-log", "idcu-core-micro-kernel"],
   "priority": "realtime",
   "type": "builtin",
-  "config_schema": {}
+  "config_schema": {},
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/*.c"],
+    "includes": ["include", "../../core/module-system/include", "../../core/micro-kernel/include"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-core-micro-kernel"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
 }

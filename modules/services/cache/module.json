@@ -1,7 +1,21 @@
 {
-    "name": "cache_service",
+    "name": "idcu_services_cache",
     "version": "1.0.0",
     "description": "IDCU Cache Service Module",
     "type": "service",
-    "dependencies": ["core_common", "core_log"]
+    "dependencies": ["idcu-common", "idcu-log"],
+    "priority": "normal",
+    "config_schema": {},
+    "build": {
+        "language": "C",
+        "standard": "99",
+        "type": "static",
+        "sources": ["src/*.c"],
+        "includes": ["include"],
+        "link_libraries": ["idcu-common", "idcu-log"],
+        "platform_deps": {
+            "win32": [],
+            "unix": []
+        }
+    }
 }

@@ -1,24 +1,8 @@
-# Security 服务模块 CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
+include("${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake/idcu_module_build.cmake")
+idcu_build_module()
 
-set(MODULE_NAME idcu_services_security)
-
-file(GLOB_RECURSE MODULE_SRCS src/*.c)
-
-add_library(${MODULE_NAME} STATIC ${MODULE_SRCS})
-
-target_include_directories(${MODULE_NAME} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(${MODULE_NAME} PUBLIC
-    idcu::common
-    idcu::log
-    idcu_core_module_system
-    idcu_core_scheduler
-)
-
+# 模块测试
 if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()

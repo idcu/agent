@@ -19,6 +19,8 @@ endif()
 
 # ==================== 独立库 ====================
 add_subdirectory(libs/idcu-module-build)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libs/idcu-module-build/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/libs/idcu-module-build" ${CMAKE_PREFIX_PATH})
 
 # 暂时禁用示例构建，专注于核心库
 set(BUILD_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)

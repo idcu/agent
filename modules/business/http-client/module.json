@@ -1,12 +1,24 @@
 {
-  "name": "http_client_module",
+  "name": "idcu_business_http_client",
   "category": "service",
   "version": "1.0.0",
   "description": "HTTP/REST client module for IDCU Agent",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["core_module"],
+  "dependencies": ["idcu-common", "idcu-http-client", "idcu-integrations-http-client", "idcu-business-log", "idcu-business-core-module"],
   "priority": "normal",
   "type": "builtin",
-  "config_schema": {}
+  "config_schema": {},
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/*.c"],
+    "includes": ["include", "../../core/module-system/include", "../../core/micro-kernel/include"],
+    "link_libraries": ["idcu-common", "idcu-http-client", "idcu-integrations-http-client", "idcu-business-log", "idcu-business-core-module"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
 }

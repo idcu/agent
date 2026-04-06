@@ -1,29 +1,22 @@
-# Sample 动态模块 CMakeLists.txt
+# Sample Dynamic 业务模块 CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
 
-set(MODULE_NAME sample_module)
+set(MODULE_NAME idcu_business_dynamic_sample)
 
 file(GLOB_RECURSE MODULE_SRCS src/*.c)
 
-add_library(${MODULE_NAME} SHARED ${MODULE_SRCS})
-
-set_target_properties(${MODULE_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out
-    PREFIX ""
-)
+add_library(${MODULE_NAME} STATIC ${MODULE_SRCS})
 
 target_include_directories(${MODULE_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../../core/module-system/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../../core/micro-kernel/include>
     $<INSTALL_INTERFACE:include>
 )
-
-if(UNIX AND NOT APPLE)
-    target_compile_options(${MODULE_NAME} PRIVATE -fvisibility=hidden)
-endif()
 
 target_link_libraries(${MODULE_NAME} PRIVATE
     idcu::common
     idcu::log
-    idcu_core_module_system
+    idcu_core_sdk
+    idcu_business_core_module
 )

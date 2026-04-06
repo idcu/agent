@@ -1,12 +1,24 @@
 {
-  "name": "test_framework_module",
+  "name": "idcu_core_test_framework",
   "category": "core",
   "version": "1.0.0",
   "description": "Test framework module providing unit test management, assertions, and report generation",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["common_module", "utils_module"],
+  "dependencies": ["idcu-common"],
   "priority": "medium",
   "type": "builtin",
-  "config_schema": {}
+  "config_schema": {},
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
 }

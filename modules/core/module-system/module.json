@@ -1,12 +1,24 @@
 {
-  "name": "module_system_module",
+  "name": "idcu_core_module_system",
   "category": "core",
   "version": "1.0.0",
   "description": "Module system providing module registry, category management, dynamic loading, and version control",
   "author": "IDCU Team",
   "license": "MIT",
-  "dependencies": ["common_module", "utils_module"],
+  "dependencies": ["idcu-common", "idcu-log", "idcu-config"],
   "priority": "high",
   "type": "builtin",
-  "config_schema": {}
+  "config_schema": {},
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log", "idcu-config"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
 }
