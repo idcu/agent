@@ -1,7 +1,7 @@
-#include "test_framework.h"
-#include "micro_kernel.h"
-#include "module_registry.h"
-#include "module_def.h"
+#include "../../test-framework/include/test_framework.h"
+#include "../include/micro_kernel.h"
+#include "../../module-system/include/module_registry.h"
+#include "../../module-system/include/module_def.h"
 #include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>

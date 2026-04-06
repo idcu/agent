@@ -1,7 +1,7 @@
 #include "idcu/config/config.h"
-#include &lt;stdio.h&gt;
-#include &lt;stdlib.h&gt;
-#include &lt;string.h&gt;
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main(void) {
     printf("Testing idcu-config basic functionality...\n");

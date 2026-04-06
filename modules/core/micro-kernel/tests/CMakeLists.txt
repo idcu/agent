@@ -7,6 +7,10 @@ file(GLOB_RECURSE TEST_SRCS
 foreach(test_src ${TEST_SRCS})
     get_filename_component(test_name ${test_src} NAME_WE)
     add_executable(${test_name} ${test_src})
+    target_include_directories(${test_name} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../test-framework/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    )
     
     if(WIN32)
         # MinGW 也支持 whole-archive，需要强制链接所有模块符号

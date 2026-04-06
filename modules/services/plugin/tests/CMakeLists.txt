@@ -10,6 +10,7 @@ foreach(test_src ${TEST_SRCS})
     target_include_directories(${test_name} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/utils/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/module-system/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../core/test-framework/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../plugin/include
     )
     target_link_libraries(${test_name} PRIVATE

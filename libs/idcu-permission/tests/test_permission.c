@@ -1,8 +1,8 @@
 #include "idcu/permission/permission.h"
 #include "idcu/common/error_code.h"
-#include &lt;stdio.h&gt;
-#include &lt;string.h&gt;
-#include &lt;stdlib.h&gt;
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define TEST_ASSERT(cond, msg) do { \
     if (!(cond)) { \

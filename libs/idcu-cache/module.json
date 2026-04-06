@@ -1,0 +1,23 @@
+{
+  "name": "idcu-cache",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU 缓存服务库，提供 LRU、FIFO、LFU 缓存策略",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "priority": "high",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/cache/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
+}

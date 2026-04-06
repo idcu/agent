@@ -1,0 +1,23 @@
+{
+  "name": "idcu-plugin",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU 插件生态系统库，提供动态插件加载和管理功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "priority": "medium",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/plugin/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log"],
+    "platform_deps": {
+      "win32": [],
+      "unix": ["dl"]
+    }
+  }
+}

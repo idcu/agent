@@ -1,0 +1,23 @@
+{
+  "name": "idcu-module-system",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU 模块管理系统库，提供动态模块加载、启动、停止等功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "priority": "high",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/module_system/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log"],
+    "platform_deps": {
+      "win32": [],
+      "unix": []
+    }
+  }
+}

@@ -77,7 +77,11 @@ typedef enum {
     IDCU_ERR_VERSION_TOO_OLD = -51, /**< 版本过旧 */
     IDCU_ERR_VERSION_TOO_NEW = -52, /**< 版本过新 */
     IDCU_ERR_VERSION_INCOMPATIBLE = -53, /**< 版本不兼�?*/
-    IDCU_ERR_MEMORY = -54 /**< 内存分配失败 */
+    IDCU_ERR_MEMORY = -54, /**< 内存分配失败 */
+    IDCU_ERR_LIMIT_EXCEEDED = -55, /**< 超出限制 */
+    IDCU_ERR_IO_ERROR = -56, /**< IO错误 */
+    IDCU_ERR_FILE_ERROR = -56, /**< IO错误（别名） */
+    IDCU_ERR_SECURITY_ERROR = -57 /**< 安全错误 */
 } idcu_ErrorCode;
 
 // 为了向后兼容，同时定义不带 _ERR_ 前缀的版本

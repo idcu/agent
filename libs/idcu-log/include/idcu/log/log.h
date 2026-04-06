@@ -42,6 +42,8 @@ void idcu_log_printf(idcu_LogLevel level, const char* file, int line, const char
 #define IDCU_LOG_WARN(fmt, ...) \
     do { idcu_log_printf(IDCU_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__); } while(0)
 
+#define IDCU_LOG_WARNING(fmt, ...) IDCU_LOG_WARN(fmt, ##__VA_ARGS__)
+
 #define IDCU_LOG_ERROR(fmt, ...) \
     do { idcu_log_printf(IDCU_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__); } while(0)
 

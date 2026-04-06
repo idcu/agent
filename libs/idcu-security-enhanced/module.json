@@ -1,0 +1,23 @@
+{
+  "name": "idcu-security-enhanced",
+  "category": "library",
+  "version": "1.0.0",
+  "description": "IDCU 增强安全组件库，提供加密、哈希、随机数生成等功能",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common", "idcu-log"],
+  "priority": "medium",
+  "type": "library",
+  "build": {
+    "language": "C",
+    "standard": "99",
+    "type": "static",
+    "sources": ["src/idcu/security_enhanced/*.c"],
+    "includes": ["include"],
+    "link_libraries": ["idcu-common", "idcu-log"],
+    "platform_deps": {
+      "win32": ["advapi32"],
+      "unix": []
+    }
+  }
+}

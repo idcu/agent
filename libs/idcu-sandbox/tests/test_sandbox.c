@@ -1,8 +1,8 @@
 #include "idcu/sandbox/sandbox.h"
 #include "idcu/common/error_code.h"
-#include &lt;stdio.h&gt;
-#include &lt;string.h&gt;
-#include &lt;stdlib.h&gt;
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define TEST_ASSERT(cond, msg) do { \
     if (!(cond)) { \
@@ -13,82 +13,82 @@
 
 static int test_sandbox_init_destroy(void) {
     idcu_Sandbox sb;
-    int ret = idcu_sandbox_init(&amp;sb, 1, IDCU_PERM_FILE);
+    int ret = idcu_sandbox_init(&sb, 1, IDCU_PERM_FILE);
     TEST_ASSERT(ret == IDCU_ERR_OK, "idcu_sandbox_init should succeed");
     
-    idcu_sandbox_destroy(&amp;sb);
+    idcu_sandbox_destroy(&sb);
     printf("PASS: test_sandbox_init_destroy\n");
     return 0;
 }
 
 static int test_sandbox_permissions(void) {
     idcu_Sandbox sb;
-    idcu_sandbox_init(&amp;sb, 1, 0);
+    idcu_sandbox_init(&sb, 1, 0);
     
     // Add permission
-    int ret = idcu_sandbox_add_perm(&amp;sb, IDCU_PERM_FILE);
+    int ret = idcu_sandbox_add_perm(&sb, IDCU_PERM_FILE);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Add perm should succeed");
     
     // Check permission
-    ret = idcu_sandbox_perm_check(&amp;sb, IDCU_PERM_FILE);
+    ret = idcu_sandbox_perm_check(&sb, IDCU_PERM_FILE);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Should have file permission");
     
     // Check another permission
-    ret = idcu_sandbox_perm_check(&amp;sb, IDCU_PERM_NETWORK);
+    ret = idcu_sandbox_perm_check(&sb, IDCU_PERM_NETWORK);
     TEST_ASSERT(ret != IDCU_ERR_OK, "Should not have network permission");
     
     // Remove permission
-    ret = idcu_sandbox_remove_perm(&amp;sb, IDCU_PERM_FILE);
+    ret = idcu_sandbox_remove_perm(&sb, IDCU_PERM_FILE);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Remove perm should succeed");
     
     // Check permission again
-    ret = idcu_sandbox_perm_check(&amp;sb, IDCU_PERM_FILE);
+    ret = idcu_sandbox_perm_check(&sb, IDCU_PERM_FILE);
     TEST_ASSERT(ret != IDCU_ERR_OK, "Should not have file permission after remove");
     
     // Set all permissions
-    ret = idcu_sandbox_set_perm(&amp;sb, IDCU_PERM_ALL);
+    ret = idcu_sandbox_set_perm(&sb, IDCU_PERM_ALL);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Set perm should succeed");
     
     // Get permissions
-    uint32_t perm = idcu_sandbox_get_perm(&amp;sb);
+    uint32_t perm = idcu_sandbox_get_perm(&sb);
     TEST_ASSERT(perm == IDCU_PERM_ALL, "Should have all permissions");
     
-    idcu_sandbox_destroy(&amp;sb);
+    idcu_sandbox_destroy(&sb);
     printf("PASS: test_sandbox_permissions\n");
     return 0;
 }
 
 static int test_sandbox_quota(void) {
     idcu_Sandbox sb;
-    idcu_sandbox_init(&amp;sb, 1, 0);
+    idcu_sandbox_init(&sb, 1, 0);
     
     // Set quota
-    int ret = idcu_sandbox_set_quota(&amp;sb, 1024);
+    int ret = idcu_sandbox_set_quota(&sb, 1024);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Set quota should succeed");
     
     // Get quota
-    uint32_t quota = idcu_sandbox_get_quota(&amp;sb);
+    uint32_t quota = idcu_sandbox_get_quota(&sb);
     TEST_ASSERT(quota == 1024, "Quota should be 1024");
     
-    idcu_sandbox_destroy(&amp;sb);
+    idcu_sandbox_destroy(&sb);
     printf("PASS: test_sandbox_quota\n");
     return 0;
 }
 
 static int test_sandbox_registry(void) {
     idcu_Sandbox sb1, sb2;
-    idcu_sandbox_init(&amp;sb1, 1, IDCU_PERM_FILE);
-    idcu_sandbox_init(&amp;sb2, 2, IDCU_PERM_NETWORK);
+    idcu_sandbox_init(&sb1, 1, IDCU_PERM_FILE);
+    idcu_sandbox_init(&sb2, 2, IDCU_PERM_NETWORK);
     
     // Init registry
     int ret = idcu_sandbox_registry_init();
     TEST_ASSERT(ret == IDCU_ERR_OK, "Registry init should succeed");
     
     // Add sandbox
-    ret = idcu_sandbox_registry_add(&amp;sb1);
+    ret = idcu_sandbox_registry_add(&sb1);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Add sandbox 1 should succeed");
     
-    ret = idcu_sandbox_registry_add(&amp;sb2);
+    ret = idcu_sandbox_registry_add(&sb2);
     TEST_ASSERT(ret == IDCU_ERR_OK, "Add sandbox 2 should succeed");
     
     // Get sandbox
@@ -112,8 +112,8 @@ static int test_sandbox_registry(void) {
     // Destroy registry
     idcu_sandbox_registry_destroy();
     
-    idcu_sandbox_destroy(&amp;sb1);
-    idcu_sandbox_destroy(&amp;sb2);
+    idcu_sandbox_destroy(&sb1);
+    idcu_sandbox_destroy(&sb2);
     printf("PASS: test_sandbox_registry\n");
     return 0;
 }

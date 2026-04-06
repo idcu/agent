@@ -1,5 +1,5 @@
-#include "test_framework.h"
-#include "sandbox.h"
+#include "../../../core/test-framework/include/test_framework.h"
+#include "../include/sandbox.h"
 #include "idcu/log/log.h"
 #include <stdio.h>
 #include <string.h>
