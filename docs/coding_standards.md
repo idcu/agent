@@ -208,4 +208,53 @@ typedef struct idcu_memory_pool {
     size_t used_size;       /**< 已使用大小 */
     void *memory;           /**< 内存指针 */
     idcu_lock_t lock;       /**< 锁 */
-} idcu_memory_pool
+} idcu_memory_pool_t;
+```
+
+### 6.2 行内注释
+
+关键逻辑（协程调度、沙箱隔离等）必须添加行内注释：
+
+```c
+// 保存当前上下文
+idcu_coroutine_context_save(&current->ctx);
+
+// 切换到下一个协程
+idcu_coroutine_context_switch(next->ctx);
+
+// 检查沙箱访问权限
+if (!idcu_sandbox_check_access(sandbox, address)) {
+    return IDCU_ERR_SANDBOX_ACCESS;
+}
+```
+
+## 7. 静态检查
+
+### 7.1 clang-tidy
+
+使用 `.clang-tidy` 配置进行静态检查，主要检查项：
+
+- bugprone-*：易出错的代码模式
+- clang-analyzer-*：Clang 静态分析器
+- concurrency-*：并发相关问题
+- performance-*：性能问题
+- readability-*：可读性问题
+
+**使用方式：**
+```bash
+# CMake 构建时启用
+cmake -DENABLE_CLANG_TIDY=ON ..
+cmake --build .
+```
+
+### 7.2 CI 检查
+
+CI 流程会自动执行：
+1. clang-format 检查（不通过则阻断）
+2. clang-tidy 静态检查（不通过则阻断）
+
+## 8. 参考
+
+- [.clang-format](../.clang-format)
+- [.clang-tidy](../.clang-tidy)
+- [CI 配置](../.github/workflows/ci.yml)

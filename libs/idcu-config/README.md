@@ -9,7 +9,9 @@ IDCU 项目的独立配置管理库，提供简单易用的配置文件解析和
 - 支持多种数据类型（字符串、整数、浮点数、布尔值）
 - 支持环境变量扩展
 - 线程安全
-- 配置变更回调支持
+- **配置热更新（支持运行时重载配置）**
+- **配置文件监控和自动重载**
+- **配置变更回调支持**
 - 支持配置文件保存
 
 ## 快速开始
@@ -106,6 +108,25 @@ idcu_config_register_change_callback(on_config_change, NULL);
 idcu_config_unregister_change_callback(on_config_change);
 ```
 
+### 配置热更新
+
+```c
+// 手动重载配置
+int ret = idcu_config_reload();
+if (ret == IDCU_ERR_SUCCESS) {
+    printf("Config reloaded successfully!\n");
+}
+
+// 启动配置文件监控（自动重载）
+ret = idcu_config_watch_start();
+if (ret == IDCU_ERR_SUCCESS) {
+    printf("Config watcher started!\n");
+}
+
+// 停止配置文件监控
+idcu_config_watch_stop();
+```
+
 ## 配置文件格式
 
 配置文件使用标准 INI 格式：
@@ -134,8 +155,8 @@ ctest
 库提供了以下示例代码：
 
 - [简单配置示例](examples/example_basic.c) - 演示基本配置读写
-- [配置回调示例](examples/example_callback.c) - 演示配置变更回调
 - [配置保存示例](examples/example_save.c) - 演示如何保存配置
+- **[配置热更新示例](examples/example_hot_reload.c) - 演示配置文件监控和自动重载**
 
 ### 编译和运行示例
 
@@ -145,8 +166,50 @@ cmake .. -DBUILD_EXAMPLES=ON
 cmake --build .
 
 ./example_basic
-./example_callback
 ./example_save
+./example_hot_reload
+```
+
+## 配置热更新使用指南
+
+### 基本概念
+
+idcu-config 库支持两种配置热更新方式：
+
+1. **手动重载**：调用 `idcu_config_reload()` 函数手动重新加载配置文件
+2. **文件监控自动重载**：使用 `idcu_config_watch_start()` 启动文件监控，配置文件变更时自动重载
+
+### 工作流程
+
+1. 初始化配置管理器
+2. 注册配置变更回调（可选但推荐）
+3. 启动配置文件监控（如需自动重载）
+4. 运行时配置变更会自动触发回调
+5. 模块根据回调更新自身行为
+6. 关闭时停止监控并清理资源
+
+### 多环境配置
+
+配合项目的多环境配置目录使用：
+
+```
+config/
+├── dev/           # 开发环境配置
+│   └── agent.cfg
+├── test/          # 测试环境配置
+│   └── agent.cfg
+└── prod/          # 生产环境配置
+    └── agent.cfg
+```
+
+在不同环境启动时，使用对应的配置文件：
+
+```bash
+# 开发环境
+./agent --config=config/dev/agent.cfg
+
+# 生产环境
+./agent --config=config/prod/agent.cfg
 ```
 
 ## 依赖

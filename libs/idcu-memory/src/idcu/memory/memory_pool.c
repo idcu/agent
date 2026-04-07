@@ -52,6 +52,12 @@ int idcu_mem_pool_init(idcu_MemoryPool *pool)
         sc->block_size = size_class_sizes[i];
         sc->block_count = IDCU_MEM_POOL_MAX_BLOCKS / pool->num_size_classes;
         
+        int ret = idcu_mutex_init(&sc->class_lock);
+        if (ret != IDCU_ERR_SUCCESS) {
+            idcu_mem_pool_destroy(pool);
+            return ret;
+        }
+        
         sc->blocks = (idcu_PoolBlock*)malloc(sc->block_count * sizeof(idcu_PoolBlock));
         if (!sc->blocks) {
             idcu_mem_pool_destroy(pool);
@@ -72,6 +78,7 @@ int idcu_mem_pool_init(idcu_MemoryPool *pool)
             }
             sc->blocks[j].in_use = 0;
             sc->blocks[j].alloc_size = 0;
+            sc->blocks[j].size_class = (uint8_t)i;
             write_guard(sc->blocks[j].data, sc->block_size);
             sc->free_list[j] = j;
         }
@@ -106,6 +113,8 @@ void idcu_mem_pool_destroy(idcu_MemoryPool *pool)
             free(sc->free_list);
             sc->free_list = NULL;
         }
+        
+        idcu_mutex_destroy(&sc->class_lock);
     }
 
     idcu_mutex_destroy(&pool->lock);
@@ -127,14 +136,14 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool *pool, uint32_t size)
         return ptr;
     }
 
-    int ret = idcu_mutex_lock(&pool->lock);
+    idcu_SizeClass *sc = &pool->size_classes[idx];
+    int ret = idcu_mutex_lock(&sc->class_lock);
     if (ret != IDCU_ERR_SUCCESS) {
         return NULL;
     }
 
-    idcu_SizeClass *sc = &pool->size_classes[idx];
     if (sc->free_count == 0) {
-        idcu_mutex_unlock(&pool->lock);
+        idcu_mutex_unlock(&sc->class_lock);
         return NULL;
     }
 
@@ -145,14 +154,17 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool *pool, uint32_t size)
     idcu_PoolBlock *block = &sc->blocks[block_idx];
     block->in_use = 1;
     block->alloc_size = size;
+    block->size_class = (uint8_t)idx;
     
+    idcu_mutex_lock(&pool->lock);
     pool->total_allocated += sc->block_size;
     uint64_t current_usage = pool->total_allocated - pool->total_freed;
     if (current_usage > pool->peak_usage) {
         pool->peak_usage = current_usage;
     }
-
     idcu_mutex_unlock(&pool->lock);
+
+    idcu_mutex_unlock(&sc->class_lock);
     return block->data;
 }
 
@@ -204,6 +216,9 @@ void idcu_mem_pool_free(idcu_MemoryPool *pool, void *ptr)
     }
 
     idcu_SizeClass *sc = &pool->size_classes[class_idx];
+    idcu_mutex_unlock(&pool->lock);
+    
+    idcu_mutex_lock(&sc->class_lock);
     idcu_PoolBlock *block = &sc->blocks[block_idx];
     
     block->in_use = 0;
@@ -213,9 +228,11 @@ void idcu_mem_pool_free(idcu_MemoryPool *pool, void *ptr)
     sc->free_list[sc->free_head] = block_idx;
     sc->free_count++;
     
+    idcu_mutex_lock(&pool->lock);
     pool->total_freed += sc->block_size;
-
     idcu_mutex_unlock(&pool->lock);
+
+    idcu_mutex_unlock(&sc->class_lock);
 }
 
 uint32_t idcu_mem_pool_get_free_count(idcu_MemoryPool *pool, uint32_t size)
@@ -229,13 +246,14 @@ uint32_t idcu_mem_pool_get_free_count(idcu_MemoryPool *pool, uint32_t size)
         return 0;
     }
 
-    int ret = idcu_mutex_lock(&pool->lock);
+    idcu_SizeClass *sc = &pool->size_classes[idx];
+    int ret = idcu_mutex_lock(&sc->class_lock);
     if (ret != IDCU_ERR_SUCCESS) {
         return 0;
     }
 
-    uint32_t count = pool->size_classes[idx].free_count;
-    idcu_mutex_unlock(&pool->lock);
+    uint32_t count = sc->free_count;
+    idcu_mutex_unlock(&sc->class_lock);
     return count;
 }
 

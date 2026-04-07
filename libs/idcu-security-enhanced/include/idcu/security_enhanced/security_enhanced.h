@@ -55,4 +55,6 @@ int idcu_security_base64_decode(const char* input, size_t input_size, void* outp
 int idcu_security_hex_encode(const void* data, size_t data_size, char* output, size_t* output_size);
 int idcu_security_hex_decode(const char* input, size_t input_size, void* output, size_t* output_size);
 
+#include "idcu/security_enhanced/module_security.h"
+
 #endif // IDCU_SECURITY_ENHANCED_SECURITY_ENHANCED_H

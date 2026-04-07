@@ -1,8 +1,8 @@
 {
   "name": "IDCU Agent Official Module Repository",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Official module repository for IDCU Agent",
-  "last_updated": "2026-04-04",
+  "last_updated": "2026-04-07",
   "modules": [
     {
       "name": "core_module",
@@ -113,12 +113,56 @@
       "dependencies": ["sandbox", "core_module"],
       "path": "official/security/sandbox_enhanced_module.c",
       "type": "builtin"
+    },
+    {
+      "name": "server_monitor",
+      "category": "monitoring",
+      "version": "1.0.0",
+      "description": "Server monitor module - collects CPU, memory, disk, and network metrics",
+      "author": "IDCU Team",
+      "license": "MIT",
+      "dependencies": ["idcu-common", "idcu-log"],
+      "path": "../libs/idcu-server-monitor",
+      "type": "library"
+    },
+    {
+      "name": "device_collector",
+      "category": "iot",
+      "version": "1.0.0",
+      "description": "Device collector module - manages IoT devices and collects sensor data",
+      "author": "IDCU Team",
+      "license": "MIT",
+      "dependencies": ["idcu-common", "idcu-log"],
+      "path": "../libs/idcu-device-collector",
+      "type": "library"
+    },
+    {
+      "name": "scheduler",
+      "category": "core",
+      "version": "1.0.0",
+      "description": "Scheduler module - task scheduling with interval and cron support",
+      "author": "IDCU Team",
+      "license": "MIT",
+      "dependencies": ["idcu-common", "idcu-log"],
+      "path": "../libs/idcu-scheduler",
+      "type": "library"
     }
   ],
   "categories": {
     "core": "Core functionality modules",
     "monitoring": "Monitoring and observability modules",
     "networking": "Networking and distributed modules",
-    "security": "Security and sandbox modules"
+    "security": "Security and sandbox modules",
+    "iot": "Internet of Things (IoT) modules"
+  },
+  "third_party": {
+    "review_process": "All third-party modules must go through code review, security audit, and testing before being added to the repository",
+    "submission_guide": "Submit a pull request with your module including documentation, tests, and module.json metadata",
+    "quality_requirements": {
+      "documentation": "Must include README.md with usage examples",
+      "testing": "Must include unit tests",
+      "security": "Must pass security audit",
+      "licensing": "Must use compatible open-source license"
+    }
   }
 }

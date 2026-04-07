@@ -32,6 +32,7 @@ typedef struct {
     void *data;          /**< 内存块数据指针 */
     uint8_t in_use;      /**< 是否正在使用标志，1=使用中，0=空闲 */
     uint32_t alloc_size; /**< 实际分配大小 */
+    uint8_t size_class;  /**< 所属尺寸类别索引 */
 } idcu_PoolBlock;
 
 /**
@@ -46,6 +47,7 @@ typedef struct {
     uint32_t free_count;     /**< 空闲块数量 */
     uint32_t *free_list;     /**< 空闲块索引链表 */
     uint32_t free_head;      /**< 空闲链表头索引 */
+    idcu_Mutex class_lock;    /**< 每个尺寸类别的独立锁 */
 } idcu_SizeClass;
 
 /**

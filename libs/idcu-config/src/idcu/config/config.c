@@ -6,9 +6,16 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <process.h>
+typedef unsigned __stdcall ThreadFuncRet;
+#define THREAD_FUNC_PREFIX unsigned __stdcall
 #else
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <pthread.h>
+#include <unistd.h>
+typedef void* ThreadFuncRet;
+#define THREAD_FUNC_PREFIX void*
 #endif
 
 #define IDCU_CONFIG_MAX_CALLBACKS 32
@@ -23,6 +30,17 @@ static idcu_ConfigCallbackEntry g_callbacks[IDCU_CONFIG_MAX_CALLBACKS];
 static int g_callback_count = 0;
 static char g_config_file_path[IDCU_CONFIG_PATH_MAX];
 static int g_initialized = 0;
+
+static volatile int g_watch_running = 0;
+static volatile int g_watch_stop_requested = 0;
+static uint64_t g_last_modified_time = 0;
+static uint32_t g_watch_interval_ms = 5000;
+
+#ifdef _WIN32
+static HANDLE g_watch_thread = NULL;
+#else
+static pthread_t g_watch_thread;
+#endif
 
 static idcu_ConfigSection* find_section(const char* name)
 {
@@ -213,6 +231,10 @@ int idcu_config_init(const char* file_path)
     memset(g_callbacks, 0, sizeof(g_callbacks));
     g_callback_count = 0;
     g_config_file_path[0] = '\0';
+    g_watch_running = 0;
+    g_watch_stop_requested = 0;
+    g_last_modified_time = 0;
+    g_watch_interval_ms = 5000;
     int ret = idcu_mutex_init(&g_config_mgr.lock);
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
@@ -236,6 +258,7 @@ void idcu_config_shutdown(void)
     if (!g_initialized) {
         return;
     }
+    idcu_config_watch_stop();
     idcu_mutex_destroy(&g_config_mgr.lock);
     memset(&g_config_mgr, 0, sizeof(idcu_ConfigManager));
     g_initialized = 0;
@@ -813,4 +836,95 @@ int idcu_config_get_last_modified_time(uint64_t* timestamp) {
 #endif
 
     return IDCU_ERR_SUCCESS;
+}
+
+static void sleep_ms(uint32_t ms) {
+#ifdef _WIN32
+    Sleep(ms);
+#else
+    usleep(ms * 1000);
+#endif
+}
+
+static THREAD_FUNC_PREFIX config_watch_thread(void* arg) {
+    (void)arg;
+    uint64_t current_mtime;
+    
+    while (!g_watch_stop_requested) {
+        if (g_config_file_path[0] != '\0' && 
+            idcu_config_get_last_modified_time(&current_mtime) == IDCU_ERR_SUCCESS) {
+            if (g_last_modified_time != 0 && current_mtime != g_last_modified_time) {
+                idcu_config_reload();
+            }
+            g_last_modified_time = current_mtime;
+        }
+        sleep_ms(g_watch_interval_ms);
+    }
+    
+    g_watch_running = 0;
+#ifdef _WIN32
+    _endthreadex(0);
+    return 0;
+#else
+    return NULL;
+#endif
+}
+
+int idcu_config_watch_start(uint32_t interval_ms) {
+    if (!g_initialized) {
+        return IDCU_ERR_NOT_INITIALIZED;
+    }
+    
+    if (g_watch_running) {
+        return IDCU_ERR_ALREADY_EXISTS;
+    }
+    
+    if (g_config_file_path[0] == '\0') {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    g_watch_interval_ms = (interval_ms > 0) ? interval_ms : 5000;
+    g_watch_stop_requested = 0;
+    
+    if (idcu_config_get_last_modified_time(&g_last_modified_time) != IDCU_ERR_SUCCESS) {
+        g_last_modified_time = 0;
+    }
+    
+#ifdef _WIN32
+    g_watch_thread = (HANDLE)_beginthreadex(NULL, 0, config_watch_thread, NULL, 0, NULL);
+    if (g_watch_thread == NULL) {
+        return IDCU_ERR_NO_MEMORY;
+    }
+#else
+    if (pthread_create(&g_watch_thread, NULL, config_watch_thread, NULL) != 0) {
+        return IDCU_ERR_NO_MEMORY;
+    }
+#endif
+    
+    g_watch_running = 1;
+    return IDCU_ERR_SUCCESS;
+}
+
+void idcu_config_watch_stop(void) {
+    if (!g_watch_running) {
+        return;
+    }
+    
+    g_watch_stop_requested = 1;
+    
+#ifdef _WIN32
+    if (g_watch_thread != NULL) {
+        WaitForSingleObject(g_watch_thread, INFINITE);
+        CloseHandle(g_watch_thread);
+        g_watch_thread = NULL;
+    }
+#else
+    pthread_join(g_watch_thread, NULL);
+#endif
+    
+    g_watch_running = 0;
+}
+
+int idcu_config_watch_is_running(void) {
+    return g_watch_running;
 }

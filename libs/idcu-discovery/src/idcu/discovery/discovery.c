@@ -18,7 +18,24 @@ static uint64_t get_current_time_ms(void) {
 #endif
 }
 
+void idcu_discovery_config_init(idcu_DiscoveryConfig* config) {
+    if (!config) return;
+    
+    memset(config, 0, sizeof(idcu_DiscoveryConfig));
+    config->protocol = IDCU_DISCOVERY_PROTOCOL_BROADCAST;
+    
+    strncpy(config->mdns.service_name, "idcu-node", sizeof(config->mdns.service_name) - 1);
+    strncpy(config->mdns.service_domain, "local", sizeof(config->mdns.service_domain) - 1);
+    config->mdns.service_port = IDCU_DISCOVERY_PORT;
+}
+
 int idcu_node_discovery_init(idcu_NodeDiscovery* disc, idcu_DistributedNode* dist_node) {
+    idcu_DiscoveryConfig default_config;
+    idcu_discovery_config_init(&default_config);
+    return idcu_node_discovery_init_with_config(disc, dist_node, &default_config);
+}
+
+int idcu_node_discovery_init_with_config(idcu_NodeDiscovery* disc, idcu_DistributedNode* dist_node, const idcu_DiscoveryConfig* config) {
     if (!disc || !dist_node) return IDCU_ERR_INVALID_PARAM;
 
     memset(disc, 0, sizeof(idcu_NodeDiscovery));
@@ -29,6 +46,13 @@ int idcu_node_discovery_init(idcu_NodeDiscovery* disc, idcu_DistributedNode* dis
     disc->lost_user_data = NULL;
     disc->running = 0;
     disc->last_broadcast_time = 0;
+    disc->protocol_data = NULL;
+    
+    if (config) {
+        disc->config = *config;
+    } else {
+        idcu_discovery_config_init(&disc->config);
+    }
 
     int ret = idcu_network_init();
     if (ret != IDCU_ERR_OK) {
@@ -64,10 +88,31 @@ int idcu_node_discovery_set_lost_handler(idcu_NodeDiscovery* disc, idcu_NodeLost
     return IDCU_ERR_OK;
 }
 
-int idcu_node_discovery_start(idcu_NodeDiscovery* disc) {
-    if (!disc || !disc->dist_node) return IDCU_ERR_INVALID_PARAM;
-    if (disc->running) return IDCU_ERR_OK;
+int idcu_node_discovery_set_protocol(idcu_NodeDiscovery* disc, idcu_DiscoveryProtocol protocol) {
+    if (!disc) return IDCU_ERR_INVALID_PARAM;
+    if (disc->running) return IDCU_ERR_INVALID_STATE;
+    
+    disc->config.protocol = protocol;
+    return IDCU_ERR_OK;
+}
 
+int idcu_node_discovery_configure_etcd(idcu_NodeDiscovery* disc, const idcu_EtcdConfig* config) {
+    if (!disc || !config) return IDCU_ERR_INVALID_PARAM;
+    if (disc->running) return IDCU_ERR_INVALID_STATE;
+    
+    disc->config.etcd = *config;
+    return IDCU_ERR_OK;
+}
+
+int idcu_node_discovery_configure_mdns(idcu_NodeDiscovery* disc, const idcu_MdnsConfig* config) {
+    if (!disc || !config) return IDCU_ERR_INVALID_PARAM;
+    if (disc->running) return IDCU_ERR_INVALID_STATE;
+    
+    disc->config.mdns = *config;
+    return IDCU_ERR_OK;
+}
+
+static int start_broadcast_discovery(idcu_NodeDiscovery* disc) {
     int ret = idcu_network_socket_create(&disc->socket, IDCU_NET_PROTO_UDP);
     if (ret != IDCU_ERR_OK) {
         IDCU_LOG_ERROR("Failed to create discovery socket");
@@ -91,10 +136,49 @@ int idcu_node_discovery_start(idcu_NodeDiscovery* disc) {
         return ret;
     }
 
+    return IDCU_ERR_OK;
+}
+
+static int start_mdns_discovery(idcu_NodeDiscovery* disc) {
+    IDCU_LOG_INFO("mDNS discovery protocol selected (implementation placeholder)");
+    IDCU_LOG_WARN("mDNS discovery requires additional dependencies and is not fully implemented yet");
+    return start_broadcast_discovery(disc);
+}
+
+static int start_etcd_discovery(idcu_NodeDiscovery* disc) {
+    IDCU_LOG_INFO("etcd discovery protocol selected (implementation placeholder)");
+    IDCU_LOG_WARN("etcd discovery requires etcd client library and is not fully implemented yet");
+    return start_broadcast_discovery(disc);
+}
+
+int idcu_node_discovery_start(idcu_NodeDiscovery* disc) {
+    if (!disc || !disc->dist_node) return IDCU_ERR_INVALID_PARAM;
+    if (disc->running) return IDCU_ERR_OK;
+
+    int ret;
+    switch (disc->config.protocol) {
+        case IDCU_DISCOVERY_PROTOCOL_BROADCAST:
+            ret = start_broadcast_discovery(disc);
+            break;
+        case IDCU_DISCOVERY_PROTOCOL_MDNS:
+            ret = start_mdns_discovery(disc);
+            break;
+        case IDCU_DISCOVERY_PROTOCOL_ETCD:
+            ret = start_etcd_discovery(disc);
+            break;
+        default:
+            ret = start_broadcast_discovery(disc);
+            break;
+    }
+    
+    if (ret != IDCU_ERR_OK) {
+        return ret;
+    }
+
     disc->running = 1;
     disc->last_broadcast_time = get_current_time_ms();
 
-    IDCU_LOG_INFO("Node discovery started on port %d", IDCU_DISCOVERY_PORT);
+    IDCU_LOG_INFO("Node discovery started on port %d, protocol: %d", IDCU_DISCOVERY_PORT, (int)disc->config.protocol);
     return IDCU_ERR_OK;
 }
 
@@ -120,6 +204,8 @@ static int send_discovery_packet(idcu_NodeDiscovery* disc) {
     strncpy(packet.address, disc->dist_node->nodes[0].address, IDCU_NODE_ADDR_MAX - 1);
     packet.port = disc->dist_node->nodes[0].port;
     packet.timestamp = get_current_time_ms();
+    packet.load = disc->dist_node->nodes[0].load;
+    packet.status = disc->dist_node->nodes[0].status;
 
     size_t sent;
     int ret = idcu_network_socket_sendto(&disc->socket, &packet, sizeof(packet),
@@ -149,6 +235,7 @@ static int process_discovery_packet(idcu_NodeDiscovery* disc, const idcu_Discove
 
     if (existing_node) {
         idcu_distributed_node_update_heartbeat(disc->dist_node, packet->node_id);
+        existing_node->load = packet->load;
     } else {
         idcu_NodeInfo new_node;
         memset(&new_node, 0, sizeof(new_node));
@@ -156,8 +243,10 @@ static int process_discovery_packet(idcu_NodeDiscovery* disc, const idcu_Discove
         strncpy(new_node.name, packet->name, IDCU_NODE_NAME_MAX - 1);
         strncpy(new_node.address, packet->address, IDCU_NODE_ADDR_MAX - 1);
         new_node.port = packet->port;
-        new_node.status = IDCU_NODE_STATUS_ONLINE;
+        new_node.status = (idcu_NodeStatus)packet->status;
+        new_node.load = packet->load;
         new_node.last_heartbeat = get_current_time_ms();
+        new_node.weight = 100;
 
         int ret = idcu_distributed_node_add_node(disc->dist_node, new_node.node_id,
                                                   new_node.name, new_node.address, new_node.port);
@@ -186,9 +275,7 @@ static void check_for_lost_nodes(idcu_NodeDiscovery* disc) {
     }
 }
 
-int idcu_node_discovery_poll(idcu_NodeDiscovery* disc) {
-    if (!disc || !disc->running) return IDCU_ERR_INVALID_PARAM;
-
+static void poll_broadcast_discovery(idcu_NodeDiscovery* disc) {
     uint64_t current_time = get_current_time_ms();
 
     if (current_time - disc->last_broadcast_time >= IDCU_DISCOVERY_BROADCAST_INTERVAL_MS) {
@@ -208,6 +295,33 @@ int idcu_node_discovery_poll(idcu_NodeDiscovery* disc) {
     }
 
     check_for_lost_nodes(disc);
+}
+
+static void poll_mdns_discovery(idcu_NodeDiscovery* disc) {
+    poll_broadcast_discovery(disc);
+}
+
+static void poll_etcd_discovery(idcu_NodeDiscovery* disc) {
+    poll_broadcast_discovery(disc);
+}
+
+int idcu_node_discovery_poll(idcu_NodeDiscovery* disc) {
+    if (!disc || !disc->running) return IDCU_ERR_INVALID_PARAM;
+
+    switch (disc->config.protocol) {
+        case IDCU_DISCOVERY_PROTOCOL_BROADCAST:
+            poll_broadcast_discovery(disc);
+            break;
+        case IDCU_DISCOVERY_PROTOCOL_MDNS:
+            poll_mdns_discovery(disc);
+            break;
+        case IDCU_DISCOVERY_PROTOCOL_ETCD:
+            poll_etcd_discovery(disc);
+            break;
+        default:
+            poll_broadcast_discovery(disc);
+            break;
+    }
 
     return IDCU_ERR_OK;
 }

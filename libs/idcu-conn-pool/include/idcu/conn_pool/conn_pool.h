@@ -20,6 +20,7 @@ typedef struct {
     int in_use;
     uint64_t last_used_ms;
     int ref_count;
+    idcu_Mutex conn_lock;
 } idcu_PooledConnection;
 
 typedef struct {
@@ -31,6 +32,8 @@ typedef struct {
     int max_retries;
     idcu_Mutex lock;
     int initialized;
+    uint32_t free_list[IDCU_POOL_MAX_CONNECTIONS];
+    uint32_t free_head;
 } idcu_ConnectionPool;
 
 typedef struct {

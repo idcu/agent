@@ -92,6 +92,10 @@ void idcu_config_notify_changes(void);
 int idcu_config_get_file_path(char* buffer, size_t buffer_size);
 int idcu_config_get_last_modified_time(uint64_t* timestamp);
 
+int idcu_config_watch_start(uint32_t interval_ms);
+void idcu_config_watch_stop(void);
+int idcu_config_watch_is_running(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -35,6 +35,7 @@ void idcu_msg_bus_init(idcu_MessageBus *bus)
     }
     
     idcu_mutex_init(&bus->payload_lock);
+    idcu_mutex_init(&bus->retry_lock);
     
     for (uint32_t i = 0; i < IDCU_MSG_ZEROCOPY_POOL_SIZE - 1; i++) {
         bus->payload_in_use[i] = i + 1;
@@ -61,6 +62,7 @@ void idcu_msg_bus_destroy(idcu_MessageBus *bus)
     }
     
     idcu_mutex_destroy(&bus->payload_lock);
+    idcu_mutex_destroy(&bus->retry_lock);
     
     for (int p = 0; p < IDCU_MSG_PRIO_COUNT; p++) {
         idcu_mutex_destroy(&bus->prio_queues[p].lock);
@@ -441,4 +443,160 @@ int idcu_msg_recv_batch(idcu_MessageBus *bus, uint32_t mod_id, idcu_MessageBatch
     }
 
     return (int)batch->count;
+}
+
+int idcu_msg_send_reliable(idcu_MessageBus *bus, uint32_t src_mod, uint32_t dst_mod, idcu_MsgPriority prio, const idcu_StackContext *ctx)
+{
+    if (!bus || !ctx) {
+        IDCU_LOG_ERROR("msg_send_reliable failed: invalid parameters (bus=%p, ctx=%p)", (void*)bus, (void*)ctx);
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    if (prio >= IDCU_MSG_PRIO_COUNT) {
+        IDCU_LOG_ERROR("msg_send_reliable failed: invalid priority %d", prio);
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    idcu_PriorityQueue *q = &bus->prio_queues[prio];
+    int ret = idcu_mutex_lock(&q->lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("msg_send_reliable failed: lock error, code=%d (%s)", ret, idcu_err_to_str(ret));
+        return ret;
+    }
+
+    if (is_queue_full(q)) {
+        idcu_mutex_unlock(&q->lock);
+        IDCU_LOG_WARN("msg_send_reliable failed: queue full (prio=%d)", prio);
+        return IDCU_ERR_QUEUE_FULL;
+    }
+
+    idcu_Message *msg = &q->queue[q->tail];
+    memset(msg, 0, sizeof(idcu_Message));
+    msg->data = *ctx;
+    msg->source_mod_id = src_mod;
+    msg->target_mod_id = dst_mod;
+    msg->priority = prio;
+    msg->timestamp = get_timestamp_ms();
+    msg->retry_count = 0;
+    msg->next_retry_time = 0;
+    msg->is_reliable = 1;
+    msg->payload = NULL;
+
+    q->tail = (q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
+
+    idcu_mutex_unlock(&q->lock);
+    IDCU_LOG_DEBUG("msg_send_reliable succeeded: src=%u, dst=%u, prio=%d", src_mod, dst_mod, prio);
+    return IDCU_ERR_SUCCESS;
+}
+
+void idcu_msg_process_retries(idcu_MessageBus *bus)
+{
+    if (!bus) {
+        return;
+    }
+
+    uint64_t current_time = get_timestamp_ms();
+    int ret = idcu_mutex_lock(&bus->retry_lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return;
+    }
+
+    uint32_t write_idx = 0;
+    for (uint32_t i = 0; i < bus->pending_retry_count; i++) {
+        idcu_Message *pending_msg = &bus->pending_retry_queue[i];
+        
+        if (current_time < pending_msg->next_retry_time) {
+            if (write_idx != i) {
+                bus->pending_retry_queue[write_idx] = *pending_msg;
+            }
+            write_idx++;
+            continue;
+        }
+
+        if (pending_msg->retry_count >= IDCU_MSG_MAX_RETRIES) {
+            IDCU_LOG_ERROR("Message delivery failed after %u retries: src=%u, dst=%u", 
+                          IDCU_MSG_MAX_RETRIES, pending_msg->source_mod_id, pending_msg->target_mod_id);
+            
+            if (bus->failure_callback) {
+                bus->failure_callback(pending_msg->source_mod_id, pending_msg->target_mod_id, 
+                                      pending_msg, bus->failure_callback_data);
+            }
+            
+            if (pending_msg->payload) {
+                idcu_msg_release_payload(bus, pending_msg->payload);
+            }
+            continue;
+        }
+
+        idcu_PriorityQueue *q = &bus->prio_queues[pending_msg->priority];
+        int q_ret = idcu_mutex_lock(&q->lock);
+        if (q_ret != IDCU_ERR_SUCCESS) {
+            if (write_idx != i) {
+                bus->pending_retry_queue[write_idx] = *pending_msg;
+            }
+            write_idx++;
+            continue;
+        }
+
+        if (is_queue_full(q)) {
+            idcu_mutex_unlock(&q->lock);
+            if (write_idx != i) {
+                bus->pending_retry_queue[write_idx] = *pending_msg;
+            }
+            write_idx++;
+            continue;
+        }
+
+        pending_msg->retry_count++;
+        pending_msg->timestamp = current_time;
+        pending_msg->next_retry_time = current_time + (IDCU_MSG_RETRY_DELAY_MS * (pending_msg->retry_count + 1));
+        
+        idcu_Message *q_msg = &q->queue[q->tail];
+        *q_msg = *pending_msg;
+        q->tail = (q->tail + 1) % IDCU_MSG_QUEUE_SIZE;
+        
+        idcu_mutex_unlock(&q->lock);
+        
+        IDCU_LOG_DEBUG("Retrying message: src=%u, dst=%u, attempt=%u", 
+                      pending_msg->source_mod_id, pending_msg->target_mod_id, pending_msg->retry_count);
+    }
+
+    bus->pending_retry_count = write_idx;
+    idcu_mutex_unlock(&bus->retry_lock);
+}
+
+int idcu_msg_set_failure_callback(idcu_MessageBus *bus, idcu_MessageFailureCallback callback, void* user_data)
+{
+    if (!bus) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    bus->failure_callback = callback;
+    bus->failure_callback_data = user_data;
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_msg_mark_for_retry(idcu_MessageBus *bus, idcu_Message *msg)
+{
+    if (!bus || !msg || !msg->is_reliable) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+    
+    int ret = idcu_mutex_lock(&bus->retry_lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        return ret;
+    }
+    
+    if (bus->pending_retry_count >= IDCU_MSG_PENDING_QUEUE_SIZE) {
+        idcu_mutex_unlock(&bus->retry_lock);
+        IDCU_LOG_ERROR("Pending retry queue full");
+        return IDCU_ERR_QUEUE_FULL;
+    }
+    
+    msg->next_retry_time = get_timestamp_ms() + IDCU_MSG_RETRY_DELAY_MS;
+    bus->pending_retry_queue[bus->pending_retry_count] = *msg;
+    bus->pending_retry_count++;
+    
+    idcu_mutex_unlock(&bus->retry_lock);
+    return IDCU_ERR_SUCCESS;
 }

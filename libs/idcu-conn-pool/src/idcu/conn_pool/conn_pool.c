@@ -31,11 +31,22 @@ int idcu_connection_pool_init(idcu_ConnectionPool* pool, const char* name, int p
     pool->idle_timeout_ms = IDCU_POOL_CONN_IDLE_TIMEOUT_MS;
     pool->max_retries = IDCU_POOL_CONN_MAX_RETRIES;
     pool->initialized = 0;
+    pool->free_head = 0;
 
     int ret = idcu_mutex_init(&pool->lock);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("connection pool %s: failed to init lock, code=%d", name, ret);
         return ret;
+    }
+
+    for (uint32_t i = 0; i < IDCU_POOL_MAX_CONNECTIONS; i++) {
+        ret = idcu_mutex_init(&pool->connections[i].conn_lock);
+        if (ret != IDCU_ERR_SUCCESS) {
+            idcu_connection_pool_destroy(pool);
+            IDCU_LOG_ERROR("connection pool %s: failed to init connection lock %u, code=%d", name, i, ret);
+            return ret;
+        }
+        pool->free_list[i] = i;
     }
 
     pool->initialized = 1;
@@ -69,6 +80,10 @@ void idcu_connection_pool_destroy(idcu_ConnectionPool* pool)
 
     idcu_mutex_unlock(&pool->lock);
     idcu_mutex_destroy(&pool->lock);
+    
+    for (uint32_t i = 0; i < IDCU_POOL_MAX_CONNECTIONS; i++) {
+        idcu_mutex_destroy(&pool->connections[i].conn_lock);
+    }
 
     IDCU_LOG_INFO("connection pool %s destroyed", pool->pool_name);
 }
@@ -110,12 +125,24 @@ static idcu_PooledConnection* create_new_connection(idcu_ConnectionPool* pool,
         return NULL;
     }
 
-    idcu_PooledConnection* conn = &pool->connections[pool->count];
+    uint32_t conn_idx = pool->free_list[pool->free_head];
+    pool->free_head++;
+    
+    idcu_PooledConnection* conn = &pool->connections[conn_idx];
     memset(conn, 0, sizeof(idcu_PooledConnection));
+    
+    int ret = idcu_mutex_init(&conn->conn_lock);
+    if (ret != IDCU_ERR_SUCCESS) {
+        IDCU_LOG_ERROR("connection pool %s: failed to init connection lock", pool->pool_name);
+        pool->free_head--;
+        return NULL;
+    }
 
-    int ret = idcu_network_socket_create(&conn->sock, pool->protocol);
+    ret = idcu_network_socket_create(&conn->sock, pool->protocol);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("connection pool %s: failed to create socket", pool->pool_name);
+        idcu_mutex_destroy(&conn->conn_lock);
+        pool->free_head--;
         return NULL;
     }
 
@@ -132,6 +159,8 @@ static idcu_PooledConnection* create_new_connection(idcu_ConnectionPool* pool,
         IDCU_LOG_ERROR("connection pool %s: failed to connect to %s:%d after %d retries",
                       pool->pool_name, addr, port, pool->max_retries);
         idcu_network_socket_destroy(&conn->sock);
+        idcu_mutex_destroy(&conn->conn_lock);
+        pool->free_head--;
         return NULL;
     }
 
@@ -268,6 +297,11 @@ void idcu_connection_pool_cleanup_idle(idcu_ConnectionPool* pool)
                 idcu_network_socket_destroy(&conn->sock);
             }
 
+            idcu_mutex_destroy(&conn->conn_lock);
+            
+            pool->free_head--;
+            pool->free_list[pool->free_head] = i;
+            
             if (i < pool->count - 1) {
                 memmove(&pool->connections[i], &pool->connections[i + 1],
                         (pool->count - i - 1) * sizeof(idcu_PooledConnection));

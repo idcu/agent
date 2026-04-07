@@ -1,0 +1,21 @@
+#ifndef IDCU_@MODULE_DIR_UPPER@_H
+#define IDCU_@MODULE_DIR_UPPER@_H
+
+#include "idcu/common/config.h"
+#include "idcu/common/error_code.h"
+#include "module_def.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int idcu_@MODULE_NAME@_init(void);
+int idcu_@MODULE_NAME@_run(void);
+int idcu_@MODULE_NAME@_stop(void);
+int idcu_@MODULE_NAME@_get_counter(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // IDCU_@MODULE_DIR_UPPER@_H

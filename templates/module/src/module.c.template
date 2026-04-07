@@ -1,0 +1,34 @@
+#include "idcu/@MODULE_DIR@/@MODULE_DIR@.h"
+#include "idcu/log/log.h"
+#include "idcu/common/error_code.h"
+#include <stdio.h>
+
+static int g_@MODULE_NAME@_counter = 0;
+
+int idcu_@MODULE_NAME@_init(void) {
+    IDCU_LOG_INFO("Initializing @MODULE_NAME@ module");
+    g_@MODULE_NAME@_counter = 0;
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_@MODULE_NAME@_run(void) {
+    if (g_@MODULE_NAME@_counter % 1000 == 0) {
+        IDCU_LOG_DEBUG("@MODULE_NAME@ running, counter: %d", g_@MODULE_NAME@_counter);
+    }
+    g_@MODULE_NAME@_counter++;
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_@MODULE_NAME@_stop(void) {
+    IDCU_LOG_INFO("Stopping @MODULE_NAME@ module");
+    return IDCU_ERR_SUCCESS;
+}
+
+int idcu_@MODULE_NAME@_get_counter(void) {
+    return g_@MODULE_NAME@_counter;
+}
+
+IDCU_REGISTER_MODULE(@MODULE_NAME@, IDCU_MODULE_VERSION(1, 0, 0),
+                      idcu_@MODULE_NAME@_init,
+                      idcu_@MODULE_NAME@_run,
+                      idcu_@MODULE_NAME@_stop);

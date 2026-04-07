@@ -1,0 +1,19 @@
+{
+    "name": "basic_libs",
+    "version": "1.0.0",
+    "description": "Basic libraries integration module",
+    "author": "IDCU Team",
+    "license": "MIT",
+    "dependencies": [
+        "idcu-common",
+        "idcu-log",
+        "idcu-config",
+        "idcu-json",
+        "idcu-metrics",
+        "idcu-healthcheck",
+        "idcu-http-server",
+        "idcu-http-client",
+        "idcu-network",
+        "idcu-module-system"
+    ]
+}

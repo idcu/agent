@@ -1,0 +1,113 @@
+# CODEOWNERS 文件
+# 定义项目各模块的维护者
+# 格式: <路径模式> <维护者1> <维护者2> ...
+
+# 全局默认维护者
+* @idcu-core-team
+
+# 核心模块 - 微内核
+/modules/core/micro-kernel/ @idcu-kernel-team
+/libs/idcu-common/ @idcu-kernel-team
+
+# 核心模块 - 模块系统
+/modules/core/module-system/ @idcu-module-team
+/libs/idcu-module-system/ @idcu-module-team
+/libs/idcu-module-build/ @idcu-module-team
+/libs/idcu-module-isolation/ @idcu-module-team
+/libs/idcu-module-verifier/ @idcu-module-team
+
+# 核心模块 - 调度器
+/modules/core/scheduler/ @idcu-scheduler-team
+/libs/idcu-coroutine/ @idcu-scheduler-team
+/libs/idcu-msgbus/ @idcu-scheduler-team
+
+# 核心模块 - SDK
+/modules/core/sdk/ @idcu-sdk-team
+
+# 分布式模块
+/libs/idcu-distributed/ @idcu-distributed-team
+/libs/idcu-discovery/ @idcu-distributed-team
+
+# 业务模块 - 核心功能
+/modules/business/core-module/ @idcu-business-team
+/modules/business/log/ @idcu-business-team
+/modules/business/metrics/ @idcu-business-team
+/modules/business/healthcheck/ @idcu-business-team
+/modules/business/heartbeat/ @idcu-business-team
+
+# 业务模块 - 数据相关
+/modules/business/cache/ @idcu-data-team
+/modules/business/storage/ @idcu-data-team
+/modules/business/collect/ @idcu-data-team
+/libs/idcu-cache/ @idcu-data-team
+/libs/idcu-storage/ @idcu-data-team
+/libs/idcu-json/ @idcu-data-team
+
+# 业务模块 - 网络相关
+/modules/business/http-client/ @idcu-network-team
+/modules/business/http-management/ @idcu-network-team
+/libs/idcu-network/ @idcu-network-team
+/libs/idcu-http-client/ @idcu-network-team
+/libs/idcu-http-server/ @idcu-network-team
+/libs/idcu-conn-pool/ @idcu-network-team
+
+# 业务模块 - 安全相关
+/modules/business/security/ @idcu-security-team
+/libs/idcu-sandbox/ @idcu-security-team
+/libs/idcu-security-enhanced/ @idcu-security-team
+/libs/idcu-permission/ @idcu-security-team
+/modules/services/security/ @idcu-security-team
+
+# 业务模块 - 告警相关
+/modules/business/alert/ @idcu-alert-team
+/libs/idcu-alert/ @idcu-alert-team
+
+# 配置模块
+/modules/business/config/ @idcu-config-team
+/libs/idcu-config/ @idcu-config-team
+/config/ @idcu-config-team
+
+# 管理模块
+/libs/idcu-management/ @idcu-management-team
+
+# 内存管理
+/libs/idcu-memory/ @idcu-memory-team
+
+# 监控相关
+/libs/idcu-metrics/ @idcu-monitoring-team
+/libs/idcu-healthcheck/ @idcu-monitoring-team
+/libs/idcu-watchdog/ @idcu-monitoring-team
+
+# 插件系统
+/libs/idcu-plugin/ @idcu-plugin-team
+/modules/services/plugin/ @idcu-plugin-team
+
+# 测试框架
+/modules/core/test-framework/ @idcu-test-team
+/libs/idcu-testframework/ @idcu-test-team
+/tests/ @idcu-test-team
+
+# 示例代码
+/examples/ @idcu-docs-team
+/templates/ @idcu-docs-team
+
+# 文档
+/docs/ @idcu-docs-team
+*.md @idcu-docs-team
+
+# 构建系统
+/CMakeLists.txt @idcu-build-team
+/scripts/ @idcu-build-team
+/libs/idcu-module-build/cmake/ @idcu-build-team
+
+# CI/CD
+/.github/workflows/ @idcu-ci-team
+/.github/ISSUE_TEMPLATE/ @idcu-ci-team
+/.github/PULL_REQUEST_TEMPLATE.md @idcu-ci-team
+
+# 主程序
+/app/ @idcu-core-team
+
+# 社区文件
+/CONTRIBUTING.md @idcu-community-team
+/CODE_OF_CONDUCT.md @idcu-community-team

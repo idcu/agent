@@ -91,10 +91,13 @@ add_integration_test(test_module_load integration/test_module_load.c)
 add_integration_test(test_micro_kernel_integration integration/test_micro_kernel_integration.c)
 add_integration_test(test_distributed_integration integration/test_distributed_integration.c)
 add_integration_test(test_coroutine_scheduling integration/test_coroutine_scheduling.c)
+add_integration_test(test_stress_test integration/test_stress_test.c)
+add_integration_test(test_fault_tolerance integration/test_fault_tolerance.c)
 
 # 设置集成测试输出目录
 set_target_properties(
     test_module_comm test_error_recovery test_module_load test_micro_kernel_integration test_distributed_integration test_coroutine_scheduling
+    test_stress_test test_fault_tolerance
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/out/tests
 )

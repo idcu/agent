@@ -25,11 +25,24 @@ function(safe_json_get RESULT_VAR JSON_CONTENT)
     set(FOUND TRUE)
 
     foreach(KEY ${SAFE_JSON_KEYS})
-        string(JSON TEMP GET "${CURRENT_JSON}" "${KEY}")
-        if(NOT TEMP)
+        # 先检查键是否存在
+        string(JSON MEMBER_COUNT LENGTH "${CURRENT_JSON}")
+        set(KEY_EXISTS FALSE)
+        math(EXPR LAST_INDEX "${MEMBER_COUNT} - 1")
+        foreach(I RANGE ${LAST_INDEX})
+            string(JSON MEMBER_NAME MEMBER "${CURRENT_JSON}" ${I})
+            if(MEMBER_NAME STREQUAL KEY)
+                set(KEY_EXISTS TRUE)
+                break()
+            endif()
+        endforeach()
+        
+        if(NOT KEY_EXISTS)
             set(FOUND FALSE)
             break()
         endif()
+        
+        string(JSON TEMP GET "${CURRENT_JSON}" "${KEY}")
         set(CURRENT_JSON "${TEMP}")
     endforeach()
 

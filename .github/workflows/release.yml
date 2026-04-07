@@ -1,0 +1,162 @@
+name: IDCU Agent Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+jobs:
+  build-and-package:
+    name: Build and Package on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        build_type: [Release]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF
+
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }}
+
+    - name: Package Release
+      shell: bash
+      run: |
+        # Determine package name
+        if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          OS_NAME="linux"
+          EXT="tar.gz"
+        else
+          OS_NAME="windows"
+          EXT="zip"
+        fi
+        
+        VERSION="${{ github.event.inputs.version || github.ref_name }}"
+        VERSION=${VERSION#v}
+        PACKAGE_NAME="idcu-agent-${VERSION}-${OS_NAME}-x86_64"
+        
+        # Create package directory
+        mkdir -p package/${PACKAGE_NAME}
+        
+        # Copy binaries
+        if [ -d "build/output/Release/bin" ]; then
+          cp -r build/output/Release/bin/* package/${PACKAGE_NAME}/
+        elif [ -d "build/output/bin" ]; then
+          cp -r build/output/bin/* package/${PACKAGE_NAME}/
+        fi
+        
+        # Copy libraries
+        if [ -d "build/output/Release/lib" ]; then
+          mkdir -p package/${PACKAGE_NAME}/lib
+          cp -r build/output/Release/lib/* package/${PACKAGE_NAME}/lib/
+        elif [ -d "build/output/lib" ]; then
+          mkdir -p package/${PACKAGE_NAME}/lib
+          cp -r build/output/lib/* package/${PACKAGE_NAME}/lib/
+        fi
+        
+        # Copy config files
+        if [ -d "config" ]; then
+          cp -r config package/${PACKAGE_NAME}/
+        fi
+        
+        # Copy documentation
+        cp README.md package/${PACKAGE_NAME}/
+        cp CHANGELOG.md package/${PACKAGE_NAME}/
+        cp LICENSE package/${PACKAGE_NAME}/ 2>/dev/null || true
+        
+        # Create archive
+        cd package
+        if [ "${EXT}" = "zip" ]; then
+          7z a -tzip ../${PACKAGE_NAME}.zip ${PACKAGE_NAME}
+        else
+          tar -czf ../${PACKAGE_NAME}.tar.gz ${PACKAGE_NAME}
+        fi
+        cd ..
+        
+        echo "PACKAGE_FILE=${PACKAGE_NAME}.${EXT}" >> $GITHUB_ENV
+
+    - name: Upload Package Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.PACKAGE_FILE }}
+        path: ${{ env.PACKAGE_FILE }}
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-and-package
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+        pattern: idcu-agent-*
+        merge-multiple: true
+
+    - name: List Downloaded Files
+      run: ls -la artifacts/
+
+    - name: Extract Version
+      id: version
+      run: |
+        VERSION="${{ github.event.inputs.version || github.ref_name }}"
+        VERSION=${VERSION#v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "TAG_NAME=v$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Generate Release Notes
+      run: |
+        # Extract changelog for current version
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        CHANGELOG_FILE="CHANGELOG.md"
+        
+        if [ -f "$CHANGELOG_FILE" ]; then
+          # Try to find the version in CHANGELOG
+          if grep -q "## \[$VERSION\]" "$CHANGELOG_FILE"; then
+            # Extract content between this version and the next one
+            awk '/## \['"$VERSION"'\]/{flag=1;next}/^## \[/{flag=0}flag' "$CHANGELOG_FILE" > release_notes.md
+          else
+            echo "## Release v$VERSION" > release_notes.md
+            echo "" >> release_notes.md
+            echo "### New Features" >> release_notes.md
+            echo "- Initial release" >> release_notes.md
+          fi
+        else
+          echo "## Release v$VERSION" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### New Features" >> release_notes.md
+          echo "- Initial release" >> release_notes.md
+        fi
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.TAG_NAME }}
+        name: Release v${{ steps.version.outputs.VERSION }}
+        body_path: release_notes.md
+        files: artifacts/idcu-agent-*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

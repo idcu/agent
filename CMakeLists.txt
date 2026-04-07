@@ -22,6 +22,10 @@ elseif(MSVC)
     endif()
 endif()
 
+# AddressSanitizer 选项
+option(ENABLE_ADDRESS_SANITIZER "Enable AddressSanitizer for memory leak detection" OFF)
+option(ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer for data race detection" OFF)
+
 # 编译选项
 if(MSVC)
     add_compile_options(/W4 /WX- /utf-8)
@@ -35,6 +39,26 @@ else()
         add_compile_options(-O0 -g -Wall -Wextra -Wno-unused-parameter)
     else()
         add_compile_options(-O2 -Wall -Wextra -Wno-unused-parameter)
+    endif()
+    
+    # AddressSanitizer
+    if(ENABLE_ADDRESS_SANITIZER)
+        if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+            message(FATAL_ERROR "AddressSanitizer requires GCC or Clang compiler")
+        endif()
+        message(STATUS "AddressSanitizer enabled")
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
+        add_link_options(-fsanitize=address)
+    endif()
+    
+    # ThreadSanitizer
+    if(ENABLE_THREAD_SANITIZER)
+        if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+            message(FATAL_ERROR "ThreadSanitizer requires GCC or Clang compiler")
+        endif()
+        message(STATUS "ThreadSanitizer enabled")
+        add_compile_options(-fsanitize=thread -g)
+        add_link_options(-fsanitize=thread)
     endif()
 endif()
 

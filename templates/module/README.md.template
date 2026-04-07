@@ -1,18 +1,61 @@
 # @MODULE_NAME@ 模块
 
-## 功能说明
+## 简介
 
-[在此填写模块的功能说明]
+@MODULE_NAME@ 模块是 IDCU Agent 的一个功能模块，用于 [简要描述模块功能]。
 
-## API 文档
+## 功能特性
 
-[在此填写主要 API 文档]
+- 特性 1
+- 特性 2
+- 特性 3
 
 ## 依赖关系
 
-- [依赖1]
-- [依赖2]
+- idcu-common
+- idcu-log
+- @DEPENDENCIES@
+
+## 配置
+
+在 agent.cfg 中配置：
+
+```ini
+[module.@MODULE_DIR@]
+enabled = true
+# 其他配置项...
+```
 
 ## 使用示例
 
-[在此填写使用示例代码]
+```c
+#include "idcu/@MODULE_DIR@/@MODULE_DIR@.h"
+
+// 初始化模块
+int ret = @MODULE_NAME@_init();
+if (ret != IDCU_ERR_SUCCESS) {
+    // 错误处理
+}
+
+// 使用模块功能
+@MODULE_NAME@_do_something();
+
+// 停止模块
+@MODULE_NAME@_stop();
+```
+
+## API 文档
+
+详见 [API 文档](../../docs/api/idcu-@MODULE_DIR@.md)
+
+## 构建
+
+```bash
+mkdir -p build && cd build
+cmake ..
+make idcu_@MODULE_DIR@
+```
+
+## 版本历史
+
+- v1.0.0 - 初始版本
