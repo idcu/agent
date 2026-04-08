@@ -473,112 +473,1219 @@ idcu-common (基础)
 - ✅ 使用 idcu-module-build 创建新模块
 - ✅ 运行简单的测试
 
-### 7.2 步骤 1: 创建项目结构
+### 7.2 步骤 1: 创建项目结构（详细版）
 
-首先，创建最基础的项目目录结构：
+#### 7.2.1 目标
+创建完整的、可扩展的项目目录结构，为后续所有模块开发打下基础。
 
+#### 7.2.2 详细步骤
+
+**1. 创建根目录**
 ```bash
-mkdir -p idcu-agent/app
-mkdir -p idcu-agent/config
-mkdir -p idcu-agent/docs
-mkdir -p idcu-agent/scripts
-mkdir -p idcu-agent/libs/idcu-module-build
-mkdir -p idcu-agent/tests/unit
-mkdir -p idcu-agent/tests/integration
+# 如果还没有项目目录，先创建
+mkdir -p idcu-agent
+cd idcu-agent
+
+# 初始化 Git 仓库（如果还没有）
+git init
 ```
 
-### 7.3 步骤 2: 编写主程序入口
+**2. 创建完整的目录结构**
+```bash
+# 应用程序目录
+mkdir -p app
 
-创建 `app/main.c`：
+# 配置文件目录
+mkdir -p config
+mkdir -p config/default
 
+# 文档目录
+mkdir -p docs
+mkdir -p docs/api
+mkdir -p docs/design
+
+# 脚本目录
+mkdir -p scripts
+mkdir -p scripts/windows
+mkdir -p scripts/linux
+
+# 库目录
+mkdir -p libs
+mkdir -p libs/idcu-module-build
+mkdir -p libs/idcu-module-build/include
+mkdir -p libs/idcu-module-build/src
+mkdir -p libs/idcu-module-build/tests
+
+# 模块目录
+mkdir -p modules
+mkdir -p modules/core
+mkdir -p modules/integrations
+mkdir -p modules/business
+
+# 测试目录
+mkdir -p tests
+mkdir -p tests/unit
+mkdir -p tests/integration
+mkdir -p tests/benchmarks
+mkdir -p tests/data
+
+# 构建输出目录（会被 .gitignore 忽略）
+mkdir -p build
+mkdir -p out
+```
+
+**3. 创建初始文件**
+```bash
+# 创建 .gitignore
+cat > .gitignore << 'EOF'
+# Build directories
+build/
+out/
+bin/
+lib/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.old
+
+# Log files
+*.log
+logs/
+EOF
+
+# 创建 README.md（项目总览）
+cat > README.md << 'EOF'
+# IDCU Agent
+
+基于微内核架构的实时代理程序。
+
+## 快速开始
+
+详见 [docs/step_by_step_development_guide.md](docs/step_by_step_development_guide.md)
+
+## 项目结构
+
+```
+idcu-agent/
+├── app/                 # 应用程序入口
+├── config/              # 配置文件
+├── docs/                # 文档
+├── libs/                # 独立库
+├── modules/             # 模块
+├── scripts/             # 构建脚本
+└── tests/               # 测试
+```
+EOF
+
+# 创建空的 CMakeLists.txt（稍后填充）
+touch CMakeLists.txt
+```
+
+#### 7.2.3 验证步骤
+- [ ] 所有目录都已创建
+- [ ] .gitignore 已创建
+- [ ] README.md 已创建
+- [ ] 可以使用 `tree -L 2` 查看目录结构（Linux）或 `dir /s`（Windows）
+
+#### 7.2.4 Git 提交
+```bash
+git add .
+git commit -m "chore: initialize project structure
+
+- Create complete directory structure
+- Add .gitignore
+- Add initial README.md"
+```
+
+---
+
+### 7.3 步骤 2: 编写主程序入口（详细版）
+
+#### 7.3.1 目标
+创建简单但可扩展的主程序入口，为后续集成微内核做准备。
+
+#### 7.3.2 详细步骤
+
+**1. 创建主程序文件**
 ```c
+// app/main.c
 #include <stdio.h>
+#include <stdlib.h>
 
-int main(void) {
+// 版本信息
+#define IDCU_AGENT_VERSION_MAJOR 0
+#define IDCU_AGENT_VERSION_MINOR 1
+#define IDCU_AGENT_VERSION_PATCH 0
+
+static void print_version(void) {
+    printf("IDCU Agent v%d.%d.%d\n",
+           IDCU_AGENT_VERSION_MAJOR,
+           IDCU_AGENT_VERSION_MINOR,
+           IDCU_AGENT_VERSION_PATCH);
+}
+
+static void print_usage(const char* program_name) {
+    printf("Usage: %s [OPTIONS]\n", program_name);
+    printf("\n");
+    printf("Options:\n");
+    printf("  -h, --help     Show this help message\n");
+    printf("  -v, --version  Show version information\n");
+    printf("\n");
+}
+
+int main(int argc, char* argv[]) {
+    // 解析命令行参数
+    for (int i = 1; i < argc; i++) {
+        const char* arg = argv[i];
+        if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+            print_usage(argv[0]);
+            return EXIT_SUCCESS;
+        } else if (strcmp(arg, "-v") == 0 || strcmp(arg, "--version") == 0) {
+            print_version();
+            return EXIT_SUCCESS;
+        } else {
+            fprintf(stderr, "Unknown option: %s\n", arg);
+            print_usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+    }
+
+    // 正常启动
+    printf("========================================\n");
+    print_version();
+    printf("========================================\n");
     printf("Hello, IDCU Agent!\n");
-    return 0;
+    printf("System is starting...\n");
+
+    // TODO: 这里将来会集成微内核
+    // 目前只是简单的 Hello World
+
+    printf("System started successfully!\n");
+    printf("Press Ctrl+C to exit...\n");
+
+    // 简单的等待循环
+    while (1) {
+        // 什么都不做，等待用户中断
+    }
+
+    return EXIT_SUCCESS;
 }
 ```
 
-### 7.4 步骤 3: 创建 CMake 构建配置
+**2. 创建头文件（版本信息）**
+```bash
+mkdir -p app/include
+```
 
-创建根目录的 `CMakeLists.txt`：
+```c
+// app/include/version.h
+#ifndef IDCU_APP_VERSION_H
+#define IDCU_APP_VERSION_H
 
+#define IDCU_AGENT_VERSION_MAJOR 0
+#define IDCU_AGENT_VERSION_MINOR 1
+#define IDCU_AGENT_VERSION_PATCH 0
+
+#define IDCU_AGENT_VERSION_STRING "0.1.0"
+
+const char* idcu_agent_get_version(void);
+
+#endif
+```
+
+```c
+// app/src/version.c
+#include "version.h"
+
+const char* idcu_agent_get_version(void) {
+    return IDCU_AGENT_VERSION_STRING;
+}
+```
+
+#### 7.3.3 验证步骤
+- [ ] 代码已创建
+- [ ] 语法检查通过（可以用编译器检查）
+- [ ] 代码已通过 clang-format 格式化
+
+#### 7.3.4 Git 提交（任务完成后）
+```bash
+git add app/
+git commit -m "feat(app): add main program entry
+
+- Add main.c with command line parsing
+- Add version information
+- Add help message"
+```
+
+---
+
+### 7.4 步骤 3: 创建 CMake 构建配置（详细版）
+
+#### 7.4.1 目标
+创建灵活、可扩展的 CMake 构建系统，为 idcu-module-build 预留接口。
+
+#### 7.4.2 详细步骤
+
+**1. 创建根目录 CMakeLists.txt**
 ```cmake
 cmake_minimum_required(VERSION 3.14)
 project(idcu_agent C)
+
+# 设置 C 标准
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+
+# 设置输出目录
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # 编译选项
 if(MSVC)
-    add_compile_options(/W4 /utf-8)
+    # MSVC 特定选项
+    add_compile_options(/W4 /WX /utf-8)
+    add_compile_options(/MP)  # 多核编译
 else()
-    add_compile_options(-Wall -Wextra)
+    # GCC/Clang 通用选项
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Werror)  # 警告当作错误
+    
+    # 调试构建选项
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-g -O0)
+        add_compile_definitions(DEBUG=1)
+    endif()
+    
+    # 发布构建选项
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+        add_compile_definitions(NDEBUG=1)
+    endif()
 endif()
 
+# 选项：是否构建测试
+option(BUILD_TESTS "Build unit tests" ON)
+
+# 选项：是否构建示例
+option(BUILD_EXAMPLES "Build example programs" ON)
+
+# 添加 idcu-module-build 模块
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake")
+
+# 包含子目录
+add_subdirectory(libs)
+add_subdirectory(app)
+
+# 测试（如果启用）
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# 打印配置摘要
+message(STATUS "")
+message(STATUS "========================================")
+message(STATUS "IDCU Agent Configuration Summary")
+message(STATUS "========================================")
+message(STATUS "  Version: ${IDCU_AGENT_VERSION_STRING}")
+message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Compiler: ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
+message(STATUS "  Build Tests: ${BUILD_TESTS}")
+message(STATUS "  Build Examples: ${BUILD_EXAMPLES}")
+message(STATUS "========================================")
+message(STATUS "")
+```
+
+**2. 创建 app/CMakeLists.txt**
+```cmake
+# app/CMakeLists.txt
+
 # 主程序
-add_executable(idcu_agent app/main.c)
+add_executable(idcu_agent
+    main.c
+    src/version.c
+)
+
+target_include_directories(idcu_agent PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# 安装规则
+install(TARGETS idcu_agent
+    RUNTIME DESTINATION bin
+)
 ```
 
-### 7.5 步骤 4: 验证项目可以编译
+**3. 创建 libs/CMakeLists.txt**
+```cmake
+# libs/CMakeLists.txt
 
+# idcu-module-build 是一个特殊的模块，先添加它
+add_subdirectory(idcu-module-build)
+
+# 其他库将在后续阶段添加
+# add_subdirectory(idcu-common)
+# add_subdirectory(idcu-log)
+# ...
+```
+
+**4. 创建 tests/CMakeLists.txt**
+```cmake
+# tests/CMakeLists.txt
+# 测试框架将在后续阶段添加
+message(STATUS "Tests will be added in later stages")
+```
+
+#### 7.4.3 验证步骤
+- [ ] CMakeLists.txt 语法正确
+- [ ] 可以运行 `cmake -B build` 不报错
+- [ ] 可以看到配置摘要输出
+
+#### 7.4.4 Git 提交
 ```bash
-# Windows (使用 MinGW)
-mkdir build
-cd build
-cmake -G "MinGW Makefiles" ..
-mingw32-make
+git add CMakeLists.txt
+git add app/CMakeLists.txt
+git add libs/CMakeLists.txt
+git add tests/CMakeLists.txt
+git commit -m "chore(build): add CMake build system
 
-# Linux
-mkdir build
-cd build
-cmake ..
-make
+- Add root CMakeLists.txt with configuration options
+- Add app CMakeLists.txt
+- Add libs CMakeLists.txt
+- Add tests CMakeLists.txt
+- Add MSVC and GCC/Clang compiler options"
 ```
 
-运行程序：
+---
 
+### 7.5 步骤 4: 验证项目可以编译（详细版）
+
+#### 7.5.1 目标
+确保 CMake 构建系统可以正常工作，在多个平台上验证。
+
+#### 7.5.2 详细步骤
+
+**1. Windows (MinGW)**
 ```bash
-./idcu_agent
-# 输出: Hello, IDCU Agent!
+# 创建构建目录
+mkdir -p build
+cd build
+
+# 配置 CMake
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+
+# 编译
+mingw32-make -j4
+
+# 运行程序
+./bin/idcu_agent.exe
+
+# 测试命令行参数
+./bin/idcu_agent.exe --help
+./bin/idcu_agent.exe --version
 ```
 
-### 7.6 步骤 5: 添加代码质量工具
+**2. Windows (MSVC)**
+```bash
+# 创建构建目录
+mkdir -p build
+cd build
 
-创建 `.clang-format`（代码格式化）：
+# 配置 CMake（Visual Studio 2019）
+cmake -G "Visual Studio 16 2019" -A x64 ..
 
+# 编译 Debug 版本
+cmake --build . --config Debug
+
+# 运行程序
+./Debug/bin/idcu_agent.exe
+```
+
+**3. Linux**
+```bash
+# 创建构建目录
+mkdir -p build
+cd build
+
+# 配置 CMake
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+
+# 编译
+make -j4
+
+# 运行程序
+./bin/idcu_agent
+
+# 测试命令行参数
+./bin/idcu_agent --help
+./bin/idcu_agent --version
+```
+
+**4. 清理并重新构建（验证）**
+```bash
+# 清理
+cd ..
+rm -rf build
+
+# 重新配置和编译
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j4
+
+# 验证 Release 版本
+./build/bin/idcu_agent --version
+```
+
+#### 7.5.3 验证检查清单
+- [ ] Debug 版本可以正常编译
+- [ ] Release 版本可以正常编译
+- [ ] 程序可以正常运行
+- [ ] `--help` 参数工作正常
+- [ ] `--version` 参数工作正常
+- [ ] 可以正常退出（Ctrl+C）
+
+#### 7.5.4 常见问题排查
+| 问题 | 可能原因 | 解决方案 |
+|-----|---------|---------|
+| CMake 找不到编译器 | 编译器未安装或不在 PATH 中 | 安装编译器并检查 PATH |
+| 链接错误 | 缺少依赖库 | 检查依赖是否正确安装 |
+| 中文乱码 | 字符编码问题 | 确保源文件是 UTF-8 编码 |
+
+---
+
+### 7.6 步骤 5: 添加代码质量工具（详细版）
+
+#### 7.6.1 目标
+配置代码格式化和静态分析工具，从第一天就保证代码质量。
+
+#### 7.6.2 详细步骤
+
+**1. 创建 .clang-format（更详细的配置）**
 ```yaml
 ---
+Language: Cpp
 BasedOnStyle: Google
 IndentWidth: 4
+TabWidth: 4
+UseTab: Never
 ColumnLimit: 100
+
+# 指针和引用对齐
+PointerAlignment: Left
+
+# 括号风格
+BreakBeforeBraces: Attach
+
+# 空行
+MaxEmptyLinesToKeep: 2
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# 包含排序
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*\.h>'
+    Priority: 1
+  - Regex: '^".*'
+    Priority: 2
+
+# 其他设置
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: true
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
 ...
 ```
 
-创建 `.clang-tidy`（静态分析）：
-
+**2. 创建 .clang-tidy（更详细的配置）**
 ```yaml
 ---
-Checks: '-*,clang-analyzer-*,performance-*,modernize-*,readability-*'
+Checks: >
+  -*,
+  clang-analyzer-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers
+
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle: file
+
+CheckOptions:
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.MemberCase
+    value: lower_case
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key: readability-identifier-naming.TypedefCase
+    value: CamelCase
 ...
 ```
 
-### 7.7 步骤 6: 搭建测试框架（TDD 从这里开始！）
+**3. 创建格式化脚本**
 
-创建基础的测试框架，参考现有实现。
+**Windows (scripts/windows/format.bat)**
+```batch
+@echo off
+echo Formatting C/C++ files...
 
-### 7.8 步骤 7: 初始化 idcu-module-build（优先完成！）
+REM 格式化所有 .c 和 .h 文件
+for /r %%f in (*.c *.h) do (
+    echo Formatting: %%f
+    clang-format -i "%%f"
+)
 
-创建 `libs/idcu-module-build/` 的基础结构，详见该模块的 README。**这是最重要的一步！**
+echo Formatting complete!
+```
 
-### 7.9 阶段 1 验收标准
+**Linux (scripts/linux/format.sh)**
+```bash
+#!/bin/bash
 
-- [ ] 项目结构清晰
-- [ ] CMake 可以成功构建
-- [ ] 程序可以正常运行
-- [ ] 代码质量工具配置完成
-- [ ] 测试框架可以运行
-- [ ] **idcu-module-build 基础结构已创建并可使用**
+echo "Formatting C/C++ files..."
+
+# 格式化所有 .c 和 .h 文件
+find . -name "*.c" -o -name "*.h" | while read -r file; do
+    echo "Formatting: $file"
+    clang-format -i "$file"
+done
+
+echo "Formatting complete!"
+```
+
+**4. 创建格式检查脚本**
+
+**Windows (scripts/windows/check_format.bat)**
+```batch
+@echo off
+echo Checking code format...
+
+set HAS_ERRORS=0
+
+REM 检查所有 .c 和 .h 文件
+for /r %%f in (*.c *.h) do (
+    clang-format --dry-run --Werror "%%f" >nul 2>&1
+    if errorlevel 1 (
+        echo File needs formatting: %%f
+        set HAS_ERRORS=1
+    )
+)
+
+if %HAS_ERRORS% equ 0 (
+    echo All files are properly formatted!
+) else (
+    echo Some files need formatting!
+    exit /b 1
+)
+```
+
+**Linux (scripts/linux/check_format.sh)**
+```bash
+#!/bin/bash
+
+echo "Checking code format..."
+
+HAS_ERRORS=0
+
+# 检查所有 .c 和 .h 文件
+find . -name "*.c" -o -name "*.h" | while read -r file; do
+    if ! clang-format --dry-run --Werror "$file" > /dev/null 2>&1; then
+        echo "File needs formatting: $file"
+        HAS_ERRORS=1
+    fi
+done
+
+if [ "$HAS_ERRORS" -eq 0 ]; then
+    echo "All files are properly formatted!"
+else
+    echo "Some files need formatting!"
+    exit 1
+fi
+```
+
+**5. 给脚本添加执行权限（Linux）**
+```bash
+chmod +x scripts/linux/format.sh
+chmod +x scripts/linux/check_format.sh
+```
+
+**6. 运行格式化**
+```bash
+# Windows
+scripts/windows/format.bat
+
+# Linux
+scripts/linux/format.sh
+```
+
+#### 7.6.3 验证检查清单
+- [ ] .clang-format 已创建
+- [ ] .clang-tidy 已创建
+- [ ] 格式化脚本已创建
+- [ ] 检查脚本已创建
+- [ ] 可以运行格式化脚本
+- [ ] 可以运行检查脚本
+- [ ] 现有代码已格式化
+
+#### 7.6.4 Git 提交
+```bash
+git add .clang-format
+git add .clang-tidy
+git add scripts/
+git commit -m "chore: add code quality tools
+
+- Add .clang-format configuration
+- Add .clang-tidy configuration
+- Add format scripts for Windows and Linux
+- Add check-format scripts for Windows and Linux"
+
+# 格式化现有代码并提交
+scripts/windows/format.bat  # 或 scripts/linux/format.sh
+git add -u
+git commit -m "style: format existing code with clang-format"
+```
+
+---
+
+### 7.7 步骤 6: 搭建测试框架（详细版 - TDD 从这里开始！）
+
+#### 7.7.1 目标
+创建轻量级、易用的测试框架，支持 TDD（测试驱动开发）。
+
+#### 7.7.2 详细步骤
+
+**1. 创建测试框架目录结构**
+```bash
+mkdir -p libs/idcu-testframework/include/idcu/testframework
+mkdir -p libs/idcu-testframework/src
+mkdir -p libs/idcu-testframework/tests
+mkdir -p libs/idcu-testframework/examples
+```
+
+**2. 创建测试框架头文件**
+```c
+// libs/idcu-testframework/include/idcu/testframework/testframework.h
+#ifndef IDCU_TESTFRAMEWORK_TESTFRAMEWORK_H
+#define IDCU_TESTFRAMEWORK_TESTFRAMEWORK_H
+
+#include <stdio.h>
+#include <stdbool.h>
+
+// 测试结果统计
+typedef struct {
+    int total_tests;
+    int passed_tests;
+    int failed_tests;
+} idcu_TestStats;
+
+// 测试函数类型
+typedef void (*idcu_TestFunc)(void);
+
+// 测试用例注册
+void idcu_test_register(const char* suite_name, const char* test_name, idcu_TestFunc func);
+
+// 断言宏
+#define IDCU_TEST_ASSERT(cond) \
+    do { \
+        if (!(cond)) { \
+            fprintf(stderr, "ASSERT FAILED: %s:%d - %s\n", __FILE__, __LINE__, #cond); \
+            idcu_test_fail_current(); \
+            return; \
+        } \
+    } while (0)
+
+#define IDCU_TEST_ASSERT_EQUAL(expected, actual) \
+    do { \
+        if ((expected) != (actual)) { \
+            fprintf(stderr, "ASSERT FAILED: %s:%d - %s != %s (expected %d, got %d)\n", \
+                    __FILE__, __LINE__, #expected, #actual, (int)(expected), (int)(actual)); \
+            idcu_test_fail_current(); \
+            return; \
+        } \
+    } while (0)
+
+#define IDCU_TEST_ASSERT_STRING_EQUAL(expected, actual) \
+    do { \
+        if (strcmp((expected), (actual)) != 0) { \
+            fprintf(stderr, "ASSERT FAILED: %s:%d - \"%s\" != \"%s\"\n", \
+                    __FILE__, __LINE__, (expected), (actual)); \
+            idcu_test_fail_current(); \
+            return; \
+        } \
+    } while (0)
+
+// 测试注册宏
+#define IDCU_TEST_CASE(suite, name) \
+    static void _test_##suite##_##name(void); \
+    static void _register_test_##suite##_##name(void) __attribute__((constructor)); \
+    static void _register_test_##suite##_##name(void) { \
+        idcu_test_register(#suite, #name, _test_##suite##_##name); \
+    } \
+    static void _test_##suite##_##name(void)
+
+// 内部函数
+void idcu_test_fail_current(void);
+int idcu_test_run_all(void);
+idcu_TestStats idcu_test_get_stats(void);
+
+#endif
+```
+
+**3. 创建测试框架实现**
+```c
+// libs/idcu-testframework/src/testframework.c
+#include "idcu/testframework/testframework.h"
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_TESTS 1024
+
+typedef struct {
+    const char* suite_name;
+    const char* test_name;
+    idcu_TestFunc func;
+    bool failed;
+} idcu_TestCase;
+
+static idcu_TestCase g_tests[MAX_TESTS];
+static int g_test_count = 0;
+static int g_current_test = -1;
+static idcu_TestStats g_stats = {0};
+
+void idcu_test_register(const char* suite_name, const char* test_name, idcu_TestFunc func) {
+    if (g_test_count >= MAX_TESTS) {
+        fprintf(stderr, "Too many tests! Maximum is %d\n", MAX_TESTS);
+        return;
+    }
+    
+    g_tests[g_test_count].suite_name = suite_name;
+    g_tests[g_test_count].test_name = test_name;
+    g_tests[g_test_count].func = func;
+    g_tests[g_test_count].failed = false;
+    g_test_count++;
+}
+
+void idcu_test_fail_current(void) {
+    if (g_current_test >= 0 && g_current_test < g_test_count) {
+        g_tests[g_current_test].failed = true;
+    }
+}
+
+int idcu_test_run_all(void) {
+    printf("========================================\n");
+    printf("Running %d tests...\n", g_test_count);
+    printf("========================================\n\n");
+    
+    g_stats.total_tests = g_test_count;
+    g_stats.passed_tests = 0;
+    g_stats.failed_tests = 0;
+    
+    const char* current_suite = NULL;
+    
+    for (int i = 0; i < g_test_count; i++) {
+        // 打印 suite 名称（如果变化）
+        if (current_suite == NULL || strcmp(g_tests[i].suite_name, current_suite) != 0) {
+            current_suite = g_tests[i].suite_name;
+            printf("[Suite: %s]\n", current_suite);
+        }
+        
+        // 运行测试
+        printf("  Running: %s... ", g_tests[i].test_name);
+        fflush(stdout);
+        
+        g_current_test = i;
+        g_tests[i].failed = false;
+        g_tests[i].func();
+        
+        if (g_tests[i].failed) {
+            printf("FAILED\n");
+            g_stats.failed_tests++;
+        } else {
+            printf("PASSED\n");
+            g_stats.passed_tests++;
+        }
+    }
+    
+    // 打印总结
+    printf("\n========================================\n");
+    printf("Test Summary:\n");
+    printf("  Total:  %d\n", g_stats.total_tests);
+    printf("  Passed: %d\n", g_stats.passed_tests);
+    printf("  Failed: %d\n", g_stats.failed_tests);
+    printf("========================================\n");
+    
+    return g_stats.failed_tests;
+}
+
+idcu_TestStats idcu_test_get_stats(void) {
+    return g_stats;
+}
+```
+
+**4. 创建测试框架 CMakeLists.txt**
+```cmake
+# libs/idcu-testframework/CMakeLists.txt
+
+add_library(idcu_testframework STATIC
+    src/testframework.c
+)
+
+target_include_directories(idcu_testframework PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+add_library(idcu::testframework ALIAS idcu_testframework)
+
+# 示例
+if(BUILD_EXAMPLES)
+    add_executable(example_simple_test examples/simple_test.c)
+    target_link_libraries(example_simple_test PRIVATE idcu::testframework)
+endif()
+```
+
+**5. 创建示例测试**
+```c
+// libs/idcu-testframework/examples/simple_test.c
+#include "idcu/testframework/testframework.h"
+#include <string.h>
+
+// 示例函数，我们将测试它
+static int add(int a, int b) {
+    return a + b;
+}
+
+static const char* get_greeting(void) {
+    return "Hello, World!";
+}
+
+// 测试用例 1
+IDCU_TEST_CASE(Math, AddPositiveNumbers) {
+    IDCU_TEST_ASSERT_EQUAL(5, add(2, 3));
+    IDCU_TEST_ASSERT_EQUAL(10, add(5, 5));
+}
+
+// 测试用例 2
+IDCU_TEST_CASE(Math, AddNegativeNumbers) {
+    IDCU_TEST_ASSERT_EQUAL(-1, add(2, -3));
+    IDCU_TEST_ASSERT_EQUAL(-5, add(-2, -3));
+}
+
+// 测试用例 3
+IDCU_TEST_CASE(String, Greeting) {
+    IDCU_TEST_ASSERT_STRING_EQUAL("Hello, World!", get_greeting());
+}
+
+// 主函数
+int main(void) {
+    return idcu_test_run_all();
+}
+```
+
+**6. 创建测试框架的 README**
+```markdown
+# idcu-testframework
+
+轻量级 C 语言测试框架，支持 TDD。
+
+## 快速开始
+
+```c
+#include "idcu/testframework/testframework.h"
+
+IDCU_TEST_CASE(MySuite, MyTest) {
+    IDCU_TEST_ASSERT_EQUAL(5, 2 + 3);
+}
+
+int main(void) {
+    return idcu_test_run_all();
+}
+```
+
+## API 参考
+
+### 断言
+
+- `IDCU_TEST_ASSERT(cond)` - 断言条件为真
+- `IDCU_TEST_ASSERT_EQUAL(expected, actual)` - 断言两个值相等
+- `IDCU_TEST_ASSERT_STRING_EQUAL(expected, actual)` - 断言两个字符串相等
+
+### 测试注册
+
+- `IDCU_TEST_CASE(suite, name)` - 定义一个测试用例
+
+### 运行测试
+
+- `idcu_test_run_all()` - 运行所有测试
+```
+
+**7. 将测试框架添加到构建中**
+编辑 `libs/CMakeLists.txt`，添加：
+```cmake
+add_subdirectory(idcu-testframework)
+```
+
+#### 7.7.3 验证检查清单
+- [ ] 测试框架头文件已创建
+- [ ] 测试框架实现已创建
+- [ ] CMakeLists.txt 已创建
+- [ ] 示例测试已创建
+- [ ] 可以编译测试框架
+- [ ] 可以运行示例测试
+- [ ] 示例测试通过
+
+#### 7.7.4 运行测试
+```bash
+# 构建
+cmake -B build -DBUILD_EXAMPLES=ON
+cmake --build build
+
+# 运行示例测试
+./build/libs/idcu-testframework/example_simple_test
+```
+
+#### 7.7.5 Git 提交
+```bash
+git add libs/idcu-testframework/
+git commit -m "feat(libs): add test framework
+
+- Add test framework header
+- Add test framework implementation
+- Add example tests
+- Add CMakeLists.txt
+- Add README"
+
+# 更新 libs/CMakeLists.txt
+git add libs/CMakeLists.txt
+git commit -m "chore: add testframework to build"
+```
+
+---
+
+### 7.8 步骤 7: 初始化 idcu-module-build（详细版 - 优先完成！）
+
+#### 7.8.1 目标
+创建模块构建工具，这是最重要的一步，后续所有模块都将使用它。
+
+#### 7.8.2 详细步骤
+
+由于这个模块比较复杂，建议直接参考现有项目的实现。这里给出核心结构：
+
+**1. 创建目录结构**
+```bash
+mkdir -p libs/idcu-module-build/cmake
+mkdir -p libs/idcu-module-build/include
+mkdir -p libs/idcu-module-build/src
+mkdir -p libs/idcu-module-build/tests
+mkdir -p libs/idcu-module-build/examples
+```
+
+**2. 创建核心 CMake 模块文件**
+```cmake
+# libs/idcu-module-build/cmake/idcu_module.cmake
+
+# IDCU 模块构建辅助函数
+include_guard()
+
+# 创建一个 IDCU 库
+function(idcu_add_library name)
+    cmake_parse_arguments(IDCU_LIB
+        ""
+        "VERSION"
+        "SOURCES;HEADERS;DEPENDS"
+        ${ARGN}
+    )
+    
+    # 创建库
+    add_library(${name} STATIC ${IDCU_LIB_SOURCES})
+    
+    # 设置包含目录
+    target_include_directories(${name} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    )
+    
+    # 添加依赖
+    if(IDCU_LIB_DEPENDS)
+        target_link_libraries(${name} PUBLIC ${IDCU_LIB_DEPENDS})
+    endif()
+    
+    # 创建别名
+    add_library(idcu::${name} ALIAS ${name})
+    
+    message(STATUS "Added library: idcu::${name}")
+endfunction()
+
+# 创建一个 IDCU 模块
+function(idcu_add_module name)
+    cmake_parse_arguments(IDCU_MODULE
+        ""
+        "VERSION"
+        "SOURCES;DEPENDS"
+        ${ARGN}
+    )
+    
+    # 创建模块库
+    add_library(${name} STATIC ${IDCU_MODULE_SOURCES})
+    
+    # 设置包含目录
+    target_include_directories(${name} PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    )
+    
+    # 添加依赖
+    if(IDCU_MODULE_DEPENDS)
+        target_link_libraries(${name} PUBLIC ${IDCU_MODULE_DEPENDS})
+    endif()
+    
+    message(STATUS "Added module: ${name}")
+endfunction()
+```
+
+**3. 创建完整的 idcu-module-build**
+
+**重要提示**：由于这个模块的复杂性，**强烈建议直接参考现有项目的完整实现**。现有项目的 `libs/idcu-module-build/` 目录包含：
+- 完整的 CMake 模块
+- 配置文件支持
+- 跨平台支持
+- 详细的文档
+
+**4. 验证 idcu-module-build**
+```bash
+# 确保可以引用这个模块
+# 在根 CMakeLists.txt 中已经添加了：
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake")
+```
+
+#### 7.8.3 验收标准
+- [ ] idcu-module-build 目录结构已创建
+- [ ] 核心 CMake 模块已创建
+- [ ] 可以被其他 CMakeLists.txt 引用
+- [ ] 有详细的 README 文档
+
+---
+
+### 7.9 阶段 1 最终验收和交付
+
+#### 7.9.1 完整验收检查清单
+
+在进入阶段 2 之前，请确认：
+
+- [ ] **1.1 - 创建项目结构**
+  - [ ] 所有目录已创建
+  - [ ] .gitignore 已配置
+  - [ ] README.md 已创建
+  - [ ] 已提交 Git
+
+- [ ] **1.2 - 编写主程序入口**
+  - [ ] main.c 已创建
+  - [ ] 支持命令行参数（--help, --version）
+  - [ ] 代码已格式化
+  - [ ] 已提交 Git
+
+- [ ] **1.3 - 创建 CMake 构建配置**
+  - [ ] 根 CMakeLists.txt 已创建
+  - [ ] 支持 Debug 和 Release 构建
+  - [ ] 有 BUILD_TESTS 和 BUILD_EXAMPLES 选项
+  - [ ] 有配置摘要输出
+  - [ ] 已提交 Git
+
+- [ ] **1.4 - 验证项目可以编译**
+  - [ ] Debug 版本编译成功
+  - [ ] Release 版本编译成功
+  - [ ] 程序可以正常运行
+  - [ ] 命令行参数工作正常
+  - [ ] 在至少一个平台上验证过
+
+- [ ] **1.5 - 添加代码质量工具**
+  - [ ] .clang-format 已创建
+  - [ ] .clang-tidy 已创建
+  - [ ] format 脚本已创建
+  - [ ] check-format 脚本已创建
+  - [ ] 现有代码已格式化
+  - [ ] 已提交 Git
+
+- [ ] **1.6 - 搭建测试框架**
+  - [ ] 测试框架已创建
+  - [ ] 有断言宏
+  - [ ] 有测试注册机制
+  - [ ] 有示例测试
+  - [ ] 示例测试可以运行并通过
+  - [ ] 已提交 Git
+
+- [ ] **1.7 - 初始化 idcu-module-build**
+  - [ ] 目录结构已创建
+  - [ ] 核心 CMake 模块已创建
+  - [ ] 有 README 文档
+  - [ ] 已提交 Git
+
+#### 7.9.2 阶段 1 完成后的演示
+
+运行以下命令展示成果：
+
+```bash
+# 1. 清理并重新构建
+rm -rf build
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+cmake --build build -j4
+
+# 2. 运行主程序
+echo "=== Running main program ==="
+./build/bin/idcu_agent --version
+./build/bin/idcu_agent --help
+
+# 3. 运行测试框架示例
+echo ""
+echo "=== Running test framework example ==="
+./build/libs/idcu-testframework/example_simple_test
+
+# 4. 检查代码格式
+echo ""
+echo "=== Checking code format ==="
+scripts/windows/check_format.bat  # 或 scripts/linux/check_format.sh
+
+echo ""
+echo "========================================"
+echo "Phase 1 is COMPLETE! 🎉"
+echo "========================================"
+```
+
+#### 7.9.3 Git 标签（可选但推荐）
+
+如果想标记阶段 1 完成：
+
+```bash
+git tag -a v0.1.0-phase1 -m "Complete Phase 1: Project initialization and basic build"
+git push origin v0.1.0-phase1
+```
+
+---
+
+**恭喜！你已完成阶段 1！现在可以进入阶段 2 了！** 🚀
 
 ---
 
