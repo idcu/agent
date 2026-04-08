@@ -148,6 +148,46 @@ typedef void (*idcu_SdkDestroyFunc)(idcu_SdkContext* ctx);
 
 ## 7. 详细实现步骤
 
+### 阶段架构图
+
+```mermaid
+flowchart TD
+    subgraph 模块系统完善
+        log_integration[日志集成]
+        config_integration[配置集成]
+        json_integration[JSON集成]
+        yaml_integration[YAML集成]
+        network_integration[网络集成]
+        metrics_integration[指标集成]
+        basic_libs[基础库集成]
+        sdk_complete[SDK完善]
+        rest_api[REST API]
+    end
+
+    subgraph 依赖关系
+        phase2[Phase 2: 核心基础设施]
+        phase3[Phase 3: 独立库]
+    end
+
+    phase2 --> sdk_complete
+    phase3 --> log_integration
+    phase3 --> config_integration
+    phase3 --> json_integration
+    phase3 --> yaml_integration
+    phase3 --> network_integration
+    phase3 --> metrics_integration
+    phase3 --> basic_libs
+    sdk_complete --> log_integration
+    sdk_complete --> config_integration
+    sdk_complete --> json_integration
+    sdk_complete --> yaml_integration
+    sdk_complete --> network_integration
+    sdk_complete --> metrics_integration
+    sdk_complete --> basic_libs
+    sdk_complete --> rest_api
+    network_integration --> rest_api
+```
+
 ### 7.1 任务列表
 
 | 序号 | 组件 | 文档 | 状态 | 预计时间 | 依赖 |

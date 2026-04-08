@@ -186,6 +186,38 @@
 
 ## 7. 详细实现步骤
 
+### 阶段架构图
+
+```mermaid
+flowchart TD
+    subgraph 核心基础设施构建
+        idcu_common[通用基础库]
+        module_build[模块构建系统]
+        module_system[模块系统]
+        coroutine_scheduler[协程调度器]
+        message_bus[消息总线]
+        micro_kernel[微内核核心]
+        sdk_base[SDK基础]
+    end
+
+    idcu_common --> module_build
+    idcu_common --> module_system
+    idcu_common --> coroutine_scheduler
+    idcu_common --> message_bus
+    module_build --> module_system
+    module_system --> micro_kernel
+    coroutine_scheduler --> micro_kernel
+    message_bus --> micro_kernel
+    micro_kernel --> sdk_base
+    idcu_common --> sdk_base
+
+    subgraph 依赖关系
+        phase1[Phase 1: 项目初始化]
+    end
+
+    phase1 --> idcu_common
+```
+
 详见各子任务文档：
 - [任务 2.1: 创建通用基础库 (idcu-common)](./01_create_idcu_common.md)
 - [任务 2.2: 完善 idcu-module-build](./02_improve_module_build.md)

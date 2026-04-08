@@ -138,6 +138,100 @@ libs/idcu-xxx/
 
 ## 7. 详细实现步骤
 
+### 阶段架构图
+
+```mermaid
+flowchart TD
+    subgraph 基础工具层
+        idcu_log[日志系统]
+        idcu_json[JSON解析]
+        idcu_yaml[YAML解析]
+        idcu_memory[内存池管理]
+        idcu_utils[通用工具函数]
+    end
+
+    subgraph 配置与存储层
+        idcu_config[配置管理]
+        idcu_storage[持久化存储]
+        idcu_cache[内存缓存]
+    end
+
+    subgraph 网络与通信层
+        idcu_network[网络层]
+        idcu_conn_pool[连接池管理]
+        idcu_http_server[HTTP服务器]
+        idcu_http_client[HTTP客户端]
+        idcu_msgbus[消息总线库]
+        idcu_coroutine[协程库]
+    end
+
+    subgraph 监控与服务层
+        idcu_metrics[指标收集]
+        idcu_healthcheck[健康检查]
+        idcu_alert[告警管理]
+        idcu_watchdog[看门狗]
+        idcu_discovery[节点发现]
+    end
+
+    subgraph 安全与插件层
+        idcu_sandbox[沙箱安全]
+        idcu_permission[权限管理]
+        idcu_plugin[插件系统]
+        idcu_management[管理CLI]
+    end
+
+    subgraph 高级功能层
+        idcu_distributed[分布式支持]
+        idcu_scheduler[任务调度]
+        idcu_device_collector[设备采集]
+        idcu_server_monitor[服务器监控]
+        idcu_module_isolation[模块隔离]
+        idcu_module_verifier[模块验证]
+    end
+
+    subgraph 依赖关系
+        idcu_common[通用基础库]
+    end
+
+    idcu_common --> idcu_log
+    idcu_common --> idcu_json
+    idcu_common --> idcu_yaml
+    idcu_common --> idcu_memory
+    idcu_common --> idcu_utils
+
+    idcu_log --> idcu_config
+    idcu_json --> idcu_config
+    idcu_yaml --> idcu_config
+    idcu_memory --> idcu_storage
+    idcu_memory --> idcu_cache
+
+    idcu_utils --> idcu_network
+    idcu_memory --> idcu_network
+    idcu_network --> idcu_conn_pool
+    idcu_network --> idcu_http_server
+    idcu_network --> idcu_http_client
+    idcu_common --> idcu_msgbus
+    idcu_common --> idcu_coroutine
+
+    idcu_log --> idcu_metrics
+    idcu_log --> idcu_healthcheck
+    idcu_log --> idcu_alert
+    idcu_utils --> idcu_watchdog
+    idcu_network --> idcu_discovery
+
+    idcu_common --> idcu_sandbox
+    idcu_common --> idcu_permission
+    idcu_common --> idcu_plugin
+    idcu_utils --> idcu_management
+
+    idcu_network --> idcu_distributed
+    idcu_coroutine --> idcu_scheduler
+    idcu_network --> idcu_device_collector
+    idcu_metrics --> idcu_server_monitor
+    idcu_common --> idcu_module_isolation
+    idcu_common --> idcu_module_verifier
+```
+
 ### 库的分类与开发顺序
 
 #### 基础工具层（5 个库）

@@ -291,6 +291,149 @@ docs/tasks/
 
 ---
 
+## 架构概览
+
+### 系统架构
+
+```mermaid
+flowchart TD
+    subgraph 核心层
+        micro_kernel[微内核核心]
+        module_system[模块系统]
+        coroutine_scheduler[协程调度器]
+        message_bus[消息总线]
+    end
+
+    subgraph 基础库层
+        idcu_common[通用基础库]
+        idcu_log[日志系统]
+        idcu_json[JSON解析]
+        idcu_yaml[YAML解析]
+        idcu_memory[内存池]
+        idcu_utils[工具库]
+        idcu_config[配置管理]
+        idcu_storage[持久化存储]
+        idcu_cache[内存缓存]
+        idcu_network[网络层]
+        idcu_http_server[HTTP服务器]
+        idcu_http_client[HTTP客户端]
+        idcu_metrics[指标收集]
+        idcu_healthcheck[健康检查]
+        idcu_alert[告警管理]
+    end
+
+    subgraph 集成层
+        log_integration[日志集成]
+        config_integration[配置集成]
+        json_integration[JSON集成]
+        yaml_integration[YAML集成]
+        network_integration[网络集成]
+        metrics_integration[指标集成]
+    end
+
+    subgraph 业务模块层
+        core_module[核心基础模块]
+        log_module[日志业务模块]
+        config_module[配置业务模块]
+        heartbeat[心跳模块]
+        metrics_module[指标模块]
+        task_queue[任务队列模块]
+        healthcheck_module[健康检查业务模块]
+        alert_module[告警业务模块]
+        collect_module[数据采集模块]
+        cache_module[缓存业务模块]
+        storage_module[存储业务模块]
+        security_module[安全业务模块]
+        http_client_module[HTTP客户端模块]
+        http_management_module[HTTP管理模块]
+    end
+
+    micro_kernel --> module_system
+    micro_kernel --> coroutine_scheduler
+    micro_kernel --> message_bus
+
+    module_system --> idcu_common
+    coroutine_scheduler --> idcu_common
+    message_bus --> idcu_common
+
+    log_integration --> idcu_log
+    config_integration --> idcu_config
+    json_integration --> idcu_json
+    yaml_integration --> idcu_yaml
+    network_integration --> idcu_network
+    metrics_integration --> idcu_metrics
+
+    core_module --> log_integration
+    core_module --> config_integration
+    log_module --> log_integration
+    config_module --> config_integration
+    heartbeat --> message_bus
+    metrics_module --> metrics_integration
+    task_queue --> coroutine_scheduler
+    healthcheck_module --> idcu_healthcheck
+    alert_module --> idcu_alert
+    collect_module --> idcu_network
+    cache_module --> idcu_cache
+    storage_module --> idcu_storage
+    security_module --> idcu_common
+    http_client_module --> idcu_http_client
+    http_management_module --> idcu_http_server
+```
+
+### 核心组件关系
+
+- **微内核核心**：系统的核心，负责整合模块系统、协程调度器和消息总线
+- **模块系统**：负责模块的加载、卸载和生命周期管理
+- **协程调度器**：提供高效的并发处理能力
+- **消息总线**：实现模块间的通信
+- **基础库**：提供各种功能的独立库，如日志、配置、网络等
+- **集成层**：将基础库封装为模块系统可用的接口
+- **业务模块**：实现具体的业务功能
+
+## 风险评估
+
+### 技术风险
+
+| 风险 | 描述 | 应对措施 |
+|-----|------|---------|
+| 跨平台兼容性 | Windows/Linux 平台差异可能导致行为不一致 | 分别在两个平台进行持续测试，使用条件编译处理差异 |
+| 模块间依赖 | 库之间依赖关系复杂，可能导致构建失败 | 制定详细的依赖关系图，按拓扑排序开发 |
+| 性能问题 | 消息总线和协程调度器性能可能不达标 | 提前进行性能基准测试，预留优化时间 |
+| 维护成本 | 30 个独立库增加维护成本 | 建立统一的代码规范和文档标准，自动化测试 |
+
+### 项目风险
+
+| 风险 | 描述 | 应对措施 |
+|-----|------|---------|
+| 进度延误 | 开发时间可能超过预期 | 制定详细的执行计划，定期跟踪进度 |
+| 资源不足 | 人力或设备资源不足 | 提前规划资源需求，确保资源充足 |
+| 需求变更 | 需求可能在开发过程中变更 | 建立需求变更管理机制，控制变更范围 |
+| 质量问题 | 代码质量可能不达标 | 加强代码审查，自动化测试，持续集成 |
+
+## 技术栈建议
+
+### 开发工具
+
+| 类别 | 工具 | 版本 | 用途 |
+|-----|------|------|------|
+| 编译器 | GCC | 9.0+ | Linux 平台编译 |
+| 编译器 | MSVC | 2019+ | Windows 平台编译 |
+| 构建工具 | CMake | 3.15+ | 跨平台构建系统 |
+| 构建工具 | Ninja | 1.10+ | 加速构建过程 |
+| 代码质量 | clang-format | 10.0+ | 代码格式化 |
+| 代码质量 | clang-tidy | 10.0+ | 静态代码分析 |
+| 内存检测 | Valgrind | 3.15+ | 内存泄漏检测 |
+| 文档工具 | Doxygen | 1.8.17+ | API 文档生成 |
+
+### CI/CD 工具
+
+| 工具 | 用途 | 配置文件 |
+|-----|------|---------|
+| GitHub Actions | 持续集成和持续部署 | .github/workflows/ci.yml |
+| Jenkins | 企业级 CI/CD | Jenkinsfile |
+| Docker | 容器化部署 | Dockerfile |
+| Kubernetes | 容器编排 | k8s/deployment.yaml |
+
 ## 总结
 
 **重开发不是目的，而是手段**。目标是：

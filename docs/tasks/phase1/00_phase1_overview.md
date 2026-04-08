@@ -72,6 +72,41 @@
   - [ ] 有 README 文档
   - [ ] 已提交 Git
 
+## 阶段架构图
+
+```mermaid
+flowchart TD
+    subgraph 项目初始化和基础构建
+        project_structure[项目目录结构]
+        main_entry[主程序入口]
+        cmake_config[CMake配置]
+        build_verify[构建验证]
+        code_quality[代码质量工具]
+        test_framework[测试框架]
+        module_build[模块构建系统]
+    end
+
+    project_structure --> main_entry
+    main_entry --> cmake_config
+    cmake_config --> build_verify
+    build_verify --> code_quality
+    code_quality --> test_framework
+    test_framework --> module_build
+
+    subgraph 输出产物
+        bin[可执行文件]
+        libs[库文件]
+        scripts[脚本文件]
+        config[配置文件]
+    end
+
+    main_entry --> bin
+    cmake_config --> config
+    code_quality --> scripts
+    test_framework --> libs
+    module_build --> libs
+```
+
 ## 阶段完成演示
 
 运行以下命令展示成果：
