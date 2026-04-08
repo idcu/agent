@@ -1,6 +1,6 @@
 #include "idcu/http_server/http_server.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 int main(void) {
     printf("Testing HTTP method functions...\n");
@@ -27,7 +27,7 @@ int main(void) {
     assert(method == IDCU_HTTP_METHOD_UNKNOWN);
     printf("✓ Unknown method handled correctly\n");
 
-    const char* text;
+    const char *text;
     text = idcu_http_status_text(200);
     assert(strcmp(text, "OK") == 0);
     printf("✓ Status text for 200 is correct\n");

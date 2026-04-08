@@ -1,26 +1,32 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
+#include "idcu/common/error_code.h"
+#include "idcu/log/log.h"
 #include "micro_kernel.h"
 #include "module_def.h"
 #include "module_registry.h"
-#include "idcu/log/log.h"
-#include "idcu/common/error_code.h"
 
 static idcu_MicroKernel g_kernel;
 static volatile int g_should_exit = 0;
 static volatile int g_debug_mode = 1;
 
-static const char* module_state_to_str(idcu_ModuleState state) {
+static const char *module_state_to_str(idcu_ModuleState state) {
     switch (state) {
-        case IDCU_MOD_STATE_UNINIT: return "UNINIT";
-        case IDCU_MOD_STATE_INITED: return "INITED";
-        case IDCU_MOD_STATE_RUNNING: return "RUNNING";
-        case IDCU_MOD_STATE_STOPPED: return "STOPPED";
-        case IDCU_MOD_STATE_ERROR: return "ERROR";
-        default: return "UNKNOWN";
+    case IDCU_MOD_STATE_UNINIT:
+        return "UNINIT";
+    case IDCU_MOD_STATE_INITED:
+        return "INITED";
+    case IDCU_MOD_STATE_RUNNING:
+        return "RUNNING";
+    case IDCU_MOD_STATE_STOPPED:
+        return "STOPPED";
+    case IDCU_MOD_STATE_ERROR:
+        return "ERROR";
+    default:
+        return "UNKNOWN";
     }
 }
 
@@ -31,13 +37,11 @@ static void print_module_status(idcu_MicroKernel *k) {
     printf("Total tracked modules: %u\n", k->tracked_cnt);
     printf("\n%-20s %-10s %-10s\n", "NAME", "STATE", "DYNAMIC");
     printf("----------------------------------------\n");
-    
+
     for (uint32_t i = 0; i < k->tracked_cnt; i++) {
         idcu_TrackedModule *tm = &k->tracked_modules[i];
         if (tm->iface) {
-            printf("%-20s %-10s %-10s\n",
-                   tm->iface->name,
-                   module_state_to_str(tm->state),
+            printf("%-20s %-10s %-10s\n", tm->iface->name, module_state_to_str(tm->state),
                    tm->is_dynamic ? "YES" : "NO");
         }
     }
@@ -48,28 +52,27 @@ static void print_message_bus_stats(idcu_MicroKernel *k) {
     printf("\n========================================\n");
     printf("      MESSAGE BUS STATISTICS\n");
     printf("========================================\n");
-    
+
     uint32_t total_count = idcu_msg_get_count(&k->msg);
     printf("Total messages in bus: %u\n", total_count);
-    
+
     printf("\nPriority queue status:\n");
-    const char* prio_names[] = {"LOW", "NORMAL", "HIGH", "REALTIME"};
+    const char *prio_names[] = {"LOW", "NORMAL", "HIGH", "REALTIME"};
     for (int i = 0; i < IDCU_MSG_PRIO_COUNT; i++) {
         idcu_PriorityQueue *q = &k->msg.prio_queues[i];
-        uint32_t count = (q->tail >= q->head) ? 
-            (q->tail - q->head) : 
-            (IDCU_MSG_QUEUE_SIZE - q->head + q->tail);
+        uint32_t count =
+            (q->tail >= q->head) ? (q->tail - q->head) : (IDCU_MSG_QUEUE_SIZE - q->head + q->tail);
         printf("  %-10s: %u messages\n", prio_names[i], count);
     }
-    
+
     printf("========================================\n\n");
 }
 
 static void print_resource_usage(void) {
     printf("\n========================================\n");
-    printf       ("      RESOURCE USAGE\n");
+    printf("      RESOURCE USAGE\n");
     printf("========================================\n");
-    
+
 #ifdef _WIN32
     MEMORYSTATUSEX memStatus;
     memStatus.dwLength = sizeof(memStatus);
@@ -81,7 +84,7 @@ static void print_resource_usage(void) {
     printf("Resource usage info (Linux/macOS)\n");
     printf("Note: Detailed resource monitoring requires system-specific APIs\n");
 #endif
-    
+
     printf("========================================\n\n");
 }
 
@@ -99,9 +102,9 @@ static void print_help(void) {
     printf("========================================\n\n");
 }
 
-static void set_log_level(const char* level_str) {
+static void set_log_level(const char *level_str) {
     idcu_LogLevel level;
-    
+
     if (strcmp(level_str, "debug") == 0) {
         level = IDCU_LOG_DEBUG;
     } else if (strcmp(level_str, "info") == 0) {
@@ -115,19 +118,20 @@ static void set_log_level(const char* level_str) {
         printf("Valid levels: debug, info, warn, error\n");
         return;
     }
-    
+
     idcu_log_set_level(level);
     printf("Log level set to: %s\n", level_str);
 }
 
-static void process_command(const char* cmd) {
+static void process_command(const char *cmd) {
     char cmd_copy[256];
     strncpy(cmd_copy, cmd, sizeof(cmd_copy) - 1);
     cmd_copy[sizeof(cmd_copy) - 1] = '\0';
-    
-    char* token = strtok(cmd_copy, " \t\n");
-    if (!token) return;
-    
+
+    char *token = strtok(cmd_copy, " \t\n");
+    if (!token)
+        return;
+
     if (strcmp(token, "help") == 0) {
         print_help();
     } else if (strcmp(token, "status") == 0) {
@@ -141,7 +145,7 @@ static void process_command(const char* cmd) {
         print_message_bus_stats(&g_kernel);
         print_resource_usage();
     } else if (strcmp(token, "loglevel") == 0) {
-        char* level = strtok(NULL, " \t\n");
+        char *level = strtok(NULL, " \t\n");
         if (level) {
             set_log_level(level);
         } else {
@@ -157,8 +161,8 @@ static void process_command(const char* cmd) {
 }
 
 #ifdef _WIN32
-#include <windows.h>
 #include <conio.h>
+#include <windows.h>
 
 static BOOL WINAPI win_ctrl_handler(DWORD fdwCtrlType) {
     if (fdwCtrlType == CTRL_C_EVENT) {
@@ -197,9 +201,9 @@ static void check_input(void) {
     }
 }
 #else
-#include <unistd.h>
-#include <termios.h>
 #include <poll.h>
+#include <termios.h>
+#include <unistd.h>
 
 static struct termios g_orig_termios;
 
@@ -216,7 +220,7 @@ static void check_input(void) {
     struct pollfd fds;
     fds.fd = STDIN_FILENO;
     fds.events = POLLIN;
-    
+
     int ret = poll(&fds, 1, 100);
     if (ret > 0) {
         char cmd[256];
@@ -240,11 +244,8 @@ int main(void) {
         fprintf(stderr, "Warning: Failed to initialize log system\n");
         idcu_log_set_level(IDCU_LOG_DEBUG);
     }
-    
-    idcu_log_set_rotate_policy(IDCU_LOG_ROTATE_SIZE, 
-                               10 * 1024 * 1024, 
-                               0, 
-                               5);
+
+    idcu_log_set_rotate_policy(IDCU_LOG_ROTATE_SIZE, 10 * 1024 * 1024, 0, 5);
 
     idcu_kernel_init(&g_kernel);
     g_kernel.should_exit = 0;
@@ -256,7 +257,7 @@ int main(void) {
     struct termios new_termios = g_orig_termios;
     new_termios.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
-    
+
     signal(SIGINT, unix_sig_handler);
     signal(SIGTERM, unix_sig_handler);
 #endif
@@ -273,7 +274,7 @@ int main(void) {
         usleep(100000);
 #endif
         check_input();
-        
+
         if (!g_kernel.should_exit) {
             idcu_kernel_run(&g_kernel);
         }

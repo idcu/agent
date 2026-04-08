@@ -1,20 +1,20 @@
 @echo off
-REM 检查代码格式 (Windows 版本)
+REM Check code format (Windows version)
 
-echo === 检查代码格式 (clang-format) ===
+echo === Check code format (clang-format) ===
 
-REM 检查 clang-format 是否安装
+REM Check if clang-format is installed
 where clang-format >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo 错误: 未找到 clang-format，请先安装
+    echo ERROR: clang-format not found, please install it first
     exit /b 1
 )
 
-REM 定义要检查的目录
+REM Define directories to check
 set DIRS=libs modules app tests
 
-REM 运行 clang-format 检查
-echo 正在检查源文件...
+REM Run clang-format check
+echo Checking source files...
 set NEED_FORMAT=0
 
 for %%d in (%DIRS%) do (
@@ -22,7 +22,7 @@ for %%d in (%DIRS%) do (
         for /r %%d %%f in (*.c *.h) do (
             clang-format --dry-run --Werror "%%f" >nul 2>nul
             if errorlevel 1 (
-                echo 需要格式化: %%f
+                echo Needs formatting: %%f
                 set /a NEED_FORMAT+=1
             )
         )
@@ -31,12 +31,12 @@ for %%d in (%DIRS%) do (
 
 if %NEED_FORMAT% EQU 0 (
     echo.
-    echo ✅ 所有文件格式正确
+    echo All files are properly formatted
 ) else (
     echo.
-    echo ❌ %NEED_FORMAT% 个文件需要格式化
+    echo %NEED_FORMAT% files need formatting
     echo.
-    echo 运行以下命令自动修复:
+    echo Run the following command to auto-fix:
     echo   scripts\format.bat
     exit /b 1
 )

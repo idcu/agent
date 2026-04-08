@@ -5,8 +5,7 @@
 
 static int g_initialized = 0;
 
-int custom_init(void)
-{
+int custom_init(void) {
     if (g_initialized) {
         return 0;
     }
@@ -15,23 +14,21 @@ int custom_init(void)
     return 0;
 }
 
-int custom_process(CustomData* data)
-{
+int custom_process(CustomData *data) {
     if (!g_initialized || !data) {
         return -1;
     }
-    
+
     time_t now = time(NULL);
     data->timestamp = (uint64_t)now;
-    
-    printf("[demo-custom] Processing: %s = %d (ts: %llu)\n", 
-           data->name, data->value, (unsigned long long)data->timestamp);
-    
+
+    printf("[demo-custom] Processing: %s = %d (ts: %llu)\n", data->name, data->value,
+           (unsigned long long)data->timestamp);
+
     return 0;
 }
 
-int custom_cleanup(void)
-{
+int custom_cleanup(void) {
     if (!g_initialized) {
         return 0;
     }

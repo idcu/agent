@@ -6,7 +6,7 @@
 
 int main() {
     // 初始化日志，同时输出到控制台和文件
-    const char* log_file = "example_file_log.log";
+    const char *log_file = "example_file_log.log";
     idcu_log_init(log_file, IDCU_LOG_DEBUG);
 
     IDCU_LOG_INFO("=== 文件日志示例开始 ===");
@@ -18,7 +18,7 @@ int main() {
     IDCU_LOG_ERROR("无法打开配置文件");
 
     // 更改日志文件
-    const char* new_log_file = "example_file_log_new.log";
+    const char *new_log_file = "example_file_log_new.log";
     IDCU_LOG_INFO("切换到新的日志文件: %s", new_log_file);
     idcu_log_set_file(new_log_file);
 

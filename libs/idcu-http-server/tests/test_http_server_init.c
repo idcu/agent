@@ -1,7 +1,7 @@
 #include "idcu/http_server/http_server.h"
 #include "idcu/log/log.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 int main(void) {
     printf("Testing HTTP server initialization...\n");

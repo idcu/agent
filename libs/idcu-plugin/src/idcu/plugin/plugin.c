@@ -1,8 +1,8 @@
 #include "idcu/plugin/plugin.h"
 #include "idcu/log/log.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -13,7 +13,7 @@
 #define IDCU_PLUGIN_EXT ".dll"
 #else
 #include <dlfcn.h>
-#define IDCU_PLUGIN_HANDLE void*
+#define IDCU_PLUGIN_HANDLE void *
 #define IDCU_PLUGIN_LOAD(path) dlopen(path, RTLD_NOW | RTLD_LOCAL)
 #define IDCU_PLUGIN_UNLOAD(handle) dlclose(handle)
 #define IDCU_PLUGIN_GET_SYMBOL(handle, name) dlsym(handle, name)
@@ -65,7 +65,7 @@ void idcu_plugin_system_shutdown(void) {
     IDCU_LOG_INFO("[plugin] System shutdown");
 }
 
-int idcu_plugin_load(const char* path, idcu_PluginHandle** handle) {
+int idcu_plugin_load(const char *path, idcu_PluginHandle **handle) {
     if (!g_initialized || !path || !handle) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -75,7 +75,7 @@ int idcu_plugin_load(const char* path, idcu_PluginHandle** handle) {
 
     for (size_t i = 0; i < g_plugin_count; i++) {
         if (strcmp(g_plugins[i].path, path) == 0) {
-            *handle = (idcu_PluginHandle*)&g_plugins[i];
+            *handle = (idcu_PluginHandle *)&g_plugins[i];
             return IDCU_ERR_OK;
         }
     }
@@ -91,34 +91,40 @@ int idcu_plugin_load(const char* path, idcu_PluginHandle** handle) {
         return IDCU_ERR_IO_ERROR;
     }
 
-    idcu_PluginEntry* entry = &g_plugins[g_plugin_count];
+    idcu_PluginEntry *entry = &g_plugins[g_plugin_count];
     strncpy(entry->path, path, IDCU_PLUGIN_PATH_MAX - 1);
     entry->path[IDCU_PLUGIN_PATH_MAX - 1] = '\0';
     entry->handle = lib_handle;
     entry->is_loaded = 1;
     entry->is_initialized = 0;
 
-    idcu_PluginGetInfoFunc get_info = (idcu_PluginGetInfoFunc)IDCU_PLUGIN_GET_SYMBOL(lib_handle, "idcu_plugin_get_info");
+    idcu_PluginGetInfoFunc get_info =
+        (idcu_PluginGetInfoFunc)IDCU_PLUGIN_GET_SYMBOL(lib_handle, "idcu_plugin_get_info");
     if (get_info) {
         get_info(&entry->info);
         strncpy(entry->name, entry->info.name, IDCU_PLUGIN_NAME_MAX - 1);
         entry->name[IDCU_PLUGIN_NAME_MAX - 1] = '\0';
     } else {
-        const char* name = strrchr(path, '/');
+        const char *name = strrchr(path, '/');
 #ifdef _WIN32
-        if (!name) name = strrchr(path, '\\');
+        if (!name)
+            name = strrchr(path, '\\');
 #endif
-        if (name) name++;
-        else name = path;
+        if (name)
+            name++;
+        else
+            name = path;
         strncpy(entry->name, name, IDCU_PLUGIN_NAME_MAX - 1);
         entry->name[IDCU_PLUGIN_NAME_MAX - 1] = '\0';
-        char* dot = strrchr(entry->name, '.');
-        if (dot) *dot = '\0';
+        char *dot = strrchr(entry->name, '.');
+        if (dot)
+            *dot = '\0';
         strncpy(entry->info.name, entry->name, IDCU_PLUGIN_NAME_MAX - 1);
     }
 
     entry->init = (idcu_PluginInitFunc)IDCU_PLUGIN_GET_SYMBOL(lib_handle, "idcu_plugin_init");
-    entry->cleanup = (idcu_PluginCleanupFunc)IDCU_PLUGIN_GET_SYMBOL(lib_handle, "idcu_plugin_cleanup");
+    entry->cleanup =
+        (idcu_PluginCleanupFunc)IDCU_PLUGIN_GET_SYMBOL(lib_handle, "idcu_plugin_cleanup");
 
     if (entry->init) {
         int ret = entry->init();
@@ -132,18 +138,18 @@ int idcu_plugin_load(const char* path, idcu_PluginHandle** handle) {
     }
 
     g_plugin_count++;
-    *handle = (idcu_PluginHandle*)entry;
+    *handle = (idcu_PluginHandle *)entry;
 
     IDCU_LOG_INFO("[plugin] Loaded plugin: %s", entry->name);
     return IDCU_ERR_OK;
 }
 
-int idcu_plugin_unload(idcu_PluginHandle* handle) {
+int idcu_plugin_unload(idcu_PluginHandle *handle) {
     if (!g_initialized || !handle) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_PluginEntry* entry = (idcu_PluginEntry*)handle;
+    idcu_PluginEntry *entry = (idcu_PluginEntry *)handle;
 
     if (!entry->is_loaded) {
         return IDCU_ERR_OK;
@@ -164,28 +170,28 @@ int idcu_plugin_unload(idcu_PluginHandle* handle) {
     return IDCU_ERR_OK;
 }
 
-int idcu_plugin_get_info(idcu_PluginHandle* handle, idcu_PluginInfo* info) {
+int idcu_plugin_get_info(idcu_PluginHandle *handle, idcu_PluginInfo *info) {
     if (!g_initialized || !handle || !info) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_PluginEntry* entry = (idcu_PluginEntry*)handle;
+    idcu_PluginEntry *entry = (idcu_PluginEntry *)handle;
     memcpy(info, &entry->info, sizeof(idcu_PluginInfo));
     return IDCU_ERR_OK;
 }
 
-int idcu_plugin_get_name(idcu_PluginHandle* handle, char* buffer, size_t buffer_size) {
+int idcu_plugin_get_name(idcu_PluginHandle *handle, char *buffer, size_t buffer_size) {
     if (!g_initialized || !handle || !buffer || buffer_size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_PluginEntry* entry = (idcu_PluginEntry*)handle;
+    idcu_PluginEntry *entry = (idcu_PluginEntry *)handle;
     strncpy(buffer, entry->name, buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
     return IDCU_ERR_OK;
 }
 
-int idcu_plugin_is_loaded(const char* name) {
+int idcu_plugin_is_loaded(const char *name) {
     if (!g_initialized || !name) {
         return 0;
     }
@@ -198,7 +204,7 @@ int idcu_plugin_is_loaded(const char* name) {
     return 0;
 }
 
-int idcu_plugin_scan_directory(const char* directory) {
+int idcu_plugin_scan_directory(const char *directory) {
     (void)directory;
     IDCU_LOG_WARNING("[plugin] Directory scanning not fully implemented");
     return IDCU_ERR_OK;
@@ -211,7 +217,7 @@ int idcu_plugin_load_all(void) {
 
 int idcu_plugin_unload_all(void) {
     for (size_t i = 0; i < g_plugin_count; i++) {
-        idcu_plugin_unload((idcu_PluginHandle*)&g_plugins[i]);
+        idcu_plugin_unload((idcu_PluginHandle *)&g_plugins[i]);
     }
 
     memset(g_plugins, 0, sizeof(g_plugins));
@@ -227,7 +233,7 @@ int idcu_plugin_get_count(void) {
     return (int)g_plugin_count;
 }
 
-int idcu_plugin_get_all_names(char** names, size_t max_names, size_t* actual_count) {
+int idcu_plugin_get_all_names(char **names, size_t max_names, size_t *actual_count) {
     if (!g_initialized || !names || !actual_count) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -240,12 +246,12 @@ int idcu_plugin_get_all_names(char** names, size_t max_names, size_t* actual_cou
     return IDCU_ERR_OK;
 }
 
-int idcu_plugin_get_symbol(idcu_PluginHandle* handle, const char* symbol_name, void** symbol) {
+int idcu_plugin_get_symbol(idcu_PluginHandle *handle, const char *symbol_name, void **symbol) {
     if (!g_initialized || !handle || !symbol_name || !symbol) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_PluginEntry* entry = (idcu_PluginEntry*)handle;
+    idcu_PluginEntry *entry = (idcu_PluginEntry *)handle;
     if (!entry->handle) {
         return IDCU_ERR_NOT_INITIALIZED;
     }

@@ -2,8 +2,8 @@
  * TCP 客户端示例
  */
 
-#include "idcu/network/network_layer.h"
 #include "idcu/log/log.h"
+#include "idcu/network/network_layer.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -30,7 +30,7 @@ int main() {
     printf("Connected to 127.0.0.1:8080\n");
     printf("Local address: %s:%d\n", sock.local_addr, sock.local_port);
 
-    const char* message = "Hello from TCP client!";
+    const char *message = "Hello from TCP client!";
     size_t sent;
     ret = idcu_network_socket_send(&sock, message, strlen(message), &sent);
     if (ret != IDCU_ERR_OK) {

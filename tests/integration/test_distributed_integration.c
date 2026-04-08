@@ -1,12 +1,12 @@
-#include "test_framework.h"
-#include "micro_kernel.h"
 #include "distributed_node.h"
-#include "node_discovery.h"
-#include "network_layer.h"
 #include "idcu/log/log.h"
+#include "micro_kernel.h"
+#include "network_layer.h"
+#include "node_discovery.h"
+#include "test_framework.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -18,10 +18,7 @@
 
 static idcu_MicroKernel g_kernel;
 
-idcu_MicroKernel* idcu_get_kernel(void)
-{
-    return &g_kernel;
-}
+idcu_MicroKernel *idcu_get_kernel(void) { return &g_kernel; }
 
 static idcu_TestSuite g_suite;
 
@@ -33,12 +30,12 @@ typedef struct {
     int running;
 } TestDistributedNode;
 
-static void on_node_discovered(void* user_data, idcu_NodeInfo* node) {
+static void on_node_discovered(void *user_data, idcu_NodeInfo *node) {
     (void)user_data;
     (void)node;
 }
 
-static void on_node_lost(void* user_data, idcu_NodeInfo* node) {
+static void on_node_lost(void *user_data, idcu_NodeInfo *node) {
     (void)user_data;
     (void)node;
 }
@@ -67,7 +64,7 @@ static void test_distributed_two_node_communication(void) {
     ret = idcu_distributed_node_recv_message(&node1, &msg);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Receive message should succeed (fallback queue)");
     IDCU_TEST_ASSERT(msg.type == 1, "Message type should be 1");
-    IDCU_TEST_ASSERT(strcmp((char*)msg.payload, test_payload) == 0, "Payload should match");
+    IDCU_TEST_ASSERT(strcmp((char *)msg.payload, test_payload) == 0, "Payload should match");
 
     idcu_distributed_node_destroy(&node1);
     idcu_distributed_node_destroy(&node2);
@@ -121,8 +118,8 @@ static void test_distributed_node_load_balancing(void) {
     ret = idcu_distributed_node_add_node(&node, 3, "node3", "192.168.1.3", 9202);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Add node3 should succeed");
 
-    idcu_NodeInfo* node2 = idcu_distributed_node_find_node(&node, 2);
-    idcu_NodeInfo* node3 = idcu_distributed_node_find_node(&node, 3);
+    idcu_NodeInfo *node2 = idcu_distributed_node_find_node(&node, 2);
+    idcu_NodeInfo *node3 = idcu_distributed_node_find_node(&node, 3);
     IDCU_TEST_ASSERT(node2 != NULL && node3 != NULL, "Nodes should be found");
 
     node2->status = IDCU_NODE_STATUS_ONLINE;
@@ -167,7 +164,8 @@ static void test_distributed_message_queue_full(void) {
         ret = idcu_distributed_node_recv_message(&node, &msg);
         IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Receive message should succeed");
     }
-    IDCU_TEST_ASSERT(msg.type == (uint32_t)(IDCU_MAX_MESSAGES - 1), "Last message type should match");
+    IDCU_TEST_ASSERT(msg.type == (uint32_t)(IDCU_MAX_MESSAGES - 1),
+                     "Last message type should match");
 
     ret = idcu_distributed_node_recv_message(&node, &msg);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_QUEUE_EMPTY, "Queue should be empty after receiving all");
@@ -195,7 +193,7 @@ static void test_distributed_node_lifecycle(void) {
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Add node5 should succeed");
     ret = idcu_distributed_node_add_node(&node, 6, "node6", "192.168.1.6", 9406);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Add node6 should succeed");
-    
+
     IDCU_TEST_ASSERT(node.node_count == 6, "Node count should be 6 after adding 5 nodes");
 
     ret = idcu_distributed_node_remove_node(&node, 2);
@@ -206,10 +204,10 @@ static void test_distributed_node_lifecycle(void) {
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Remove node4 should succeed");
     ret = idcu_distributed_node_remove_node(&node, 5);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Remove node5 should succeed");
-    
+
     IDCU_TEST_ASSERT(node.node_count == 2, "Node count should be 2 after removal");
 
-    idcu_NodeInfo* info = idcu_distributed_node_find_node(&node, 6);
+    idcu_NodeInfo *info = idcu_distributed_node_find_node(&node, 6);
     IDCU_TEST_ASSERT(info != NULL, "Node6 should still exist");
 
     idcu_distributed_node_destroy(&node);
@@ -232,7 +230,8 @@ static void test_distributed_message_serialization(void) {
     idcu_DistributedNode node;
     idcu_distributed_node_init(&node, 1, "test", "127.0.0.1", 0);
 
-    ret = idcu_distributed_node_send_message(&node, 2, original.type, original.payload, original.payload_size);
+    ret = idcu_distributed_node_send_message(&node, 2, original.type, original.payload,
+                                             original.payload_size);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK, "Send message should succeed");
 
     idcu_NodeMessage received;
@@ -242,7 +241,8 @@ static void test_distributed_message_serialization(void) {
     IDCU_TEST_ASSERT(received.to_node == 2, "To node should be 2");
     IDCU_TEST_ASSERT(received.type == original.type, "Type should match");
     IDCU_TEST_ASSERT(received.payload_size == original.payload_size, "Payload size should match");
-    IDCU_TEST_ASSERT(memcmp(received.payload, original.payload, original.payload_size) == 0, "Payload should match");
+    IDCU_TEST_ASSERT(memcmp(received.payload, original.payload, original.payload_size) == 0,
+                     "Payload should match");
 
     idcu_distributed_node_destroy(&node);
     IDCU_TEST_PASS();
@@ -253,12 +253,18 @@ int main(void) {
 
     idcu_test_suite_init(&g_suite, "Distributed Integration Tests");
 
-    idcu_test_suite_add_test(&g_suite, "distributed_two_node_communication", test_distributed_two_node_communication);
-    idcu_test_suite_add_test(&g_suite, "distributed_node_discovery_basic", test_distributed_node_discovery_basic);
-    idcu_test_suite_add_test(&g_suite, "distributed_node_load_balancing", test_distributed_node_load_balancing);
-    idcu_test_suite_add_test(&g_suite, "distributed_message_queue_full", test_distributed_message_queue_full);
-    idcu_test_suite_add_test(&g_suite, "distributed_node_lifecycle", test_distributed_node_lifecycle);
-    idcu_test_suite_add_test(&g_suite, "distributed_message_serialization", test_distributed_message_serialization);
+    idcu_test_suite_add_test(&g_suite, "distributed_two_node_communication",
+                             test_distributed_two_node_communication);
+    idcu_test_suite_add_test(&g_suite, "distributed_node_discovery_basic",
+                             test_distributed_node_discovery_basic);
+    idcu_test_suite_add_test(&g_suite, "distributed_node_load_balancing",
+                             test_distributed_node_load_balancing);
+    idcu_test_suite_add_test(&g_suite, "distributed_message_queue_full",
+                             test_distributed_message_queue_full);
+    idcu_test_suite_add_test(&g_suite, "distributed_node_lifecycle",
+                             test_distributed_node_lifecycle);
+    idcu_test_suite_add_test(&g_suite, "distributed_message_serialization",
+                             test_distributed_message_serialization);
 
     idcu_test_suite_run(&g_suite);
     idcu_test_suite_print_summary(&g_suite);

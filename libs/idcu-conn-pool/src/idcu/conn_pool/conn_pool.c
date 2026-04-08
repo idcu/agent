@@ -1,15 +1,14 @@
 #include "idcu/conn_pool/conn_pool.h"
 #include "idcu/log/log.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
-static uint64_t get_current_time_ms(void)
-{
+static uint64_t get_current_time_ms(void) {
 #ifdef _WIN32
     return (uint64_t)GetTickCount64();
 #else
@@ -19,8 +18,7 @@ static uint64_t get_current_time_ms(void)
 #endif
 }
 
-int idcu_connection_pool_init(idcu_ConnectionPool* pool, const char* name, int protocol)
-{
+int idcu_connection_pool_init(idcu_ConnectionPool *pool, const char *name, int protocol) {
     if (!pool || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -43,20 +41,20 @@ int idcu_connection_pool_init(idcu_ConnectionPool* pool, const char* name, int p
         ret = idcu_mutex_init(&pool->connections[i].conn_lock);
         if (ret != IDCU_ERR_SUCCESS) {
             idcu_connection_pool_destroy(pool);
-            IDCU_LOG_ERROR("connection pool %s: failed to init connection lock %u, code=%d", name, i, ret);
+            IDCU_LOG_ERROR("connection pool %s: failed to init connection lock %u, code=%d", name,
+                           i, ret);
             return ret;
         }
         pool->free_list[i] = i;
     }
 
     pool->initialized = 1;
-    IDCU_LOG_INFO("connection pool %s initialized (protocol=%s)",
-                  name, protocol == IDCU_NET_PROTO_TCP ? "TCP" : "UDP");
+    IDCU_LOG_INFO("connection pool %s initialized (protocol=%s)", name,
+                  protocol == IDCU_NET_PROTO_TCP ? "TCP" : "UDP");
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_connection_pool_destroy(idcu_ConnectionPool* pool)
-{
+void idcu_connection_pool_destroy(idcu_ConnectionPool *pool) {
     if (!pool || !pool->initialized) {
         return;
     }
@@ -68,7 +66,7 @@ void idcu_connection_pool_destroy(idcu_ConnectionPool* pool)
     }
 
     for (uint32_t i = 0; i < pool->count; i++) {
-        idcu_PooledConnection* conn = &pool->connections[i];
+        idcu_PooledConnection *conn = &pool->connections[i];
         if (conn->sock.fd != IDCU_INVALID_SOCKET) {
             idcu_network_socket_close(&conn->sock);
             idcu_network_socket_destroy(&conn->sock);
@@ -80,7 +78,7 @@ void idcu_connection_pool_destroy(idcu_ConnectionPool* pool)
 
     idcu_mutex_unlock(&pool->lock);
     idcu_mutex_destroy(&pool->lock);
-    
+
     for (uint32_t i = 0; i < IDCU_POOL_MAX_CONNECTIONS; i++) {
         idcu_mutex_destroy(&pool->connections[i].conn_lock);
     }
@@ -88,8 +86,7 @@ void idcu_connection_pool_destroy(idcu_ConnectionPool* pool)
     IDCU_LOG_INFO("connection pool %s destroyed", pool->pool_name);
 }
 
-static int is_connection_valid(idcu_PooledConnection* conn)
-{
+static int is_connection_valid(idcu_PooledConnection *conn) {
     if (!conn) {
         return 0;
     }
@@ -102,14 +99,11 @@ static int is_connection_valid(idcu_PooledConnection* conn)
     return 1;
 }
 
-static idcu_PooledConnection* find_idle_connection(idcu_ConnectionPool* pool,
-                                                     const char* addr, uint16_t port)
-{
+static idcu_PooledConnection *find_idle_connection(idcu_ConnectionPool *pool, const char *addr,
+                                                   uint16_t port) {
     for (uint32_t i = 0; i < pool->count; i++) {
-        idcu_PooledConnection* conn = &pool->connections[i];
-        if (!conn->in_use &&
-            strcmp(conn->remote_addr, addr) == 0 &&
-            conn->remote_port == port &&
+        idcu_PooledConnection *conn = &pool->connections[i];
+        if (!conn->in_use && strcmp(conn->remote_addr, addr) == 0 && conn->remote_port == port &&
             is_connection_valid(conn)) {
             return conn;
         }
@@ -117,9 +111,8 @@ static idcu_PooledConnection* find_idle_connection(idcu_ConnectionPool* pool,
     return NULL;
 }
 
-static idcu_PooledConnection* create_new_connection(idcu_ConnectionPool* pool,
-                                                      const char* addr, uint16_t port)
-{
+static idcu_PooledConnection *create_new_connection(idcu_ConnectionPool *pool, const char *addr,
+                                                    uint16_t port) {
     if (pool->count >= IDCU_POOL_MAX_CONNECTIONS) {
         IDCU_LOG_WARN("connection pool %s: max connections reached", pool->pool_name);
         return NULL;
@@ -127,10 +120,10 @@ static idcu_PooledConnection* create_new_connection(idcu_ConnectionPool* pool,
 
     uint32_t conn_idx = pool->free_list[pool->free_head];
     pool->free_head++;
-    
-    idcu_PooledConnection* conn = &pool->connections[conn_idx];
+
+    idcu_PooledConnection *conn = &pool->connections[conn_idx];
     memset(conn, 0, sizeof(idcu_PooledConnection));
-    
+
     int ret = idcu_mutex_init(&conn->conn_lock);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("connection pool %s: failed to init connection lock", pool->pool_name);
@@ -151,13 +144,13 @@ static idcu_PooledConnection* create_new_connection(idcu_ConnectionPool* pool,
         if (ret == IDCU_ERR_SUCCESS) {
             break;
         }
-        IDCU_LOG_WARN("connection pool %s: connect attempt %d failed, retrying...",
-                      pool->pool_name, retry + 1);
+        IDCU_LOG_WARN("connection pool %s: connect attempt %d failed, retrying...", pool->pool_name,
+                      retry + 1);
     }
 
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("connection pool %s: failed to connect to %s:%d after %d retries",
-                      pool->pool_name, addr, port, pool->max_retries);
+                       pool->pool_name, addr, port, pool->max_retries);
         idcu_network_socket_destroy(&conn->sock);
         idcu_mutex_destroy(&conn->conn_lock);
         pool->free_head--;
@@ -177,9 +170,8 @@ static idcu_PooledConnection* create_new_connection(idcu_ConnectionPool* pool,
     return conn;
 }
 
-int idcu_connection_pool_acquire(idcu_ConnectionPool* pool, const char* addr, uint16_t port,
-                                  idcu_ConnectionHandle* handle)
-{
+int idcu_connection_pool_acquire(idcu_ConnectionPool *pool, const char *addr, uint16_t port,
+                                 idcu_ConnectionHandle *handle) {
     if (!pool || !pool->initialized || !addr || !handle) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -189,7 +181,7 @@ int idcu_connection_pool_acquire(idcu_ConnectionPool* pool, const char* addr, ui
         return ret;
     }
 
-    idcu_PooledConnection* conn = find_idle_connection(pool, addr, port);
+    idcu_PooledConnection *conn = find_idle_connection(pool, addr, port);
 
     if (!conn) {
         conn = create_new_connection(pool, addr, port);
@@ -209,19 +201,18 @@ int idcu_connection_pool_acquire(idcu_ConnectionPool* pool, const char* addr, ui
 
     idcu_mutex_unlock(&pool->lock);
 
-    IDCU_LOG_DEBUG("connection pool %s: acquired connection to %s:%d (ref=%d)",
-                   pool->pool_name, addr, port, conn->ref_count);
+    IDCU_LOG_DEBUG("connection pool %s: acquired connection to %s:%d (ref=%d)", pool->pool_name,
+                   addr, port, conn->ref_count);
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_connection_pool_release(idcu_ConnectionHandle* handle)
-{
+int idcu_connection_pool_release(idcu_ConnectionHandle *handle) {
     if (!handle || !handle->acquired || !handle->pool || !handle->conn) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_ConnectionPool* pool = handle->pool;
-    idcu_PooledConnection* conn = handle->conn;
+    idcu_ConnectionPool *pool = handle->pool;
+    idcu_PooledConnection *conn = handle->conn;
 
     int ret = idcu_mutex_lock(&pool->lock);
     if (ret != IDCU_ERR_SUCCESS) {
@@ -237,18 +228,18 @@ int idcu_connection_pool_release(idcu_ConnectionHandle* handle)
 
     idcu_mutex_unlock(&pool->lock);
 
-    IDCU_LOG_DEBUG("connection pool %s: released connection to %s:%d",
-                   pool->pool_name, conn->remote_addr, conn->remote_port);
+    IDCU_LOG_DEBUG("connection pool %s: released connection to %s:%d", pool->pool_name,
+                   conn->remote_addr, conn->remote_port);
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_connection_pool_send(idcu_ConnectionHandle* handle, const void* data, size_t len, size_t* sent)
-{
+int idcu_connection_pool_send(idcu_ConnectionHandle *handle, const void *data, size_t len,
+                              size_t *sent) {
     if (!handle || !handle->acquired || !handle->conn) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_PooledConnection* conn = handle->conn;
+    idcu_PooledConnection *conn = handle->conn;
     if (!is_connection_valid(conn)) {
         IDCU_LOG_ERROR("connection pool: invalid connection for send");
         return IDCU_ERR_NETWORK_CONNECT;
@@ -257,13 +248,13 @@ int idcu_connection_pool_send(idcu_ConnectionHandle* handle, const void* data, s
     return idcu_network_socket_send(&conn->sock, data, len, sent);
 }
 
-int idcu_connection_pool_recv(idcu_ConnectionHandle* handle, void* data, size_t len, size_t* received)
-{
+int idcu_connection_pool_recv(idcu_ConnectionHandle *handle, void *data, size_t len,
+                              size_t *received) {
     if (!handle || !handle->acquired || !handle->conn) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_PooledConnection* conn = handle->conn;
+    idcu_PooledConnection *conn = handle->conn;
     if (!is_connection_valid(conn)) {
         IDCU_LOG_ERROR("connection pool: invalid connection for recv");
         return IDCU_ERR_NETWORK_CONNECT;
@@ -272,8 +263,7 @@ int idcu_connection_pool_recv(idcu_ConnectionHandle* handle, void* data, size_t 
     return idcu_network_socket_recv(&conn->sock, data, len, received);
 }
 
-void idcu_connection_pool_cleanup_idle(idcu_ConnectionPool* pool)
-{
+void idcu_connection_pool_cleanup_idle(idcu_ConnectionPool *pool) {
     if (!pool || !pool->initialized) {
         return;
     }
@@ -286,11 +276,11 @@ void idcu_connection_pool_cleanup_idle(idcu_ConnectionPool* pool)
     uint64_t now = get_current_time_ms();
     uint32_t removed = 0;
 
-    for (uint32_t i = 0; i < pool->count; ) {
-        idcu_PooledConnection* conn = &pool->connections[i];
+    for (uint32_t i = 0; i < pool->count;) {
+        idcu_PooledConnection *conn = &pool->connections[i];
         if (!conn->in_use && (now - conn->last_used_ms) > pool->idle_timeout_ms) {
             IDCU_LOG_DEBUG("connection pool %s: cleaning up idle connection to %s:%d",
-                          pool->pool_name, conn->remote_addr, conn->remote_port);
+                           pool->pool_name, conn->remote_addr, conn->remote_port);
 
             if (conn->sock.fd != IDCU_INVALID_SOCKET) {
                 idcu_network_socket_close(&conn->sock);
@@ -298,10 +288,10 @@ void idcu_connection_pool_cleanup_idle(idcu_ConnectionPool* pool)
             }
 
             idcu_mutex_destroy(&conn->conn_lock);
-            
+
             pool->free_head--;
             pool->free_list[pool->free_head] = i;
-            
+
             if (i < pool->count - 1) {
                 memmove(&pool->connections[i], &pool->connections[i + 1],
                         (pool->count - i - 1) * sizeof(idcu_PooledConnection));
@@ -316,12 +306,13 @@ void idcu_connection_pool_cleanup_idle(idcu_ConnectionPool* pool)
     idcu_mutex_unlock(&pool->lock);
 
     if (removed > 0) {
-        IDCU_LOG_DEBUG("connection pool %s: cleaned up %u idle connections", pool->pool_name, removed);
+        IDCU_LOG_DEBUG("connection pool %s: cleaned up %u idle connections", pool->pool_name,
+                       removed);
     }
 }
 
-int idcu_connection_pool_get_stats(idcu_ConnectionPool* pool, uint32_t* total, uint32_t* in_use, uint32_t* idle)
-{
+int idcu_connection_pool_get_stats(idcu_ConnectionPool *pool, uint32_t *total, uint32_t *in_use,
+                                   uint32_t *idle) {
     if (!pool || !pool->initialized) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -331,7 +322,8 @@ int idcu_connection_pool_get_stats(idcu_ConnectionPool* pool, uint32_t* total, u
         return ret;
     }
 
-    if (total) *total = pool->count;
+    if (total)
+        *total = pool->count;
     if (in_use || idle) {
         uint32_t use_cnt = 0;
         for (uint32_t i = 0; i < pool->count; i++) {
@@ -339,8 +331,10 @@ int idcu_connection_pool_get_stats(idcu_ConnectionPool* pool, uint32_t* total, u
                 use_cnt++;
             }
         }
-        if (in_use) *in_use = use_cnt;
-        if (idle) *idle = pool->count - use_cnt;
+        if (in_use)
+            *in_use = use_cnt;
+        if (idle)
+            *idle = pool->count - use_cnt;
     }
 
     idcu_mutex_unlock(&pool->lock);

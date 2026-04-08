@@ -1,15 +1,12 @@
 #include "idcu/metrics/prometheus_exporter.h"
-#include "idcu/log/log.h"
 #include "idcu/common/string_buf.h"
-#include <string.h>
+#include "idcu/log/log.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-int idcu_prometheus_exporter_init(idcu_PrometheusExporter* exporter,
-                                    idcu_MetricsCollector* metrics,
-                                    const char* bind_address,
-                                    uint16_t port)
-{
+int idcu_prometheus_exporter_init(idcu_PrometheusExporter *exporter, idcu_MetricsCollector *metrics,
+                                  const char *bind_address, uint16_t port) {
     if (!exporter || !metrics) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -21,7 +18,8 @@ int idcu_prometheus_exporter_init(idcu_PrometheusExporter* exporter,
     if (bind_address && strlen(bind_address) > 0) {
         strncpy(exporter->bind_address, bind_address, sizeof(exporter->bind_address) - 1);
     } else {
-        strncpy(exporter->bind_address, IDCU_PROMETHEUS_DEFAULT_ADDR, sizeof(exporter->bind_address) - 1);
+        strncpy(exporter->bind_address, IDCU_PROMETHEUS_DEFAULT_ADDR,
+                sizeof(exporter->bind_address) - 1);
     }
     exporter->bind_address[sizeof(exporter->bind_address) - 1] = '\0';
 
@@ -35,8 +33,7 @@ int idcu_prometheus_exporter_init(idcu_PrometheusExporter* exporter,
     return IDCU_ERR_OK;
 }
 
-void idcu_prometheus_exporter_destroy(idcu_PrometheusExporter* exporter)
-{
+void idcu_prometheus_exporter_destroy(idcu_PrometheusExporter *exporter) {
     if (!exporter) {
         return;
     }
@@ -45,8 +42,7 @@ void idcu_prometheus_exporter_destroy(idcu_PrometheusExporter* exporter)
     idcu_mutex_destroy(&exporter->lock);
 }
 
-int idcu_prometheus_exporter_start(idcu_PrometheusExporter* exporter)
-{
+int idcu_prometheus_exporter_start(idcu_PrometheusExporter *exporter) {
     if (!exporter) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -61,8 +57,8 @@ int idcu_prometheus_exporter_start(idcu_PrometheusExporter* exporter)
         return IDCU_ERR_OK;
     }
 
-    ret = idcu_network_server_create(&exporter->server, IDCU_NET_PROTO_TCP,
-                                      exporter->bind_address, exporter->port);
+    ret = idcu_network_server_create(&exporter->server, IDCU_NET_PROTO_TCP, exporter->bind_address,
+                                     exporter->port);
     if (ret != IDCU_ERR_OK) {
         idcu_mutex_unlock(&exporter->lock);
         IDCU_LOG_ERROR("Failed to create Prometheus exporter server");
@@ -84,8 +80,7 @@ int idcu_prometheus_exporter_start(idcu_PrometheusExporter* exporter)
     return IDCU_ERR_OK;
 }
 
-int idcu_prometheus_exporter_stop(idcu_PrometheusExporter* exporter)
-{
+int idcu_prometheus_exporter_stop(idcu_PrometheusExporter *exporter) {
     if (!exporter) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -108,21 +103,20 @@ int idcu_prometheus_exporter_stop(idcu_PrometheusExporter* exporter)
     return IDCU_ERR_OK;
 }
 
-static int is_metrics_path(const char* request)
-{
+static int is_metrics_path(const char *request) {
     return strstr(request, IDCU_PROMETHEUS_METRICS_PATH) != NULL;
 }
 
-int idcu_prometheus_exporter_handle_request(idcu_PrometheusExporter* exporter,
-                                              idcu_NetworkSocket* client)
-{
+int idcu_prometheus_exporter_handle_request(idcu_PrometheusExporter *exporter,
+                                            idcu_NetworkSocket *client) {
     if (!exporter || !client) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     char request_buffer[4096];
     size_t received = 0;
-    int ret = idcu_network_socket_recv(client, request_buffer, sizeof(request_buffer) - 1, &received);
+    int ret =
+        idcu_network_socket_recv(client, request_buffer, sizeof(request_buffer) - 1, &received);
     if (ret != IDCU_ERR_OK) {
         return ret;
     }
@@ -183,10 +177,9 @@ int idcu_prometheus_exporter_handle_request(idcu_PrometheusExporter* exporter,
     return ret;
 }
 
-int idcu_prometheus_exporter_poll(idcu_PrometheusExporter* exporter, int timeout_ms)
-{
+int idcu_prometheus_exporter_poll(idcu_PrometheusExporter *exporter, int timeout_ms) {
     (void)timeout_ms;
-    
+
     if (!exporter) {
         return IDCU_ERR_INVALID_PARAM;
     }

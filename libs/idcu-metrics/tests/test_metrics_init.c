@@ -1,6 +1,6 @@
 #include "idcu/metrics/metrics.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 int main(void) {
     printf("Testing metrics initialization...\n");

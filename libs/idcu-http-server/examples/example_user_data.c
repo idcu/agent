@@ -3,14 +3,14 @@
 #include <string.h>
 
 typedef struct {
-    const char* app_name;
+    const char *app_name;
     int request_count;
 } AppContext;
 
-int counter_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data) {
+int counter_handler(idcu_HttpRequest *request, idcu_HttpResponse *response, void *user_data) {
     (void)request;
-    
-    AppContext* ctx = (AppContext*)user_data;
+
+    AppContext *ctx = (AppContext *)user_data;
     if (!ctx) {
         idcu_http_response_set_status(response, 500);
         idcu_http_response_set_body(response, "Internal error", 14);
@@ -18,12 +18,10 @@ int counter_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void
     }
 
     ctx->request_count++;
-    
+
     char message[256];
-    snprintf(message, sizeof(message), 
-             "%s: Request #%d",
-             ctx->app_name, ctx->request_count);
-    
+    snprintf(message, sizeof(message), "%s: Request #%d", ctx->app_name, ctx->request_count);
+
     idcu_http_response_set_body(response, message, strlen(message));
     return IDCU_ERR_OK;
 }
@@ -33,10 +31,7 @@ int main(void) {
     printf("Visit / to see the request counter increment\n");
     printf("\nPress Ctrl+C to stop\n\n");
 
-    AppContext ctx = {
-        .app_name = "IDCU HTTP Server",
-        .request_count = 0
-    };
+    AppContext ctx = {.app_name = "IDCU HTTP Server", .request_count = 0};
 
     idcu_HttpServer server;
     int ret = idcu_http_server_init(&server, "0.0.0.0", 8082);

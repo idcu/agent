@@ -1,12 +1,11 @@
 #include "idcu/permission/permission.h"
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 static idcu_PermissionManager g_perm_mgr;
 static int g_initialized = 0;
 
-static idcu_ModulePermission* find_module_perm(const char* module_name)
-{
+static idcu_ModulePermission *find_module_perm(const char *module_name) {
     if (!module_name) {
         return NULL;
     }
@@ -18,8 +17,7 @@ static idcu_ModulePermission* find_module_perm(const char* module_name)
     return NULL;
 }
 
-static int has_permission(idcu_ModulePermission* mod_perm, const char* permission)
-{
+static int has_permission(idcu_ModulePermission *mod_perm, const char *permission) {
     if (!mod_perm || !permission) {
         return 0;
     }
@@ -28,7 +26,7 @@ static int has_permission(idcu_ModulePermission* mod_perm, const char* permissio
             return 1;
         }
         char perm_prefix[IDCU_PERMISSION_NAME_MAX];
-        const char* dot = strchr(permission, '.');
+        const char *dot = strchr(permission, '.');
         if (dot) {
             size_t prefix_len = dot - permission;
             if (prefix_len < sizeof(perm_prefix)) {
@@ -43,8 +41,7 @@ static int has_permission(idcu_ModulePermission* mod_perm, const char* permissio
     return 0;
 }
 
-int idcu_permission_manager_init(void)
-{
+int idcu_permission_manager_init(void) {
     if (g_initialized) {
         idcu_permission_manager_shutdown();
     }
@@ -58,8 +55,7 @@ int idcu_permission_manager_init(void)
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_permission_manager_shutdown(void)
-{
+void idcu_permission_manager_shutdown(void) {
     if (!g_initialized) {
         return;
     }
@@ -68,8 +64,7 @@ void idcu_permission_manager_shutdown(void)
     g_initialized = 0;
 }
 
-int idcu_permission_check(const char* module_name, const char* permission)
-{
+int idcu_permission_check(const char *module_name, const char *permission) {
     if (!g_initialized || !module_name || !permission) {
         return 0;
     }
@@ -77,14 +72,13 @@ int idcu_permission_check(const char* module_name, const char* permission)
     if (ret != IDCU_ERR_SUCCESS) {
         return 0;
     }
-    idcu_ModulePermission* mod_perm = find_module_perm(module_name);
+    idcu_ModulePermission *mod_perm = find_module_perm(module_name);
     int result = has_permission(mod_perm, permission);
     idcu_mutex_unlock(&g_perm_mgr.lock);
     return result;
 }
 
-int idcu_permission_check_any(const char* module_name, const char** permissions, int count)
-{
+int idcu_permission_check_any(const char *module_name, const char **permissions, int count) {
     if (!g_initialized || !module_name || !permissions || count <= 0) {
         return 0;
     }
@@ -96,8 +90,7 @@ int idcu_permission_check_any(const char* module_name, const char** permissions,
     return 0;
 }
 
-int idcu_permission_check_all(const char* module_name, const char** permissions, int count)
-{
+int idcu_permission_check_all(const char *module_name, const char **permissions, int count) {
     if (!g_initialized || !module_name || !permissions || count <= 0) {
         return 0;
     }
@@ -109,8 +102,7 @@ int idcu_permission_check_all(const char* module_name, const char** permissions,
     return 1;
 }
 
-int idcu_permission_grant(const char* module_name, const char* permission)
-{
+int idcu_permission_grant(const char *module_name, const char *permission) {
     if (!g_initialized || !module_name || !permission) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -118,7 +110,7 @@ int idcu_permission_grant(const char* module_name, const char* permission)
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
-    idcu_ModulePermission* mod_perm = find_module_perm(module_name);
+    idcu_ModulePermission *mod_perm = find_module_perm(module_name);
     if (!mod_perm) {
         if (g_perm_mgr.module_count >= IDCU_MAX_MODULE_PERMISSIONS) {
             idcu_mutex_unlock(&g_perm_mgr.lock);
@@ -138,16 +130,15 @@ int idcu_permission_grant(const char* module_name, const char* permission)
         idcu_mutex_unlock(&g_perm_mgr.lock);
         return IDCU_ERR_QUEUE_FULL;
     }
-    strncpy(mod_perm->permissions[mod_perm->permission_count], 
-            permission, IDCU_PERMISSION_NAME_MAX - 1);
+    strncpy(mod_perm->permissions[mod_perm->permission_count], permission,
+            IDCU_PERMISSION_NAME_MAX - 1);
     mod_perm->permissions[mod_perm->permission_count][IDCU_PERMISSION_NAME_MAX - 1] = '\0';
     mod_perm->permission_count++;
     idcu_mutex_unlock(&g_perm_mgr.lock);
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_permission_revoke(const char* module_name, const char* permission)
-{
+int idcu_permission_revoke(const char *module_name, const char *permission) {
     if (!g_initialized || !module_name || !permission) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -155,7 +146,7 @@ int idcu_permission_revoke(const char* module_name, const char* permission)
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
-    idcu_ModulePermission* mod_perm = find_module_perm(module_name);
+    idcu_ModulePermission *mod_perm = find_module_perm(module_name);
     if (!mod_perm) {
         idcu_mutex_unlock(&g_perm_mgr.lock);
         return IDCU_ERR_NOT_FOUND;
@@ -175,8 +166,8 @@ int idcu_permission_revoke(const char* module_name, const char* permission)
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_permission_get_module_permissions(const char* module_name, char** out_permissions, int* out_count)
-{
+int idcu_permission_get_module_permissions(const char *module_name, char **out_permissions,
+                                           int *out_count) {
     if (!g_initialized || !module_name || !out_permissions || !out_count) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -184,7 +175,7 @@ int idcu_permission_get_module_permissions(const char* module_name, char** out_p
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
-    idcu_ModulePermission* mod_perm = find_module_perm(module_name);
+    idcu_ModulePermission *mod_perm = find_module_perm(module_name);
     if (!mod_perm) {
         *out_count = 0;
         idcu_mutex_unlock(&g_perm_mgr.lock);
@@ -198,8 +189,7 @@ int idcu_permission_get_module_permissions(const char* module_name, char** out_p
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_permission_list_modules(char** out_modules, int* out_count)
-{
+int idcu_permission_list_modules(char **out_modules, int *out_count) {
     if (!g_initialized || !out_modules || !out_count) {
         return IDCU_ERR_INVALID_PARAM;
     }

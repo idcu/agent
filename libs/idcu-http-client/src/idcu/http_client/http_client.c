@@ -1,16 +1,17 @@
 #include "idcu/http_client/http_client.h"
 #include "idcu/log/log.h"
-#include <string.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <string.h>
 
-static int parse_url(const char* url, char* host, size_t host_len, uint16_t* port, char* path, size_t path_len) {
+static int parse_url(const char *url, char *host, size_t host_len, uint16_t *port, char *path,
+                     size_t path_len) {
     if (!url || !host || !port || !path) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    const char* ptr = url;
+    const char *ptr = url;
     if (strncmp(url, "http://", 7) == 0) {
         ptr += 7;
         *port = 80;
@@ -22,19 +23,21 @@ static int parse_url(const char* url, char* host, size_t host_len, uint16_t* por
         *port = 80;
     }
 
-    const char* host_start = ptr;
-    const char* path_start = strchr(ptr, '/');
-    const char* port_start = strchr(ptr, ':');
+    const char *host_start = ptr;
+    const char *path_start = strchr(ptr, '/');
+    const char *port_start = strchr(ptr, ':');
 
     if (port_start && (!path_start || port_start < path_start)) {
         size_t host_part_len = port_start - host_start;
-        if (host_part_len >= host_len) host_part_len = host_len - 1;
+        if (host_part_len >= host_len)
+            host_part_len = host_len - 1;
         strncpy(host, host_start, host_part_len);
         host[host_part_len] = '\0';
         *port = (uint16_t)atoi(port_start + 1);
     } else {
         size_t host_part_len = path_start ? (path_start - host_start) : strlen(host_start);
-        if (host_part_len >= host_len) host_part_len = host_len - 1;
+        if (host_part_len >= host_len)
+            host_part_len = host_len - 1;
         strncpy(host, host_start, host_part_len);
         host[host_part_len] = '\0';
     }
@@ -50,21 +53,30 @@ static int parse_url(const char* url, char* host, size_t host_len, uint16_t* por
     return IDCU_ERR_OK;
 }
 
-const char* idcu_http_client_method_to_string(idcu_HttpClientMethod method) {
+const char *idcu_http_client_method_to_string(idcu_HttpClientMethod method) {
     switch (method) {
-        case IDCU_HTTPC_METHOD_GET: return "GET";
-        case IDCU_HTTPC_METHOD_POST: return "POST";
-        case IDCU_HTTPC_METHOD_PUT: return "PUT";
-        case IDCU_HTTPC_METHOD_DELETE: return "DELETE";
-        case IDCU_HTTPC_METHOD_PATCH: return "PATCH";
-        case IDCU_HTTPC_METHOD_HEAD: return "HEAD";
-        case IDCU_HTTPC_METHOD_OPTIONS: return "OPTIONS";
-        default: return "GET";
+    case IDCU_HTTPC_METHOD_GET:
+        return "GET";
+    case IDCU_HTTPC_METHOD_POST:
+        return "POST";
+    case IDCU_HTTPC_METHOD_PUT:
+        return "PUT";
+    case IDCU_HTTPC_METHOD_DELETE:
+        return "DELETE";
+    case IDCU_HTTPC_METHOD_PATCH:
+        return "PATCH";
+    case IDCU_HTTPC_METHOD_HEAD:
+        return "HEAD";
+    case IDCU_HTTPC_METHOD_OPTIONS:
+        return "OPTIONS";
+    default:
+        return "GET";
     }
 }
 
-int idcu_http_client_init(idcu_HttpClient* client, int timeout_ms) {
-    if (!client) return IDCU_ERR_INVALID_PARAM;
+int idcu_http_client_init(idcu_HttpClient *client, int timeout_ms) {
+    if (!client)
+        return IDCU_ERR_INVALID_PARAM;
 
     memset(client, 0, sizeof(idcu_HttpClient));
     client->timeout_ms = timeout_ms > 0 ? timeout_ms : 30000;
@@ -78,8 +90,9 @@ int idcu_http_client_init(idcu_HttpClient* client, int timeout_ms) {
     return IDCU_ERR_OK;
 }
 
-void idcu_http_client_destroy(idcu_HttpClient* client) {
-    if (!client) return;
+void idcu_http_client_destroy(idcu_HttpClient *client) {
+    if (!client)
+        return;
 
     if (client->connected) {
         idcu_network_socket_close(&client->socket);
@@ -88,8 +101,10 @@ void idcu_http_client_destroy(idcu_HttpClient* client) {
     idcu_network_cleanup();
 }
 
-int idcu_http_client_request_init(idcu_HttpClientRequest* req, idcu_HttpClientMethod method, const char* url) {
-    if (!req || !url) return IDCU_ERR_INVALID_PARAM;
+int idcu_http_client_request_init(idcu_HttpClientRequest *req, idcu_HttpClientMethod method,
+                                  const char *url) {
+    if (!req || !url)
+        return IDCU_ERR_INVALID_PARAM;
 
     memset(req, 0, sizeof(idcu_HttpClientRequest));
     req->method = method;
@@ -102,17 +117,21 @@ int idcu_http_client_request_init(idcu_HttpClientRequest* req, idcu_HttpClientMe
     return IDCU_ERR_OK;
 }
 
-void idcu_http_client_request_destroy(idcu_HttpClientRequest* req) {
-    if (!req) return;
+void idcu_http_client_request_destroy(idcu_HttpClientRequest *req) {
+    if (!req)
+        return;
     if (req->body) {
         free(req->body);
         req->body = NULL;
     }
 }
 
-int idcu_http_client_request_add_header(idcu_HttpClientRequest* req, const char* key, const char* value) {
-    if (!req || !key || !value) return IDCU_ERR_INVALID_PARAM;
-    if (req->header_count >= IDCU_HTTPC_MAX_HEADERS) return IDCU_ERR_NO_MEMORY;
+int idcu_http_client_request_add_header(idcu_HttpClientRequest *req, const char *key,
+                                        const char *value) {
+    if (!req || !key || !value)
+        return IDCU_ERR_INVALID_PARAM;
+    if (req->header_count >= IDCU_HTTPC_MAX_HEADERS)
+        return IDCU_ERR_NO_MEMORY;
 
     strncpy(req->headers[req->header_count].key, key, IDCU_HTTPC_HEADER_KEY_MAX - 1);
     req->headers[req->header_count].key[IDCU_HTTPC_HEADER_KEY_MAX - 1] = '\0';
@@ -123,8 +142,10 @@ int idcu_http_client_request_add_header(idcu_HttpClientRequest* req, const char*
     return IDCU_ERR_OK;
 }
 
-int idcu_http_client_request_set_body(idcu_HttpClientRequest* req, const char* body, size_t length) {
-    if (!req) return IDCU_ERR_INVALID_PARAM;
+int idcu_http_client_request_set_body(idcu_HttpClientRequest *req, const char *body,
+                                      size_t length) {
+    if (!req)
+        return IDCU_ERR_INVALID_PARAM;
 
     if (req->body) {
         free(req->body);
@@ -132,8 +153,9 @@ int idcu_http_client_request_set_body(idcu_HttpClientRequest* req, const char* b
     }
 
     if (body && length > 0) {
-        req->body = (char*)malloc(length);
-        if (!req->body) return IDCU_ERR_NO_MEMORY;
+        req->body = (char *)malloc(length);
+        if (!req->body)
+            return IDCU_ERR_NO_MEMORY;
         memcpy(req->body, body, length);
         req->body_length = length;
     }
@@ -141,18 +163,21 @@ int idcu_http_client_request_set_body(idcu_HttpClientRequest* req, const char* b
     return IDCU_ERR_OK;
 }
 
-int idcu_http_client_response_init(idcu_HttpClientResponse* resp) {
-    if (!resp) return IDCU_ERR_INVALID_PARAM;
+int idcu_http_client_response_init(idcu_HttpClientResponse *resp) {
+    if (!resp)
+        return IDCU_ERR_INVALID_PARAM;
     memset(resp, 0, sizeof(idcu_HttpClientResponse));
     return IDCU_ERR_OK;
 }
 
-void idcu_http_client_response_destroy(idcu_HttpClientResponse* resp) {
-    if (!resp) return;
+void idcu_http_client_response_destroy(idcu_HttpClientResponse *resp) {
+    if (!resp)
+        return;
 }
 
-const char* idcu_http_client_response_get_header(idcu_HttpClientResponse* resp, const char* key) {
-    if (!resp || !key) return NULL;
+const char *idcu_http_client_response_get_header(idcu_HttpClientResponse *resp, const char *key) {
+    if (!resp || !key)
+        return NULL;
 
     for (size_t i = 0; i < resp->header_count; i++) {
         if (strcasecmp(resp->headers[i].key, key) == 0) {
@@ -162,15 +187,14 @@ const char* idcu_http_client_response_get_header(idcu_HttpClientResponse* resp, 
     return NULL;
 }
 
-static int build_request_string(idcu_HttpClientRequest* req, const char* host, const char* path, char* buffer, size_t buffer_len, size_t* out_len) {
+static int build_request_string(idcu_HttpClientRequest *req, const char *host, const char *path,
+                                char *buffer, size_t buffer_len, size_t *out_len) {
     size_t offset = 0;
 
-    offset += snprintf(buffer + offset, buffer_len - offset,
-                      "%s %s HTTP/1.1\r\n",
-                      idcu_http_client_method_to_string(req->method), path);
+    offset += snprintf(buffer + offset, buffer_len - offset, "%s %s HTTP/1.1\r\n",
+                       idcu_http_client_method_to_string(req->method), path);
 
-    offset += snprintf(buffer + offset, buffer_len - offset,
-                      "Host: %s\r\n", host);
+    offset += snprintf(buffer + offset, buffer_len - offset, "Host: %s\r\n", host);
 
     int has_content_length = 0;
     int has_connection = 0;
@@ -182,9 +206,8 @@ static int build_request_string(idcu_HttpClientRequest* req, const char* host, c
         if (strcasecmp(req->headers[i].key, "Connection") == 0) {
             has_connection = 1;
         }
-        offset += snprintf(buffer + offset, buffer_len - offset,
-                          "%s: %s\r\n",
-                          req->headers[i].key, req->headers[i].value);
+        offset += snprintf(buffer + offset, buffer_len - offset, "%s: %s\r\n", req->headers[i].key,
+                           req->headers[i].value);
     }
 
     if (!has_connection) {
@@ -192,8 +215,8 @@ static int build_request_string(idcu_HttpClientRequest* req, const char* host, c
     }
 
     if (req->body && req->body_length > 0 && !has_content_length) {
-        offset += snprintf(buffer + offset, buffer_len - offset,
-                          "Content-Length: %zu\r\n", req->body_length);
+        offset += snprintf(buffer + offset, buffer_len - offset, "Content-Length: %zu\r\n",
+                           req->body_length);
     }
 
     offset += snprintf(buffer + offset, buffer_len - offset, "\r\n");
@@ -210,41 +233,53 @@ static int build_request_string(idcu_HttpClientRequest* req, const char* host, c
     return IDCU_ERR_OK;
 }
 
-static int parse_response_line(char* line, idcu_HttpClientResponse* resp) {
-    char* ptr = line;
-    while (*ptr && !isspace((unsigned char)*ptr)) ptr++;
-    if (!*ptr) return IDCU_ERR_INVALID_PARAM;
-    while (*ptr && isspace((unsigned char)*ptr)) ptr++;
+static int parse_response_line(char *line, idcu_HttpClientResponse *resp) {
+    char *ptr = line;
+    while (*ptr && !isspace((unsigned char)*ptr))
+        ptr++;
+    if (!*ptr)
+        return IDCU_ERR_INVALID_PARAM;
+    while (*ptr && isspace((unsigned char)*ptr))
+        ptr++;
 
     resp->status_code = atoi(ptr);
-    while (*ptr && isdigit((unsigned char)*ptr)) ptr++;
-    while (*ptr && isspace((unsigned char)*ptr)) ptr++;
+    while (*ptr && isdigit((unsigned char)*ptr))
+        ptr++;
+    while (*ptr && isspace((unsigned char)*ptr))
+        ptr++;
 
     strncpy(resp->status_text, ptr, sizeof(resp->status_text) - 1);
-    char* newline = strchr(resp->status_text, '\r');
-    if (newline) *newline = '\0';
+    char *newline = strchr(resp->status_text, '\r');
+    if (newline)
+        *newline = '\0';
     newline = strchr(resp->status_text, '\n');
-    if (newline) *newline = '\0';
+    if (newline)
+        *newline = '\0';
 
     return IDCU_ERR_OK;
 }
 
-static int parse_header_line(char* line, idcu_HttpClientResponse* resp) {
-    if (resp->header_count >= IDCU_HTTPC_MAX_HEADERS) return IDCU_ERR_OK;
+static int parse_header_line(char *line, idcu_HttpClientResponse *resp) {
+    if (resp->header_count >= IDCU_HTTPC_MAX_HEADERS)
+        return IDCU_ERR_OK;
 
-    char* colon = strchr(line, ':');
-    if (!colon) return IDCU_ERR_OK;
+    char *colon = strchr(line, ':');
+    if (!colon)
+        return IDCU_ERR_OK;
 
     *colon = '\0';
-    char* key = line;
-    char* value = colon + 1;
+    char *key = line;
+    char *value = colon + 1;
 
-    while (*value && isspace((unsigned char)*value)) value++;
+    while (*value && isspace((unsigned char)*value))
+        value++;
 
-    char* newline = strchr(value, '\r');
-    if (newline) *newline = '\0';
+    char *newline = strchr(value, '\r');
+    if (newline)
+        *newline = '\0';
     newline = strchr(value, '\n');
-    if (newline) *newline = '\0';
+    if (newline)
+        *newline = '\0';
 
     strncpy(resp->headers[resp->header_count].key, key, IDCU_HTTPC_HEADER_KEY_MAX - 1);
     resp->headers[resp->header_count].key[IDCU_HTTPC_HEADER_KEY_MAX - 1] = '\0';
@@ -255,18 +290,18 @@ static int parse_header_line(char* line, idcu_HttpClientResponse* resp) {
     return IDCU_ERR_OK;
 }
 
-static int receive_response(idcu_HttpClient* client, idcu_HttpClientResponse* resp) {
+static int receive_response(idcu_HttpClient *client, idcu_HttpClientResponse *resp) {
     char buffer[IDCU_HTTPC_RESPONSE_BUF_SIZE];
     size_t total_received = 0;
     int headers_complete = 0;
-    char* body_start = NULL;
+    char *body_start = NULL;
     size_t content_length = 0;
     int has_content_length = 0;
 
     while (!headers_complete || (has_content_length && total_received < content_length)) {
         size_t received = 0;
         int ret = idcu_network_socket_recv(&client->socket, buffer + total_received,
-                                          sizeof(buffer) - total_received - 1, &received);
+                                           sizeof(buffer) - total_received - 1, &received);
         if (ret != IDCU_ERR_OK) {
             return ret;
         }
@@ -285,7 +320,7 @@ static int receive_response(idcu_HttpClient* client, idcu_HttpClientResponse* re
                 *body_start = '\0';
                 body_start += 4;
 
-                char* line = strtok(buffer, "\r\n");
+                char *line = strtok(buffer, "\r\n");
                 if (line) {
                     parse_response_line(line, resp);
                     line = strtok(NULL, "\r\n");
@@ -296,7 +331,8 @@ static int receive_response(idcu_HttpClient* client, idcu_HttpClientResponse* re
                     line = strtok(NULL, "\r\n");
                 }
 
-                const char* cl_header = idcu_http_client_response_get_header(resp, "Content-Length");
+                const char *cl_header =
+                    idcu_http_client_response_get_header(resp, "Content-Length");
                 if (cl_header) {
                     content_length = atoi(cl_header);
                     has_content_length = 1;
@@ -305,7 +341,8 @@ static int receive_response(idcu_HttpClient* client, idcu_HttpClientResponse* re
                 size_t body_in_buffer = total_received - (body_start - buffer);
                 if (body_in_buffer > 0) {
                     size_t copy_len = body_in_buffer;
-                    if (copy_len > IDCU_HTTPC_BODY_MAX - 1) copy_len = IDCU_HTTPC_BODY_MAX - 1;
+                    if (copy_len > IDCU_HTTPC_BODY_MAX - 1)
+                        copy_len = IDCU_HTTPC_BODY_MAX - 1;
                     memcpy(resp->body, body_start, copy_len);
                     resp->body_length = copy_len;
                 }
@@ -313,7 +350,8 @@ static int receive_response(idcu_HttpClient* client, idcu_HttpClientResponse* re
         } else if (has_content_length && resp->body_length < content_length) {
             size_t remaining = content_length - resp->body_length;
             size_t copy_len = total_received;
-            if (copy_len > remaining) copy_len = remaining;
+            if (copy_len > remaining)
+                copy_len = remaining;
             if (resp->body_length + copy_len > IDCU_HTTPC_BODY_MAX - 1) {
                 copy_len = IDCU_HTTPC_BODY_MAX - 1 - resp->body_length;
             }
@@ -327,8 +365,10 @@ static int receive_response(idcu_HttpClient* client, idcu_HttpClientResponse* re
     return IDCU_ERR_OK;
 }
 
-int idcu_http_client_execute(idcu_HttpClient* client, idcu_HttpClientRequest* req, idcu_HttpClientResponse* resp) {
-    if (!client || !req || !resp) return IDCU_ERR_INVALID_PARAM;
+int idcu_http_client_execute(idcu_HttpClient *client, idcu_HttpClientRequest *req,
+                             idcu_HttpClientResponse *resp) {
+    if (!client || !req || !resp)
+        return IDCU_ERR_INVALID_PARAM;
 
     char host[IDCU_ADDR_MAX];
     uint16_t port;
@@ -369,7 +409,8 @@ int idcu_http_client_execute(idcu_HttpClient* client, idcu_HttpClientRequest* re
 
     char request_buffer[IDCU_HTTPC_RESPONSE_BUF_SIZE];
     size_t request_len = 0;
-    ret = build_request_string(req, host, path, request_buffer, sizeof(request_buffer), &request_len);
+    ret =
+        build_request_string(req, host, path, request_buffer, sizeof(request_buffer), &request_len);
     if (ret != IDCU_ERR_OK) {
         return ret;
     }
@@ -391,25 +432,29 @@ int idcu_http_client_execute(idcu_HttpClient* client, idcu_HttpClientRequest* re
     idcu_network_socket_close(&client->socket);
     client->connected = 0;
 
-    IDCU_LOG_INFO("HTTP %s %s - Status: %d", idcu_http_client_method_to_string(req->method), req->url, resp->status_code);
+    IDCU_LOG_INFO("HTTP %s %s - Status: %d", idcu_http_client_method_to_string(req->method),
+                  req->url, resp->status_code);
 
     return ret;
 }
 
-int idcu_http_client_get(idcu_HttpClient* client, const char* url, idcu_HttpClientResponse* resp) {
+int idcu_http_client_get(idcu_HttpClient *client, const char *url, idcu_HttpClientResponse *resp) {
     idcu_HttpClientRequest req;
     int ret = idcu_http_client_request_init(&req, IDCU_HTTPC_METHOD_GET, url);
-    if (ret != IDCU_ERR_OK) return ret;
+    if (ret != IDCU_ERR_OK)
+        return ret;
 
     ret = idcu_http_client_execute(client, &req, resp);
     idcu_http_client_request_destroy(&req);
     return ret;
 }
 
-int idcu_http_client_post(idcu_HttpClient* client, const char* url, const char* body, size_t body_len, idcu_HttpClientResponse* resp) {
+int idcu_http_client_post(idcu_HttpClient *client, const char *url, const char *body,
+                          size_t body_len, idcu_HttpClientResponse *resp) {
     idcu_HttpClientRequest req;
     int ret = idcu_http_client_request_init(&req, IDCU_HTTPC_METHOD_POST, url);
-    if (ret != IDCU_ERR_OK) return ret;
+    if (ret != IDCU_ERR_OK)
+        return ret;
 
     if (body && body_len > 0) {
         idcu_http_client_request_set_body(&req, body, body_len);

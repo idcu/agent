@@ -1,20 +1,18 @@
 #include "http_server_integration.h"
-#include "module_def.h"
 #include "idcu/log/log.h"
+#include "module_def.h"
 #include <string.h>
 
-static idcu_HttpServerIntegration* g_http_server_integration = NULL;
+static idcu_HttpServerIntegration *g_http_server_integration = NULL;
 
-int idcu_http_server_integration_init(idcu_HttpServerIntegration* integration,
-                                        const char* bind_address,
-                                        uint16_t port)
-{
+int idcu_http_server_integration_init(idcu_HttpServerIntegration *integration,
+                                      const char *bind_address, uint16_t port) {
     if (!integration) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     memset(integration, 0, sizeof(idcu_HttpServerIntegration));
-    
+
     if (bind_address) {
         strncpy(integration->bind_address, bind_address, sizeof(integration->bind_address) - 1);
     } else {
@@ -30,12 +28,12 @@ int idcu_http_server_integration_init(idcu_HttpServerIntegration* integration,
 
     integration->initialized = 1;
     g_http_server_integration = integration;
-    IDCU_LOG_INFO("HTTP server integration initialized on %s:%d", integration->bind_address, integration->port);
+    IDCU_LOG_INFO("HTTP server integration initialized on %s:%d", integration->bind_address,
+                  integration->port);
     return IDCU_ERR_OK;
 }
 
-void idcu_http_server_integration_destroy(idcu_HttpServerIntegration* integration)
-{
+void idcu_http_server_integration_destroy(idcu_HttpServerIntegration *integration) {
     if (!integration || !integration->initialized) {
         return;
     }
@@ -47,8 +45,7 @@ void idcu_http_server_integration_destroy(idcu_HttpServerIntegration* integratio
     IDCU_LOG_INFO("HTTP server integration destroyed");
 }
 
-int idcu_http_server_integration_start(idcu_HttpServerIntegration* integration)
-{
+int idcu_http_server_integration_start(idcu_HttpServerIntegration *integration) {
     if (!integration || !integration->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -63,8 +60,7 @@ int idcu_http_server_integration_start(idcu_HttpServerIntegration* integration)
     return IDCU_ERR_OK;
 }
 
-int idcu_http_server_integration_stop(idcu_HttpServerIntegration* integration)
-{
+int idcu_http_server_integration_stop(idcu_HttpServerIntegration *integration) {
     if (!integration || !integration->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -74,8 +70,7 @@ int idcu_http_server_integration_stop(idcu_HttpServerIntegration* integration)
     return IDCU_ERR_OK;
 }
 
-int idcu_http_server_integration_poll(idcu_HttpServerIntegration* integration, int timeout_ms)
-{
+int idcu_http_server_integration_poll(idcu_HttpServerIntegration *integration, int timeout_ms) {
     if (!integration || !integration->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -83,8 +78,7 @@ int idcu_http_server_integration_poll(idcu_HttpServerIntegration* integration, i
     return idcu_http_server_poll(&integration->server, timeout_ms);
 }
 
-idcu_HttpServer* idcu_http_server_integration_get_server(idcu_HttpServerIntegration* integration)
-{
+idcu_HttpServer *idcu_http_server_integration_get_server(idcu_HttpServerIntegration *integration) {
     if (!integration || !integration->initialized) {
         return NULL;
     }
@@ -93,23 +87,19 @@ idcu_HttpServer* idcu_http_server_integration_get_server(idcu_HttpServerIntegrat
 
 static idcu_HttpServerIntegration s_http_server_integration;
 
-static int http_server_integration_module_init(void)
-{
+static int http_server_integration_module_init(void) {
     return idcu_http_server_integration_init(&s_http_server_integration, "0.0.0.0", 8080);
 }
 
-static int http_server_integration_module_run(void)
-{
+static int http_server_integration_module_run(void) {
     return idcu_http_server_integration_poll(&s_http_server_integration, 10);
 }
 
-static int http_server_integration_module_stop(void)
-{
+static int http_server_integration_module_stop(void) {
     idcu_http_server_integration_destroy(&s_http_server_integration);
     return 0;
 }
 
-IDCU_REGISTER_MODULE(http_server_integration, IDCU_MODULE_VERSION(1, 0, 0), 
-                      http_server_integration_module_init, 
-                      http_server_integration_module_run, 
-                      http_server_integration_module_stop);
+IDCU_REGISTER_MODULE(http_server_integration, IDCU_MODULE_VERSION(1, 0, 0),
+                     http_server_integration_module_init, http_server_integration_module_run,
+                     http_server_integration_module_stop);

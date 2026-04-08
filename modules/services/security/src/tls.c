@@ -1,8 +1,8 @@
 #include "tls.h"
 #include "idcu/log/log.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define IDCU_TLS_ERROR_BUFFER_SIZE 256
 
@@ -12,20 +12,20 @@ struct idcu_TLSContext {
     char ca_path[IDCU_TLS_CA_PATH_MAX];
     char cert_path[IDCU_TLS_CERT_PATH_MAX];
     char key_path[IDCU_TLS_KEY_PATH_MAX];
-    void* backend_ctx;
+    void *backend_ctx;
 };
 
 struct idcu_TLSConnection {
-    idcu_TLSContext* ctx;
+    idcu_TLSContext *ctx;
     int socket_fd;
-    void* backend_conn;
+    void *backend_conn;
     int handshake_done;
 };
 
 static char g_tls_error[IDCU_TLS_ERROR_BUFFER_SIZE] = {0};
 static int g_tls_initialized = 0;
 
-static void set_tls_error(const char* error) {
+static void set_tls_error(const char *error) {
     strncpy(g_tls_error, error, IDCU_TLS_ERROR_BUFFER_SIZE - 1);
     g_tls_error[IDCU_TLS_ERROR_BUFFER_SIZE - 1] = '\0';
 }
@@ -36,7 +36,7 @@ int idcu_tls_init(void) {
     }
 
     IDCU_LOG_INFO("[tls] Initializing TLS module (placeholder implementation)");
-    
+
     g_tls_initialized = 1;
     IDCU_LOG_INFO("[tls] TLS module initialized successfully");
     return IDCU_ERR_OK;
@@ -52,13 +52,13 @@ void idcu_tls_cleanup(void) {
     IDCU_LOG_INFO("[tls] TLS module cleaned up");
 }
 
-int idcu_tls_context_create(idcu_TLSContext** ctx) {
+int idcu_tls_context_create(idcu_TLSContext **ctx) {
     if (!ctx) {
         set_tls_error("Invalid parameter: ctx is NULL");
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    *ctx = (idcu_TLSContext*)malloc(sizeof(idcu_TLSContext));
+    *ctx = (idcu_TLSContext *)malloc(sizeof(idcu_TLSContext));
     if (!*ctx) {
         set_tls_error("Failed to allocate TLS context");
         return IDCU_ERR_NO_MEMORY;
@@ -73,7 +73,7 @@ int idcu_tls_context_create(idcu_TLSContext** ctx) {
     return IDCU_ERR_OK;
 }
 
-void idcu_tls_context_destroy(idcu_TLSContext* ctx) {
+void idcu_tls_context_destroy(idcu_TLSContext *ctx) {
     if (!ctx) {
         return;
     }
@@ -87,7 +87,7 @@ void idcu_tls_context_destroy(idcu_TLSContext* ctx) {
     IDCU_LOG_DEBUG("[tls] TLS context destroyed");
 }
 
-int idcu_tls_context_set_version(idcu_TLSContext* ctx, idcu_TLSVersion version) {
+int idcu_tls_context_set_version(idcu_TLSContext *ctx, idcu_TLSVersion version) {
     if (!ctx) {
         set_tls_error("Invalid parameter: ctx is NULL");
         return IDCU_ERR_INVALID_PARAM;
@@ -98,7 +98,7 @@ int idcu_tls_context_set_version(idcu_TLSContext* ctx, idcu_TLSVersion version) 
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_context_set_verify_mode(idcu_TLSContext* ctx, idcu_TLSVerifyMode mode) {
+int idcu_tls_context_set_verify_mode(idcu_TLSContext *ctx, idcu_TLSVerifyMode mode) {
     if (!ctx) {
         set_tls_error("Invalid parameter: ctx is NULL");
         return IDCU_ERR_INVALID_PARAM;
@@ -109,7 +109,7 @@ int idcu_tls_context_set_verify_mode(idcu_TLSContext* ctx, idcu_TLSVerifyMode mo
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_context_load_ca_cert(idcu_TLSContext* ctx, const char* ca_path) {
+int idcu_tls_context_load_ca_cert(idcu_TLSContext *ctx, const char *ca_path) {
     if (!ctx || !ca_path) {
         set_tls_error("Invalid parameter");
         return IDCU_ERR_INVALID_PARAM;
@@ -122,7 +122,7 @@ int idcu_tls_context_load_ca_cert(idcu_TLSContext* ctx, const char* ca_path) {
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_context_load_cert(idcu_TLSContext* ctx, const char* cert_path) {
+int idcu_tls_context_load_cert(idcu_TLSContext *ctx, const char *cert_path) {
     if (!ctx || !cert_path) {
         set_tls_error("Invalid parameter");
         return IDCU_ERR_INVALID_PARAM;
@@ -135,7 +135,7 @@ int idcu_tls_context_load_cert(idcu_TLSContext* ctx, const char* cert_path) {
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_context_load_private_key(idcu_TLSContext* ctx, const char* key_path) {
+int idcu_tls_context_load_private_key(idcu_TLSContext *ctx, const char *key_path) {
     if (!ctx || !key_path) {
         set_tls_error("Invalid parameter");
         return IDCU_ERR_INVALID_PARAM;
@@ -148,13 +148,13 @@ int idcu_tls_context_load_private_key(idcu_TLSContext* ctx, const char* key_path
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_connection_create(idcu_TLSConnection** conn, idcu_TLSContext* ctx, int socket_fd) {
+int idcu_tls_connection_create(idcu_TLSConnection **conn, idcu_TLSContext *ctx, int socket_fd) {
     if (!conn || !ctx || socket_fd < 0) {
         set_tls_error("Invalid parameter");
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    *conn = (idcu_TLSConnection*)malloc(sizeof(idcu_TLSConnection));
+    *conn = (idcu_TLSConnection *)malloc(sizeof(idcu_TLSConnection));
     if (!*conn) {
         set_tls_error("Failed to allocate TLS connection");
         return IDCU_ERR_NO_MEMORY;
@@ -170,7 +170,7 @@ int idcu_tls_connection_create(idcu_TLSConnection** conn, idcu_TLSContext* ctx, 
     return IDCU_ERR_OK;
 }
 
-void idcu_tls_connection_destroy(idcu_TLSConnection* conn) {
+void idcu_tls_connection_destroy(idcu_TLSConnection *conn) {
     if (!conn) {
         return;
     }
@@ -183,7 +183,7 @@ void idcu_tls_connection_destroy(idcu_TLSConnection* conn) {
     IDCU_LOG_DEBUG("[tls] TLS connection destroyed");
 }
 
-int idcu_tls_connection_handshake(idcu_TLSConnection* conn) {
+int idcu_tls_connection_handshake(idcu_TLSConnection *conn) {
     if (!conn) {
         set_tls_error("Invalid parameter: conn is NULL");
         return IDCU_ERR_INVALID_PARAM;
@@ -194,7 +194,8 @@ int idcu_tls_connection_handshake(idcu_TLSConnection* conn) {
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_connection_write(idcu_TLSConnection* conn, const void* data, size_t size, size_t* written) {
+int idcu_tls_connection_write(idcu_TLSConnection *conn, const void *data, size_t size,
+                              size_t *written) {
     if (!conn || !data || size == 0 || !written) {
         set_tls_error("Invalid parameter");
         return IDCU_ERR_INVALID_PARAM;
@@ -210,7 +211,7 @@ int idcu_tls_connection_write(idcu_TLSConnection* conn, const void* data, size_t
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_connection_read(idcu_TLSConnection* conn, void* buffer, size_t size, size_t* read) {
+int idcu_tls_connection_read(idcu_TLSConnection *conn, void *buffer, size_t size, size_t *read) {
     if (!conn || !buffer || size == 0 || !read) {
         set_tls_error("Invalid parameter");
         return IDCU_ERR_INVALID_PARAM;
@@ -226,7 +227,7 @@ int idcu_tls_connection_read(idcu_TLSConnection* conn, void* buffer, size_t size
     return IDCU_ERR_OK;
 }
 
-int idcu_tls_connection_shutdown(idcu_TLSConnection* conn) {
+int idcu_tls_connection_shutdown(idcu_TLSConnection *conn) {
     if (!conn) {
         set_tls_error("Invalid parameter: conn is NULL");
         return IDCU_ERR_INVALID_PARAM;
@@ -237,6 +238,4 @@ int idcu_tls_connection_shutdown(idcu_TLSConnection* conn) {
     return IDCU_ERR_OK;
 }
 
-const char* idcu_tls_get_error(void) {
-    return g_tls_error;
-}
+const char *idcu_tls_get_error(void) { return g_tls_error; }

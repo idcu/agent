@@ -1,6 +1,6 @@
 #include "idcu/log/log.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 int main(void) {
     printf("Testing log level operations...\n");

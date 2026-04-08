@@ -4,7 +4,7 @@
 
 #include "idcu/log/log.h"
 
-void demo_log_levels(idcu_LogLevel level, const char* desc) {
+void demo_log_levels(idcu_LogLevel level, const char *desc) {
     IDCU_LOG_INFO("--- 当前日志级别: %s ---", desc);
 
     IDCU_LOG_DEBUG("DEBUG 级别的消息");

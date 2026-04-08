@@ -1,6 +1,6 @@
-#include "idcu/msgbus/msg_bus.h"
-#include "idcu/log/log.h"
 #include "idcu/common/error_code.h"
+#include "idcu/log/log.h"
+#include "idcu/msgbus/msg_bus.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -19,13 +19,13 @@ static void test_msg_bus_init_destroy(void) {
 static void test_msg_send_recv(void) {
     idcu_MessageBus bus;
     idcu_msg_bus_init(&bus);
-    
+
     idcu_StackContext ctx;
     idcu_ctx_init(&ctx, 1, 1001);
     int test_value = 42;
     memcpy(ctx.data, &test_value, sizeof(test_value));
     ctx.len = sizeof(test_value);
-    
+
     int ret = idcu_msg_send(&bus, 1, 2, IDCU_MSG_PRIO_NORMAL, &ctx);
     if (ret != 0) {
         printf("test_msg_send_recv: FAIL - idcu_msg_send should succeed\n");
@@ -37,7 +37,7 @@ static void test_msg_send_recv(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     idcu_Message msg;
     ret = idcu_msg_recv(&bus, 2, &msg);
     if (ret != 0) {
@@ -52,7 +52,7 @@ static void test_msg_send_recv(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     idcu_msg_bus_destroy(&bus);
     printf("test_msg_send_recv: PASS\n");
 }
@@ -60,26 +60,26 @@ static void test_msg_send_recv(void) {
 static void test_msg_priority(void) {
     idcu_MessageBus bus;
     idcu_msg_bus_init(&bus);
-    
+
     idcu_StackContext ctx_low, ctx_norm, ctx_high, ctx_realtime;
     int val1 = 1, val2 = 2, val3 = 3, val4 = 4;
-    
+
     idcu_ctx_init(&ctx_low, 1, 2001);
     memcpy(ctx_low.data, &val1, sizeof(val1));
     ctx_low.len = sizeof(val1);
-    
+
     idcu_ctx_init(&ctx_norm, 1, 2002);
     memcpy(ctx_norm.data, &val2, sizeof(val2));
     ctx_norm.len = sizeof(val2);
-    
+
     idcu_ctx_init(&ctx_high, 1, 2003);
     memcpy(ctx_high.data, &val3, sizeof(val3));
     ctx_high.len = sizeof(val3);
-    
+
     idcu_ctx_init(&ctx_realtime, 1, 2004);
     memcpy(ctx_realtime.data, &val4, sizeof(val4));
     ctx_realtime.len = sizeof(val4);
-    
+
     int ret;
     ret = idcu_msg_send(&bus, 1, 2, IDCU_MSG_PRIO_LOW, &ctx_low);
     if (ret != 0) {
@@ -105,16 +105,16 @@ static void test_msg_priority(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     if (idcu_msg_get_count(&bus) != 4) {
         printf("test_msg_priority: FAIL - Count should be 4\n");
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     idcu_Message msg;
     int received;
-    
+
     ret = idcu_msg_recv(&bus, 2, &msg);
     if (ret != 0) {
         printf("test_msg_priority: FAIL - First recv should succeed\n");
@@ -127,7 +127,7 @@ static void test_msg_priority(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     ret = idcu_msg_recv(&bus, 2, &msg);
     if (ret != 0) {
         printf("test_msg_priority: FAIL - Second recv should succeed\n");
@@ -140,7 +140,7 @@ static void test_msg_priority(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     ret = idcu_msg_recv(&bus, 2, &msg);
     if (ret != 0) {
         printf("test_msg_priority: FAIL - Third recv should succeed\n");
@@ -153,7 +153,7 @@ static void test_msg_priority(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     ret = idcu_msg_recv(&bus, 2, &msg);
     if (ret != 0) {
         printf("test_msg_priority: FAIL - Fourth recv should succeed\n");
@@ -166,7 +166,7 @@ static void test_msg_priority(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     idcu_msg_bus_destroy(&bus);
     printf("test_msg_priority: PASS\n");
 }
@@ -174,20 +174,20 @@ static void test_msg_priority(void) {
 static void test_msg_broadcast(void) {
     idcu_MessageBus bus;
     idcu_msg_bus_init(&bus);
-    
+
     idcu_StackContext ctx;
     int val = 100;
     idcu_ctx_init(&ctx, 1, 5001);
     memcpy(ctx.data, &val, sizeof(val));
     ctx.len = sizeof(val);
-    
+
     int ret = idcu_msg_broadcast(&bus, 1, IDCU_MSG_PRIO_HIGH, &ctx);
     if (ret != 0) {
         printf("test_msg_broadcast: FAIL - idcu_msg_broadcast should succeed\n");
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     idcu_Message msg1;
     ret = idcu_msg_recv(&bus, 100, &msg1);
     if (ret != 0) {
@@ -202,22 +202,22 @@ static void test_msg_broadcast(void) {
         idcu_msg_bus_destroy(&bus);
         return;
     }
-    
+
     idcu_msg_bus_destroy(&bus);
     printf("test_msg_broadcast: PASS\n");
 }
 
 int main(void) {
     idcu_log_init(NULL, IDCU_LOG_INFO);
-    
+
     printf("=== Message Bus Tests ===\n");
-    
+
     test_msg_bus_init_destroy();
     test_msg_send_recv();
     test_msg_priority();
     test_msg_broadcast();
-    
+
     printf("=== All Tests Completed ===\n");
-    
+
     return 0;
 }

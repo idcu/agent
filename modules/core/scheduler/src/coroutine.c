@@ -9,8 +9,7 @@
 #include <time.h>
 #endif
 
-static uint64_t get_timestamp_us(void)
-{
+static uint64_t get_timestamp_us(void) {
 #ifdef _WIN32
     LARGE_INTEGER freq, count;
     QueryPerformanceFrequency(&freq);
@@ -23,40 +22,39 @@ static uint64_t get_timestamp_us(void)
 #endif
 }
 
-static inline void circular_queue_init(idcu_CircularQueue *q)
-{
+static inline void circular_queue_init(idcu_CircularQueue *q) {
     q->head = 0;
     q->tail = 0;
     q->count = 0;
 }
 
-static inline int circular_queue_enqueue(idcu_CircularQueue *q, uint32_t item)
-{
-    if (q->count >= IDCU_CORO_MAX_COUNT) return -1;
+static inline int circular_queue_enqueue(idcu_CircularQueue *q, uint32_t item) {
+    if (q->count >= IDCU_CORO_MAX_COUNT)
+        return -1;
     q->items[q->tail] = item;
     q->tail = (q->tail + 1) % IDCU_CORO_MAX_COUNT;
     q->count++;
     return 0;
 }
 
-static inline int circular_queue_dequeue(idcu_CircularQueue *q, uint32_t *item)
-{
-    if (q->count == 0) return -1;
+static inline int circular_queue_dequeue(idcu_CircularQueue *q, uint32_t *item) {
+    if (q->count == 0)
+        return -1;
     *item = q->items[q->head];
     q->head = (q->head + 1) % IDCU_CORO_MAX_COUNT;
     q->count--;
     return 0;
 }
 
-static inline int circular_queue_remove(idcu_CircularQueue *q, uint32_t item)
-{
+static inline int circular_queue_remove(idcu_CircularQueue *q, uint32_t item) {
     uint32_t temp[IDCU_CORO_MAX_COUNT];
     uint32_t temp_count = 0;
     uint32_t current;
     int found = 0;
 
     while (q->count > 0) {
-        if (circular_queue_dequeue(q, &current) != 0) break;
+        if (circular_queue_dequeue(q, &current) != 0)
+            break;
         if (current == item) {
             found = 1;
         } else {
@@ -71,9 +69,9 @@ static inline int circular_queue_remove(idcu_CircularQueue *q, uint32_t item)
     return found ? 0 : -1;
 }
 
-static inline int find_coro_index(idcu_CoroScheduler *sched, uint32_t id)
-{
-    if (id == 0 || id > IDCU_CORO_MAX_COUNT) return -1;
+static inline int find_coro_index(idcu_CoroScheduler *sched, uint32_t id) {
+    if (id == 0 || id > IDCU_CORO_MAX_COUNT)
+        return -1;
     uint32_t idx = sched->id_to_index[id];
     if (idx < sched->count && sched->coros[idx].id == id) {
         return (int)idx;
@@ -81,22 +79,21 @@ static inline int find_coro_index(idcu_CoroScheduler *sched, uint32_t id)
     return -1;
 }
 
-static void add_to_ready_queue(idcu_CoroScheduler *sched, uint32_t coro_idx)
-{
+static void add_to_ready_queue(idcu_CoroScheduler *sched, uint32_t coro_idx) {
     idcu_Coroutine *coro = &sched->coros[coro_idx];
-    if (coro->prio >= IDCU_CORO_MAX_PRIO) return;
+    if (coro->prio >= IDCU_CORO_MAX_PRIO)
+        return;
     circular_queue_enqueue(&sched->ready_queues[coro->prio], coro_idx);
 }
 
-static int remove_from_ready_queue(idcu_CoroScheduler *sched, uint32_t coro_idx)
-{
+static int remove_from_ready_queue(idcu_CoroScheduler *sched, uint32_t coro_idx) {
     idcu_Coroutine *coro = &sched->coros[coro_idx];
-    if (coro->prio >= IDCU_CORO_MAX_PRIO) return -1;
+    if (coro->prio >= IDCU_CORO_MAX_PRIO)
+        return -1;
     return circular_queue_remove(&sched->ready_queues[coro->prio], coro_idx);
 }
 
-static int get_next_ready_coro(idcu_CoroScheduler *sched)
-{
+static int get_next_ready_coro(idcu_CoroScheduler *sched) {
     for (int p = IDCU_CORO_MAX_PRIO - 1; p >= 0; p--) {
         uint32_t idx;
         if (circular_queue_dequeue(&sched->ready_queues[p], &idx) == 0) {
@@ -106,35 +103,39 @@ static int get_next_ready_coro(idcu_CoroScheduler *sched)
     return -1;
 }
 
-void idcu_coro_sched_init(idcu_CoroScheduler *sched)
-{
-    if (!sched) return;
+void idcu_coro_sched_init(idcu_CoroScheduler *sched) {
+    if (!sched)
+        return;
 
     memset(sched, 0, sizeof(idcu_CoroScheduler));
     idcu_mutex_init(&sched->lock);
-    
+
     for (uint32_t p = 0; p < IDCU_CORO_MAX_PRIO; p++) {
         circular_queue_init(&sched->ready_queues[p]);
     }
-    
+
     sched->next_id = 1;
     sched->last_ts = get_timestamp_us();
 }
 
-void idcu_coro_sched_destroy(idcu_CoroScheduler *sched)
-{
-    if (!sched) return;
+void idcu_coro_sched_destroy(idcu_CoroScheduler *sched) {
+    if (!sched)
+        return;
     idcu_mutex_destroy(&sched->lock);
 }
 
-int idcu_coro_create(idcu_CoroScheduler *sched, idcu_CoroState (*func)(idcu_Coroutine*), uint32_t prio, uint32_t timeslice, void *user_data)
-{
-    if (!sched || !func) return IDCU_ERR_INVALID_PARAM;
-    if (prio >= IDCU_CORO_MAX_PRIO) return IDCU_ERR_INVALID_PARAM;
-    if (sched->count >= IDCU_CORO_MAX_COUNT) return IDCU_ERR_NO_MEMORY;
+int idcu_coro_create(idcu_CoroScheduler *sched, idcu_CoroState (*func)(idcu_Coroutine *),
+                     uint32_t prio, uint32_t timeslice, void *user_data) {
+    if (!sched || !func)
+        return IDCU_ERR_INVALID_PARAM;
+    if (prio >= IDCU_CORO_MAX_PRIO)
+        return IDCU_ERR_INVALID_PARAM;
+    if (sched->count >= IDCU_CORO_MAX_COUNT)
+        return IDCU_ERR_NO_MEMORY;
 
     int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return ret;
+    if (ret != IDCU_ERR_SUCCESS)
+        return ret;
 
     uint32_t idx = sched->count;
     idcu_Coroutine *coro = &sched->coros[idx];
@@ -160,12 +161,13 @@ int idcu_coro_create(idcu_CoroScheduler *sched, idcu_CoroState (*func)(idcu_Coro
     return coro->id;
 }
 
-int idcu_coro_destroy(idcu_CoroScheduler *sched, uint32_t id)
-{
-    if (!sched) return IDCU_ERR_INVALID_PARAM;
+int idcu_coro_destroy(idcu_CoroScheduler *sched, uint32_t id) {
+    if (!sched)
+        return IDCU_ERR_INVALID_PARAM;
 
     int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return ret;
+    if (ret != IDCU_ERR_SUCCESS)
+        return ret;
 
     int idx = find_coro_index(sched, id);
     if (idx < 0) {
@@ -199,12 +201,13 @@ int idcu_coro_destroy(idcu_CoroScheduler *sched, uint32_t id)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id)
-{
-    if (!sched) return IDCU_ERR_INVALID_PARAM;
+int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id) {
+    if (!sched)
+        return IDCU_ERR_INVALID_PARAM;
 
     int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return ret;
+    if (ret != IDCU_ERR_SUCCESS)
+        return ret;
 
     int idx = find_coro_index(sched, id);
     if (idx < 0) {
@@ -228,12 +231,13 @@ int idcu_coro_suspend(idcu_CoroScheduler *sched, uint32_t id)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_coro_resume(idcu_CoroScheduler *sched, uint32_t id)
-{
-    if (!sched) return IDCU_ERR_INVALID_PARAM;
+int idcu_coro_resume(idcu_CoroScheduler *sched, uint32_t id) {
+    if (!sched)
+        return IDCU_ERR_INVALID_PARAM;
 
     int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return ret;
+    if (ret != IDCU_ERR_SUCCESS)
+        return ret;
 
     int idx = find_coro_index(sched, id);
     if (idx < 0) {
@@ -255,12 +259,13 @@ int idcu_coro_resume(idcu_CoroScheduler *sched, uint32_t id)
     return IDCU_ERR_SUCCESS;
 }
 
-idcu_Coroutine* idcu_coro_get(idcu_CoroScheduler *sched, uint32_t id)
-{
-    if (!sched) return NULL;
+idcu_Coroutine *idcu_coro_get(idcu_CoroScheduler *sched, uint32_t id) {
+    if (!sched)
+        return NULL;
 
     int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return NULL;
+    if (ret != IDCU_ERR_SUCCESS)
+        return NULL;
 
     int idx = find_coro_index(sched, id);
     idcu_Coroutine *result = NULL;
@@ -272,9 +277,9 @@ idcu_Coroutine* idcu_coro_get(idcu_CoroScheduler *sched, uint32_t id)
     return result;
 }
 
-uint32_t idcu_coro_get_ready_count(idcu_CoroScheduler *sched)
-{
-    if (!sched) return 0;
+uint32_t idcu_coro_get_ready_count(idcu_CoroScheduler *sched) {
+    if (!sched)
+        return 0;
 
     uint32_t total = 0;
     for (uint32_t p = 0; p < IDCU_CORO_MAX_PRIO; p++) {
@@ -283,12 +288,13 @@ uint32_t idcu_coro_get_ready_count(idcu_CoroScheduler *sched)
     return total;
 }
 
-idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
-{
-    if (!sched) return IDCU_CORO_IDLE;
+idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched) {
+    if (!sched)
+        return IDCU_CORO_IDLE;
 
     int ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return IDCU_CORO_IDLE;
+    if (ret != IDCU_ERR_SUCCESS)
+        return IDCU_CORO_IDLE;
 
     int next_idx = get_next_ready_coro(sched);
     if (next_idx < 0) {
@@ -314,7 +320,8 @@ idcu_CoroState idcu_coro_sched_run(idcu_CoroScheduler *sched)
     idcu_CoroState result = coro->func(coro);
 
     ret = idcu_mutex_lock(&sched->lock);
-    if (ret != IDCU_ERR_SUCCESS) return result;
+    if (ret != IDCU_ERR_SUCCESS)
+        return result;
 
     uint64_t end_ts = get_timestamp_us();
     uint64_t runtime = end_ts - start_ts;

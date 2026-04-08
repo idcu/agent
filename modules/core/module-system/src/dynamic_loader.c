@@ -1,10 +1,9 @@
 #include "dynamic_module.h"
 #include "idcu/log/log.h"
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
-int idcu_dynamic_loader_init(idcu_DynamicLoader* loader, const char* module_path)
-{
+int idcu_dynamic_loader_init(idcu_DynamicLoader *loader, const char *module_path) {
     if (!loader) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -20,15 +19,14 @@ int idcu_dynamic_loader_init(idcu_DynamicLoader* loader, const char* module_path
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_dynamic_loader_destroy(idcu_DynamicLoader* loader)
-{
+void idcu_dynamic_loader_destroy(idcu_DynamicLoader *loader) {
     if (!loader) {
         return;
     }
     int ret = idcu_mutex_lock(&loader->lock);
     if (ret == IDCU_ERR_SUCCESS) {
         for (uint32_t i = 0; i < loader->count; i++) {
-            idcu_DynamicModule* mod = &loader->modules[i];
+            idcu_DynamicModule *mod = &loader->modules[i];
             if (mod->state == IDCU_MOD_STATE_RUNNING) {
                 idcu_dynamic_module_stop(mod);
             }
@@ -46,8 +44,8 @@ void idcu_dynamic_loader_destroy(idcu_DynamicLoader* loader)
     idcu_mutex_destroy(&loader->lock);
 }
 
-int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name, const char* path)
-{
+int idcu_dynamic_loader_load_module(idcu_DynamicLoader *loader, const char *name,
+                                    const char *path) {
     if (!loader || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -65,7 +63,7 @@ int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name
         idcu_mutex_unlock(&loader->lock);
         return IDCU_ERR_QUEUE_FULL;
     }
-    idcu_DynamicModule* mod = &loader->modules[loader->count];
+    idcu_DynamicModule *mod = &loader->modules[loader->count];
     strncpy(mod->name, name, sizeof(mod->name) - 1);
     mod->name[sizeof(mod->name) - 1] = '\0';
     if (path) {
@@ -90,7 +88,7 @@ int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name
 #else
     mod->handle = dlopen(full_path, RTLD_NOW | RTLD_LOCAL);
     if (!mod->handle) {
-        const char* err = dlerror();
+        const char *err = dlerror();
         IDCU_LOG_ERROR("Failed to load module %s: %s", full_path, err ? err : "unknown error");
     }
 #endif
@@ -99,16 +97,18 @@ int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name
         return IDCU_ERR_MODULE_LOAD;
     }
 #ifdef _WIN32
-    mod->iface = (idcu_ModuleInterface*)GetProcAddress(mod->handle, "module_interface");
+    mod->iface = (idcu_ModuleInterface *)GetProcAddress(mod->handle, "module_interface");
     if (!mod->iface) {
         DWORD err = GetLastError();
-        IDCU_LOG_ERROR("Failed to find module_interface in %s (Windows error: %lu)", full_path, err);
+        IDCU_LOG_ERROR("Failed to find module_interface in %s (Windows error: %lu)", full_path,
+                       err);
     }
 #else
-    mod->iface = (idcu_ModuleInterface*)dlsym(mod->handle, "module_interface");
+    mod->iface = (idcu_ModuleInterface *)dlsym(mod->handle, "module_interface");
     if (!mod->iface) {
-        const char* err = dlerror();
-        IDCU_LOG_ERROR("Failed to find module_interface in %s: %s", full_path, err ? err : "unknown error");
+        const char *err = dlerror();
+        IDCU_LOG_ERROR("Failed to find module_interface in %s: %s", full_path,
+                       err ? err : "unknown error");
     }
 #endif
     if (!mod->iface) {
@@ -128,8 +128,7 @@ int idcu_dynamic_loader_load_module(idcu_DynamicLoader* loader, const char* name
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_dynamic_loader_unload_module(idcu_DynamicLoader* loader, const char* name)
-{
+int idcu_dynamic_loader_unload_module(idcu_DynamicLoader *loader, const char *name) {
     if (!loader || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -148,7 +147,7 @@ int idcu_dynamic_loader_unload_module(idcu_DynamicLoader* loader, const char* na
         idcu_mutex_unlock(&loader->lock);
         return IDCU_ERR_NOT_FOUND;
     }
-    idcu_DynamicModule* mod = &loader->modules[found_idx];
+    idcu_DynamicModule *mod = &loader->modules[found_idx];
     if (mod->state == IDCU_MOD_STATE_RUNNING) {
         idcu_dynamic_module_stop(mod);
     }
@@ -169,8 +168,7 @@ int idcu_dynamic_loader_unload_module(idcu_DynamicLoader* loader, const char* na
     return IDCU_ERR_SUCCESS;
 }
 
-idcu_DynamicModule* idcu_dynamic_loader_find_module(idcu_DynamicLoader* loader, const char* name)
-{
+idcu_DynamicModule *idcu_dynamic_loader_find_module(idcu_DynamicLoader *loader, const char *name) {
     if (!loader || !name) {
         return NULL;
     }
@@ -178,7 +176,7 @@ idcu_DynamicModule* idcu_dynamic_loader_find_module(idcu_DynamicLoader* loader, 
     if (ret != IDCU_ERR_SUCCESS) {
         return NULL;
     }
-    idcu_DynamicModule* result = NULL;
+    idcu_DynamicModule *result = NULL;
     for (uint32_t i = 0; i < loader->count; i++) {
         if (strcmp(loader->modules[i].name, name) == 0) {
             result = &loader->modules[i];
@@ -189,8 +187,7 @@ idcu_DynamicModule* idcu_dynamic_loader_find_module(idcu_DynamicLoader* loader, 
     return result;
 }
 
-idcu_DynamicModule* idcu_dynamic_loader_get_at(idcu_DynamicLoader* loader, uint32_t index)
-{
+idcu_DynamicModule *idcu_dynamic_loader_get_at(idcu_DynamicLoader *loader, uint32_t index) {
     if (!loader) {
         return NULL;
     }
@@ -198,7 +195,7 @@ idcu_DynamicModule* idcu_dynamic_loader_get_at(idcu_DynamicLoader* loader, uint3
     if (ret != IDCU_ERR_SUCCESS) {
         return NULL;
     }
-    idcu_DynamicModule* result = NULL;
+    idcu_DynamicModule *result = NULL;
     if (index < loader->count) {
         result = &loader->modules[index];
     }
@@ -206,8 +203,7 @@ idcu_DynamicModule* idcu_dynamic_loader_get_at(idcu_DynamicLoader* loader, uint3
     return result;
 }
 
-int idcu_dynamic_loader_get_count(idcu_DynamicLoader* loader)
-{
+int idcu_dynamic_loader_get_count(idcu_DynamicLoader *loader) {
     if (!loader) {
         return 0;
     }
@@ -220,8 +216,7 @@ int idcu_dynamic_loader_get_count(idcu_DynamicLoader* loader)
     return count;
 }
 
-int idcu_dynamic_module_init(idcu_DynamicModule* mod)
-{
+int idcu_dynamic_module_init(idcu_DynamicModule *mod) {
     if (!mod || !mod->iface) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -240,8 +235,7 @@ int idcu_dynamic_module_init(idcu_DynamicModule* mod)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_dynamic_module_run(idcu_DynamicModule* mod)
-{
+int idcu_dynamic_module_run(idcu_DynamicModule *mod) {
     if (!mod || !mod->iface) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -266,8 +260,7 @@ int idcu_dynamic_module_run(idcu_DynamicModule* mod)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_dynamic_module_stop(idcu_DynamicModule* mod)
-{
+int idcu_dynamic_module_stop(idcu_DynamicModule *mod) {
     if (!mod || !mod->iface) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -282,8 +275,7 @@ int idcu_dynamic_module_stop(idcu_DynamicModule* mod)
     return ret;
 }
 
-int idcu_dynamic_module_restart(idcu_DynamicLoader* loader, const char* name)
-{
+int idcu_dynamic_module_restart(idcu_DynamicLoader *loader, const char *name) {
     if (!loader || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -291,7 +283,7 @@ int idcu_dynamic_module_restart(idcu_DynamicLoader* loader, const char* name)
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
-    idcu_DynamicModule* mod = NULL;
+    idcu_DynamicModule *mod = NULL;
     for (uint32_t i = 0; i < loader->count; i++) {
         if (strcmp(loader->modules[i].name, name) == 0) {
             mod = &loader->modules[i];
@@ -318,8 +310,7 @@ int idcu_dynamic_module_restart(idcu_DynamicLoader* loader, const char* name)
     return ret;
 }
 
-int idcu_dynamic_module_reload(idcu_DynamicLoader* loader, const char* name, const char* path)
-{
+int idcu_dynamic_module_reload(idcu_DynamicLoader *loader, const char *name, const char *path) {
     if (!loader || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -330,8 +321,8 @@ int idcu_dynamic_module_reload(idcu_DynamicLoader* loader, const char* name, con
     return idcu_dynamic_loader_load_module(loader, name, path);
 }
 
-int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* name, const char* path)
-{
+int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader *loader, const char *name,
+                                     const char *path) {
     if (!loader || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -341,7 +332,7 @@ int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* nam
         IDCU_LOG_ERROR("Failed to hotplug load module %s: %d", name, ret);
         return ret;
     }
-    idcu_DynamicModule* mod = idcu_dynamic_loader_find_module(loader, name);
+    idcu_DynamicModule *mod = idcu_dynamic_loader_find_module(loader, name);
     if (!mod) {
         return IDCU_ERR_GENERAL;
     }
@@ -359,8 +350,7 @@ int idcu_dynamic_loader_hotplug_load(idcu_DynamicLoader* loader, const char* nam
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_dynamic_loader_hotplug_unload(idcu_DynamicLoader* loader, const char* name)
-{
+int idcu_dynamic_loader_hotplug_unload(idcu_DynamicLoader *loader, const char *name) {
     if (!loader || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -369,7 +359,7 @@ int idcu_dynamic_loader_hotplug_unload(idcu_DynamicLoader* loader, const char* n
     if (ret != IDCU_ERR_SUCCESS) {
         return ret;
     }
-    idcu_DynamicModule* mod = NULL;
+    idcu_DynamicModule *mod = NULL;
     for (uint32_t i = 0; i < loader->count; i++) {
         if (strcmp(loader->modules[i].name, name) == 0) {
             mod = &loader->modules[i];

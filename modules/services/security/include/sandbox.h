@@ -3,4 +3,4 @@
 
 #include "idcu/sandbox/sandbox.h"
 
-#endif // IDCU_SECURITY_SANDBOX_H
+#endif  // IDCU_SECURITY_SANDBOX_H

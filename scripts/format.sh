@@ -1,44 +1,30 @@
 #!/bin/bash
-# 自动格式化代码
+# Auto format code (Linux/macOS version)
 
-echo "=== 自动格式化代码 (clang-format) ==="
+echo "=== Auto format code (clang-format) ==="
 
-# 检查 clang-format 是否安装
+# Check if clang-format is installed
 if ! command -v clang-format &> /dev/null; then
-    echo "错误: 未找到 clang-format，请先安装"
+    echo "ERROR: clang-format not found, please install it first"
+    echo "Ubuntu/Debian: sudo apt-get install clang-format"
+    echo "macOS: brew install clang-format"
     exit 1
 fi
 
-# 定义要格式化的目录
-DIRS=(
-    "libs"
-    "modules"
-    "app"
-    "tests"
-)
+# Define directories to format
+DIRS="libs modules app tests"
 
-# 收集所有源文件
-FILES=()
-for dir in "${DIRS[@]}"; do
+# Format all files
+echo "Formatting source files..."
+
+for dir in $DIRS; do
     if [ -d "$dir" ]; then
         while IFS= read -r -d $'\0' file; do
-            FILES+=("$file")
-        done < <(find "$dir" -type f \( -name "*.c" -o -name "*.h" \) -print0)
+            clang-format -i "$file"
+            echo "Formatted: $file"
+        done < <(find "$dir" -name "*.c" -o -name "*.h" -print0)
     fi
 done
 
-if [ ${#FILES[@]} -eq 0 ]; then
-    echo "警告: 未找到任何源文件"
-    exit 0
-fi
-
-echo "正在格式化 ${#FILES[@]} 个文件..."
-
-# 格式化所有文件
-for file in "${FILES[@]}"; do
-    clang-format -i "$file"
-    echo "已格式化: $file"
-done
-
 echo ""
-echo "✅ 格式化完成"
+echo "Formatting completed"

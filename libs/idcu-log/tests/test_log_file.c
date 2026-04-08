@@ -1,6 +1,6 @@
 #include "idcu/log/log.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define TEST_LOG_FILE "test_log_output.txt"
@@ -20,7 +20,7 @@ int main(void) {
 
     idcu_log_shutdown();
 
-    FILE* fp = fopen(TEST_LOG_FILE, "r");
+    FILE *fp = fopen(TEST_LOG_FILE, "r");
     assert(fp != NULL);
     printf("✓ Log file '%s' created successfully\n", TEST_LOG_FILE);
 

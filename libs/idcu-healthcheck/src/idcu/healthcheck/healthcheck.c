@@ -5,12 +5,11 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 #endif
 
-uint64_t idcu_health_get_uptime_ms(void)
-{
+uint64_t idcu_health_get_uptime_ms(void) {
 #ifdef _WIN32
     return GetTickCount64();
 #else
@@ -20,8 +19,7 @@ uint64_t idcu_health_get_uptime_ms(void)
 #endif
 }
 
-int idcu_health_monitor_init(idcu_HealthMonitor* monitor)
-{
+int idcu_health_monitor_init(idcu_HealthMonitor *monitor) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -40,16 +38,14 @@ int idcu_health_monitor_init(idcu_HealthMonitor* monitor)
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_health_monitor_destroy(idcu_HealthMonitor* monitor)
-{
+void idcu_health_monitor_destroy(idcu_HealthMonitor *monitor) {
     if (!monitor) {
         return;
     }
     idcu_mutex_destroy(&monitor->lock);
 }
 
-int idcu_health_register_module(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+int idcu_health_register_module(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -71,7 +67,7 @@ int idcu_health_register_module(idcu_HealthMonitor* monitor, uint32_t module_id)
         return IDCU_ERR_QUEUE_FULL;
     }
 
-    idcu_ModuleHealth* m = &monitor->modules[monitor->count];
+    idcu_ModuleHealth *m = &monitor->modules[monitor->count];
     m->module_id = module_id;
     m->status = IDCU_HEALTH_HEALTHY;
     m->last_heartbeat_ms = idcu_health_get_uptime_ms();
@@ -84,8 +80,7 @@ int idcu_health_register_module(idcu_HealthMonitor* monitor, uint32_t module_id)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_health_unregister_module(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+int idcu_health_unregister_module(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -111,8 +106,7 @@ int idcu_health_unregister_module(idcu_HealthMonitor* monitor, uint32_t module_i
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_health_update_heartbeat(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+int idcu_health_update_heartbeat(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -127,11 +121,12 @@ int idcu_health_update_heartbeat(idcu_HealthMonitor* monitor, uint32_t module_id
             monitor->modules[i].last_heartbeat_ms = idcu_health_get_uptime_ms();
             idcu_HealthStatus old_status = monitor->modules[i].status;
             monitor->modules[i].status = IDCU_HEALTH_HEALTHY;
-            
+
             if (monitor->callback && old_status != IDCU_HEALTH_HEALTHY) {
-                monitor->callback(module_id, old_status, IDCU_HEALTH_HEALTHY, monitor->callback_user_data);
+                monitor->callback(module_id, old_status, IDCU_HEALTH_HEALTHY,
+                                  monitor->callback_user_data);
             }
-            
+
             idcu_mutex_unlock(&monitor->lock);
             return IDCU_ERR_SUCCESS;
         }
@@ -141,8 +136,7 @@ int idcu_health_update_heartbeat(idcu_HealthMonitor* monitor, uint32_t module_id
     return IDCU_ERR_NOT_FOUND;
 }
 
-static void update_status(idcu_HealthMonitor* monitor, idcu_ModuleHealth* m)
-{
+static void update_status(idcu_HealthMonitor *monitor, idcu_ModuleHealth *m) {
     idcu_HealthStatus old_status = m->status;
 
     if (m->error_count >= monitor->critical_threshold) {
@@ -158,8 +152,7 @@ static void update_status(idcu_HealthMonitor* monitor, idcu_ModuleHealth* m)
     }
 }
 
-int idcu_health_report_error(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+int idcu_health_report_error(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -182,8 +175,7 @@ int idcu_health_report_error(idcu_HealthMonitor* monitor, uint32_t module_id)
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_health_report_restart(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+int idcu_health_report_restart(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -208,8 +200,7 @@ int idcu_health_report_restart(idcu_HealthMonitor* monitor, uint32_t module_id)
     return IDCU_ERR_NOT_FOUND;
 }
 
-idcu_HealthStatus idcu_health_get_status(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+idcu_HealthStatus idcu_health_get_status(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_HEALTH_UNKNOWN;
     }
@@ -231,8 +222,7 @@ idcu_HealthStatus idcu_health_get_status(idcu_HealthMonitor* monitor, uint32_t m
     return IDCU_HEALTH_UNKNOWN;
 }
 
-const idcu_ModuleHealth* idcu_health_get_info(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+const idcu_ModuleHealth *idcu_health_get_info(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return NULL;
     }
@@ -244,7 +234,7 @@ const idcu_ModuleHealth* idcu_health_get_info(idcu_HealthMonitor* monitor, uint3
 
     for (uint32_t i = 0; i < monitor->count; i++) {
         if (monitor->modules[i].module_id == module_id) {
-            const idcu_ModuleHealth* info = &monitor->modules[i];
+            const idcu_ModuleHealth *info = &monitor->modules[i];
             idcu_mutex_unlock(&monitor->lock);
             return info;
         }
@@ -254,8 +244,7 @@ const idcu_ModuleHealth* idcu_health_get_info(idcu_HealthMonitor* monitor, uint3
     return NULL;
 }
 
-int idcu_health_check_all(idcu_HealthMonitor* monitor)
-{
+int idcu_health_check_all(idcu_HealthMonitor *monitor) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -268,13 +257,14 @@ int idcu_health_check_all(idcu_HealthMonitor* monitor)
     uint64_t now = idcu_health_get_uptime_ms();
 
     for (uint32_t i = 0; i < monitor->count; i++) {
-        idcu_ModuleHealth* m = &monitor->modules[i];
+        idcu_ModuleHealth *m = &monitor->modules[i];
         if (now - m->last_heartbeat_ms > monitor->timeout_ms) {
             idcu_HealthStatus old_status = m->status;
             m->status = IDCU_HEALTH_DEAD;
-            
+
             if (monitor->callback && old_status != IDCU_HEALTH_DEAD) {
-                monitor->callback(m->module_id, old_status, IDCU_HEALTH_DEAD, monitor->callback_user_data);
+                monitor->callback(m->module_id, old_status, IDCU_HEALTH_DEAD,
+                                  monitor->callback_user_data);
             }
         }
     }
@@ -283,8 +273,8 @@ int idcu_health_check_all(idcu_HealthMonitor* monitor)
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_health_set_callback(idcu_HealthMonitor* monitor, idcu_HealthCallback cb, void* user_data)
-{
+void idcu_health_set_callback(idcu_HealthMonitor *monitor, idcu_HealthCallback cb,
+                              void *user_data) {
     if (!monitor) {
         return;
     }
@@ -300,8 +290,8 @@ void idcu_health_set_callback(idcu_HealthMonitor* monitor, idcu_HealthCallback c
     idcu_mutex_unlock(&monitor->lock);
 }
 
-void idcu_health_set_thresholds(idcu_HealthMonitor* monitor, uint64_t timeout_ms, uint64_t warning, uint64_t critical)
-{
+void idcu_health_set_thresholds(idcu_HealthMonitor *monitor, uint64_t timeout_ms, uint64_t warning,
+                                uint64_t critical) {
     if (!monitor) {
         return;
     }
@@ -318,8 +308,7 @@ void idcu_health_set_thresholds(idcu_HealthMonitor* monitor, uint64_t timeout_ms
     idcu_mutex_unlock(&monitor->lock);
 }
 
-idcu_HealthStatus idcu_health_get_overall_status(idcu_HealthMonitor* monitor)
-{
+idcu_HealthStatus idcu_health_get_overall_status(idcu_HealthMonitor *monitor) {
     if (!monitor) {
         return IDCU_HEALTH_UNKNOWN;
     }
@@ -349,8 +338,7 @@ idcu_HealthStatus idcu_health_get_overall_status(idcu_HealthMonitor* monitor)
     return overall;
 }
 
-void idcu_health_get_summary(idcu_HealthMonitor* monitor, idcu_HealthSummary* summary)
-{
+void idcu_health_get_summary(idcu_HealthMonitor *monitor, idcu_HealthSummary *summary) {
     if (!monitor || !summary) {
         return;
     }
@@ -367,29 +355,28 @@ void idcu_health_get_summary(idcu_HealthMonitor* monitor, idcu_HealthSummary* su
     for (uint32_t i = 0; i < monitor->count; i++) {
         idcu_HealthStatus status = monitor->modules[i].status;
         switch (status) {
-            case IDCU_HEALTH_HEALTHY:
-                summary->healthy_count++;
-                break;
-            case IDCU_HEALTH_WARNING:
-                summary->warning_count++;
-                break;
-            case IDCU_HEALTH_CRITICAL:
-                summary->critical_count++;
-                break;
-            case IDCU_HEALTH_DEAD:
-                summary->dead_count++;
-                break;
-            default:
-                summary->unknown_count++;
-                break;
+        case IDCU_HEALTH_HEALTHY:
+            summary->healthy_count++;
+            break;
+        case IDCU_HEALTH_WARNING:
+            summary->warning_count++;
+            break;
+        case IDCU_HEALTH_CRITICAL:
+            summary->critical_count++;
+            break;
+        case IDCU_HEALTH_DEAD:
+            summary->dead_count++;
+            break;
+        default:
+            summary->unknown_count++;
+            break;
         }
     }
 
     idcu_mutex_unlock(&monitor->lock);
 }
 
-uint32_t idcu_health_get_module_count(idcu_HealthMonitor* monitor)
-{
+uint32_t idcu_health_get_module_count(idcu_HealthMonitor *monitor) {
     if (!monitor) {
         return 0;
     }
@@ -405,8 +392,7 @@ uint32_t idcu_health_get_module_count(idcu_HealthMonitor* monitor)
     return count;
 }
 
-const idcu_ModuleHealth* idcu_health_get_all_modules(idcu_HealthMonitor* monitor, uint32_t* count)
-{
+const idcu_ModuleHealth *idcu_health_get_all_modules(idcu_HealthMonitor *monitor, uint32_t *count) {
     if (!monitor || !count) {
         return NULL;
     }
@@ -418,30 +404,28 @@ const idcu_ModuleHealth* idcu_health_get_all_modules(idcu_HealthMonitor* monitor
     }
 
     *count = monitor->count;
-    const idcu_ModuleHealth* modules = monitor->modules;
+    const idcu_ModuleHealth *modules = monitor->modules;
 
     idcu_mutex_unlock(&monitor->lock);
     return modules;
 }
 
-const char* idcu_health_status_to_string(idcu_HealthStatus status)
-{
+const char *idcu_health_status_to_string(idcu_HealthStatus status) {
     switch (status) {
-        case IDCU_HEALTH_HEALTHY:
-            return "HEALTHY";
-        case IDCU_HEALTH_WARNING:
-            return "WARNING";
-        case IDCU_HEALTH_CRITICAL:
-            return "CRITICAL";
-        case IDCU_HEALTH_DEAD:
-            return "DEAD";
-        default:
-            return "UNKNOWN";
+    case IDCU_HEALTH_HEALTHY:
+        return "HEALTHY";
+    case IDCU_HEALTH_WARNING:
+        return "WARNING";
+    case IDCU_HEALTH_CRITICAL:
+        return "CRITICAL";
+    case IDCU_HEALTH_DEAD:
+        return "DEAD";
+    default:
+        return "UNKNOWN";
     }
 }
 
-int idcu_health_reset_error_count(idcu_HealthMonitor* monitor, uint32_t module_id)
-{
+int idcu_health_reset_error_count(idcu_HealthMonitor *monitor, uint32_t module_id) {
     if (!monitor) {
         return IDCU_ERR_INVALID_PARAM;
     }

@@ -1,21 +1,18 @@
-#include "module_def.h"
 #include "idcu/log/log.h"
+#include "module_def.h"
 #include <stdio.h>
 
-static int test_init_fail_module_init(void)
-{
+static int test_init_fail_module_init(void) {
     IDCU_LOG_ERROR("Test Init Fail Module: Initialization failed intentionally");
     return IDCU_ERR_MODULE_INIT;
 }
 
-static int test_init_fail_module_run(void)
-{
+static int test_init_fail_module_run(void) {
     IDCU_LOG_INFO("Test Init Fail Module: Running...");
     return IDCU_ERR_SUCCESS;
 }
 
-static int test_init_fail_module_stop(void)
-{
+static int test_init_fail_module_stop(void) {
     IDCU_LOG_INFO("Test Init Fail Module: Stopping...");
     return IDCU_ERR_SUCCESS;
 }
@@ -28,12 +25,11 @@ static int test_init_fail_module_stop(void)
 #define MODULE_EXPORT
 #endif
 
-MODULE_EXPORT const idcu_ModuleInterface module_interface = {
-    .name = "test_module_init_fail",
-    .version = IDCU_MODULE_VERSION(1, 0, 0),
-    .dependencies = NULL,
-    .dependency_count = 0,
-    .init = test_init_fail_module_init,
-    .run = test_init_fail_module_run,
-    .stop = test_init_fail_module_stop
-};
+MODULE_EXPORT const idcu_ModuleInterface module_interface = {.name = "test_module_init_fail",
+                                                             .version =
+                                                                 IDCU_MODULE_VERSION(1, 0, 0),
+                                                             .dependencies = NULL,
+                                                             .dependency_count = 0,
+                                                             .init = test_init_fail_module_init,
+                                                             .run = test_init_fail_module_run,
+                                                             .stop = test_init_fail_module_stop};

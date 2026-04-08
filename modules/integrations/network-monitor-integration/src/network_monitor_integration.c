@@ -1,8 +1,7 @@
 #include "network_monitor_integration.h"
 #include <string.h>
 
-int idcu_network_monitor_integration_init(idcu_NetworkMonitorIntegration* integration)
-{
+int idcu_network_monitor_integration_init(idcu_NetworkMonitorIntegration *integration) {
     if (!integration) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -20,8 +19,7 @@ int idcu_network_monitor_integration_init(idcu_NetworkMonitorIntegration* integr
     return IDCU_ERR_OK;
 }
 
-void idcu_network_monitor_integration_destroy(idcu_NetworkMonitorIntegration* integration)
-{
+void idcu_network_monitor_integration_destroy(idcu_NetworkMonitorIntegration *integration) {
     if (!integration || !integration->initialized) {
         return;
     }
@@ -33,18 +31,14 @@ void idcu_network_monitor_integration_destroy(idcu_NetworkMonitorIntegration* in
     IDCU_LOG_INFO("Network-Monitor integration destroyed");
 }
 
-int idcu_network_monitor_integration_start(idcu_NetworkMonitorIntegration* integration,
-                                            const char* bind_address,
-                                            uint16_t port)
-{
+int idcu_network_monitor_integration_start(idcu_NetworkMonitorIntegration *integration,
+                                           const char *bind_address, uint16_t port) {
     if (!integration || !integration->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
 
-    int ret = idcu_prometheus_exporter_init(&integration->exporter,
-                                              &integration->metrics,
-                                              bind_address,
-                                              port);
+    int ret = idcu_prometheus_exporter_init(&integration->exporter, &integration->metrics,
+                                            bind_address, port);
     if (ret != IDCU_ERR_OK) {
         IDCU_LOG_ERROR("Failed to initialize Prometheus exporter");
         return ret;
@@ -61,8 +55,7 @@ int idcu_network_monitor_integration_start(idcu_NetworkMonitorIntegration* integ
     return IDCU_ERR_OK;
 }
 
-int idcu_network_monitor_integration_stop(idcu_NetworkMonitorIntegration* integration)
-{
+int idcu_network_monitor_integration_stop(idcu_NetworkMonitorIntegration *integration) {
     if (!integration || !integration->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -72,8 +65,8 @@ int idcu_network_monitor_integration_stop(idcu_NetworkMonitorIntegration* integr
     return IDCU_ERR_OK;
 }
 
-int idcu_network_monitor_integration_poll(idcu_NetworkMonitorIntegration* integration, int timeout_ms)
-{
+int idcu_network_monitor_integration_poll(idcu_NetworkMonitorIntegration *integration,
+                                          int timeout_ms) {
     if (!integration || !integration->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -81,8 +74,8 @@ int idcu_network_monitor_integration_poll(idcu_NetworkMonitorIntegration* integr
     return idcu_prometheus_exporter_poll(&integration->exporter, timeout_ms);
 }
 
-idcu_MetricsCollector* idcu_network_monitor_integration_get_metrics(idcu_NetworkMonitorIntegration* integration)
-{
+idcu_MetricsCollector *
+idcu_network_monitor_integration_get_metrics(idcu_NetworkMonitorIntegration *integration) {
     if (!integration || !integration->initialized) {
         return NULL;
     }

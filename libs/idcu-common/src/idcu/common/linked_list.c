@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static idcu_ListNode* idcu_list_node_create(const void* element, size_t element_size)
-{
-    idcu_ListNode* node = (idcu_ListNode*)malloc(sizeof(idcu_ListNode));
+static idcu_ListNode *idcu_list_node_create(const void *element, size_t element_size) {
+    idcu_ListNode *node = (idcu_ListNode *)malloc(sizeof(idcu_ListNode));
     if (!node) {
         return NULL;
     }
@@ -21,9 +20,9 @@ static idcu_ListNode* idcu_list_node_create(const void* element, size_t element_
     return node;
 }
 
-static void idcu_list_node_destroy(idcu_ListNode* node, void (*element_dtor)(void*))
-{
-    if (!node) return;
+static void idcu_list_node_destroy(idcu_ListNode *node, void (*element_dtor)(void *)) {
+    if (!node)
+        return;
     if (element_dtor) {
         element_dtor(node->data);
     }
@@ -31,8 +30,7 @@ static void idcu_list_node_destroy(idcu_ListNode* node, void (*element_dtor)(voi
     free(node);
 }
 
-int idcu_linked_list_init(idcu_LinkedList* list, size_t element_size)
-{
+int idcu_linked_list_init(idcu_LinkedList *list, size_t element_size) {
     if (!list || element_size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -45,9 +43,8 @@ int idcu_linked_list_init(idcu_LinkedList* list, size_t element_size)
     return IDCU_ERR_OK;
 }
 
-int idcu_linked_list_init_with_dtor(idcu_LinkedList* list, size_t element_size,
-                                       void (*element_dtor)(void*))
-{
+int idcu_linked_list_init_with_dtor(idcu_LinkedList *list, size_t element_size,
+                                    void (*element_dtor)(void *)) {
     int ret = idcu_linked_list_init(list, element_size);
     if (ret == IDCU_ERR_OK) {
         list->element_dtor = element_dtor;
@@ -55,19 +52,18 @@ int idcu_linked_list_init_with_dtor(idcu_LinkedList* list, size_t element_size,
     return ret;
 }
 
-void idcu_linked_list_destroy(idcu_LinkedList* list)
-{
-    if (!list) return;
+void idcu_linked_list_destroy(idcu_LinkedList *list) {
+    if (!list)
+        return;
     idcu_linked_list_clear(list);
 }
 
-int idcu_linked_list_push_front(idcu_LinkedList* list, const void* element)
-{
+int idcu_linked_list_push_front(idcu_LinkedList *list, const void *element) {
     if (!list || !element) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_ListNode* new_node = idcu_list_node_create(element, list->element_size);
+    idcu_ListNode *new_node = idcu_list_node_create(element, list->element_size);
     if (!new_node) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -85,13 +81,12 @@ int idcu_linked_list_push_front(idcu_LinkedList* list, const void* element)
     return IDCU_ERR_OK;
 }
 
-int idcu_linked_list_push_back(idcu_LinkedList* list, const void* element)
-{
+int idcu_linked_list_push_back(idcu_LinkedList *list, const void *element) {
     if (!list || !element) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_ListNode* new_node = idcu_list_node_create(element, list->element_size);
+    idcu_ListNode *new_node = idcu_list_node_create(element, list->element_size);
     if (!new_node) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -109,13 +104,12 @@ int idcu_linked_list_push_back(idcu_LinkedList* list, const void* element)
     return IDCU_ERR_OK;
 }
 
-int idcu_linked_list_pop_front(idcu_LinkedList* list, void* out_element)
-{
+int idcu_linked_list_pop_front(idcu_LinkedList *list, void *out_element) {
     if (!list || list->size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_ListNode* node = list->head;
+    idcu_ListNode *node = list->head;
     if (out_element) {
         memcpy(out_element, node->data, list->element_size);
     }
@@ -133,13 +127,12 @@ int idcu_linked_list_pop_front(idcu_LinkedList* list, void* out_element)
     return IDCU_ERR_OK;
 }
 
-int idcu_linked_list_pop_back(idcu_LinkedList* list, void* out_element)
-{
+int idcu_linked_list_pop_back(idcu_LinkedList *list, void *out_element) {
     if (!list || list->size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_ListNode* node = list->tail;
+    idcu_ListNode *node = list->tail;
     if (out_element) {
         memcpy(out_element, node->data, list->element_size);
     }
@@ -157,13 +150,12 @@ int idcu_linked_list_pop_back(idcu_LinkedList* list, void* out_element)
     return IDCU_ERR_OK;
 }
 
-static idcu_ListNode* idcu_list_node_at(const idcu_LinkedList* list, size_t index)
-{
+static idcu_ListNode *idcu_list_node_at(const idcu_LinkedList *list, size_t index) {
     if (!list || index >= list->size) {
         return NULL;
     }
 
-    idcu_ListNode* node;
+    idcu_ListNode *node;
     if (index < list->size / 2) {
         node = list->head;
         for (size_t i = 0; i < index; i++) {
@@ -178,8 +170,7 @@ static idcu_ListNode* idcu_list_node_at(const idcu_LinkedList* list, size_t inde
     return node;
 }
 
-int idcu_linked_list_insert_before(idcu_LinkedList* list, size_t index, const void* element)
-{
+int idcu_linked_list_insert_before(idcu_LinkedList *list, size_t index, const void *element) {
     if (!list || !element || index > list->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -192,12 +183,12 @@ int idcu_linked_list_insert_before(idcu_LinkedList* list, size_t index, const vo
         return idcu_linked_list_push_back(list, element);
     }
 
-    idcu_ListNode* next_node = idcu_list_node_at(list, index);
+    idcu_ListNode *next_node = idcu_list_node_at(list, index);
     if (!next_node) {
         return IDCU_ERR_GENERAL;
     }
 
-    idcu_ListNode* new_node = idcu_list_node_create(element, list->element_size);
+    idcu_ListNode *new_node = idcu_list_node_create(element, list->element_size);
     if (!new_node) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -210,8 +201,7 @@ int idcu_linked_list_insert_before(idcu_LinkedList* list, size_t index, const vo
     return IDCU_ERR_OK;
 }
 
-int idcu_linked_list_insert_after(idcu_LinkedList* list, size_t index, const void* element)
-{
+int idcu_linked_list_insert_after(idcu_LinkedList *list, size_t index, const void *element) {
     if (!list || !element || index >= list->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -220,12 +210,12 @@ int idcu_linked_list_insert_after(idcu_LinkedList* list, size_t index, const voi
         return idcu_linked_list_push_back(list, element);
     }
 
-    idcu_ListNode* prev_node = idcu_list_node_at(list, index);
+    idcu_ListNode *prev_node = idcu_list_node_at(list, index);
     if (!prev_node) {
         return IDCU_ERR_GENERAL;
     }
 
-    idcu_ListNode* new_node = idcu_list_node_create(element, list->element_size);
+    idcu_ListNode *new_node = idcu_list_node_create(element, list->element_size);
     if (!new_node) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -238,8 +228,7 @@ int idcu_linked_list_insert_after(idcu_LinkedList* list, size_t index, const voi
     return IDCU_ERR_OK;
 }
 
-int idcu_linked_list_remove(idcu_LinkedList* list, size_t index)
-{
+int idcu_linked_list_remove(idcu_LinkedList *list, size_t index) {
     if (!list || index >= list->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -252,7 +241,7 @@ int idcu_linked_list_remove(idcu_LinkedList* list, size_t index)
         return idcu_linked_list_pop_back(list, NULL);
     }
 
-    idcu_ListNode* node = idcu_list_node_at(list, index);
+    idcu_ListNode *node = idcu_list_node_at(list, index);
     if (!node) {
         return IDCU_ERR_GENERAL;
     }
@@ -264,45 +253,36 @@ int idcu_linked_list_remove(idcu_LinkedList* list, size_t index)
     return IDCU_ERR_OK;
 }
 
-void* idcu_linked_list_get(const idcu_LinkedList* list, size_t index)
-{
-    idcu_ListNode* node = idcu_list_node_at(list, index);
+void *idcu_linked_list_get(const idcu_LinkedList *list, size_t index) {
+    idcu_ListNode *node = idcu_list_node_at(list, index);
     return node ? node->data : NULL;
 }
 
-void* idcu_linked_list_front(const idcu_LinkedList* list)
-{
+void *idcu_linked_list_front(const idcu_LinkedList *list) {
     if (!list || list->size == 0) {
         return NULL;
     }
     return list->head->data;
 }
 
-void* idcu_linked_list_back(const idcu_LinkedList* list)
-{
+void *idcu_linked_list_back(const idcu_LinkedList *list) {
     if (!list || list->size == 0) {
         return NULL;
     }
     return list->tail->data;
 }
 
-size_t idcu_linked_list_size(const idcu_LinkedList* list)
-{
-    return list ? list->size : 0;
-}
+size_t idcu_linked_list_size(const idcu_LinkedList *list) { return list ? list->size : 0; }
 
-bool idcu_linked_list_empty(const idcu_LinkedList* list)
-{
-    return list ? (list->size == 0) : true;
-}
+bool idcu_linked_list_empty(const idcu_LinkedList *list) { return list ? (list->size == 0) : true; }
 
-void idcu_linked_list_clear(idcu_LinkedList* list)
-{
-    if (!list) return;
+void idcu_linked_list_clear(idcu_LinkedList *list) {
+    if (!list)
+        return;
 
-    idcu_ListNode* node = list->head;
+    idcu_ListNode *node = list->head;
     while (node) {
-        idcu_ListNode* next = node->next;
+        idcu_ListNode *next = node->next;
         idcu_list_node_destroy(node, list->element_dtor);
         node = next;
     }
@@ -312,25 +292,25 @@ void idcu_linked_list_clear(idcu_LinkedList* list)
     list->size = 0;
 }
 
-void idcu_linked_list_iter_init(idcu_LinkedListIterator* iter, idcu_LinkedList* list)
-{
-    if (!iter || !list) return;
+void idcu_linked_list_iter_init(idcu_LinkedListIterator *iter, idcu_LinkedList *list) {
+    if (!iter || !list)
+        return;
     iter->list = list;
     iter->current = NULL;
     iter->direction = 1;
 }
 
-void idcu_linked_list_iter_init_reverse(idcu_LinkedListIterator* iter, idcu_LinkedList* list)
-{
-    if (!iter || !list) return;
+void idcu_linked_list_iter_init_reverse(idcu_LinkedListIterator *iter, idcu_LinkedList *list) {
+    if (!iter || !list)
+        return;
     iter->list = list;
     iter->current = NULL;
     iter->direction = -1;
 }
 
-bool idcu_linked_list_iter_next(idcu_LinkedListIterator* iter, void** out_element)
-{
-    if (!iter || !iter->list) return false;
+bool idcu_linked_list_iter_next(idcu_LinkedListIterator *iter, void **out_element) {
+    if (!iter || !iter->list)
+        return false;
 
     if (!iter->current) {
         if (iter->direction == 1) {
@@ -356,9 +336,9 @@ bool idcu_linked_list_iter_next(idcu_LinkedListIterator* iter, void** out_elemen
     return true;
 }
 
-void idcu_linked_list_iter_destroy(idcu_LinkedListIterator* iter)
-{
-    if (!iter) return;
+void idcu_linked_list_iter_destroy(idcu_LinkedListIterator *iter) {
+    if (!iter)
+        return;
     iter->list = NULL;
     iter->current = NULL;
     iter->direction = 0;

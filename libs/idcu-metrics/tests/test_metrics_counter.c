@@ -1,6 +1,6 @@
 #include "idcu/metrics/metrics.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 
 int main(void) {
     printf("Testing counter metric...\n");
@@ -8,7 +8,8 @@ int main(void) {
     idcu_MetricsCollector collector;
     idcu_metrics_init(&collector);
 
-    int ret = idcu_metrics_register(&collector, "test_counter", "A test counter", IDCU_METRIC_COUNTER);
+    int ret =
+        idcu_metrics_register(&collector, "test_counter", "A test counter", IDCU_METRIC_COUNTER);
     assert(ret == IDCU_ERR_OK);
     printf("✓ Counter metric registered\n");
 

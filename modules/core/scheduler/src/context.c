@@ -1,12 +1,12 @@
 #include "context.h"
-#include "idcu/log/log.h"
 #include "idcu/common/error_code.h"
+#include "idcu/log/log.h"
 #include <time.h>
 
 // 这些函数暂时没有被使用
 /*
-int idcu_ctx_serialize(const idcu_StackContext* ctx, uint8_t* buf, uint32_t buf_len, uint32_t* out_len) {
-    if (!ctx || !buf || !out_len || buf_len < sizeof(idcu_StackContext)) {
+int idcu_ctx_serialize(const idcu_StackContext* ctx, uint8_t* buf, uint32_t buf_len, uint32_t*
+out_len) { if (!ctx || !buf || !out_len || buf_len < sizeof(idcu_StackContext)) {
         IDCU_LOG_ERROR("idcu_ctx_serialize invalid params");
         return IDCU_ERR_INVALID_PARAM;
     }

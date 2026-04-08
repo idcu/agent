@@ -1,71 +1,77 @@
 ---
-Checks: >
-  *,
-  -modernize-use-trailing-return-type,
-  -modernize-use-nullptr,
-  -cppcoreguidelines-pro-type-vararg,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers,
-  -fuchsia-default-arguments,
-  -llvmlibc-callee-namespace,
-  -llvmlibc-implementation-in-namespace,
-  -llvmlibc-restrict-system-libc-headers,
-  -altera-id-dependent-backward-branch,
-  -altera-struct-pack-align,
-  -modernize-use-auto,
-  -modernize-use-equals-default,
-  -modernize-use-equals-delete,
-  -modernize-use-nodiscard,
-  -modernize-use-override,
-  -modernize-use-transparent-functors,
-  -modernize-use-uncaught-exceptions,
+Checks: >-
+  -*,
+  bugprone-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,
-  -hicpp-signed-bitwise,
-  -hicpp-vararg,
-  -hicpp-no-array-decay,
-  -concurrency-mt-unsafe,
-  -readability-function-cognitive-complexity,
-  -readability-uppercase-literal-suffix,
-  -cert-dcl21-cpp,
-  -cert-err33-c,
+  -bugprone-signed-char-use,
+  -bugprone-branch-clone,
+  -bugprone-duplicate-branch,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-macro-parentheses,
+  cert-*,
   -cert-err58-cpp,
   -cert-flp30-c,
-  -cert-msc30-c,
+  -cert-dcl50-cpp,
+  -cert-dcl58-cpp,
+  -cert-err60-cpp,
   -cert-msc32-c,
-  -cert-msc50-c,
+  -cert-msc50-cpp,
   -cert-msc51-cpp,
-  -cert-oop11-cpp,
-  -cert-oop54-cpp,
-  -cert-str34-c,
-  -llvm-include-order,
-  -llvm-namespace-comment,
-  -llvm-prefer-isa-or-dyn-cast-in-conditionals,
-  -llvm-twine-local,
-  -android-cloexec-accept,
-  -android-cloexec-accept4,
-  -android-cloexec-creat,
-  -android-cloexec-dup,
-  -android-cloexec-epoll-create,
-  -android-cloexec-epoll-create1,
-  -android-cloexec-fopen,
-  -android-cloexec-inotify-init,
-  -android-cloexec-inotify-init1,
-  -android-cloexec-memfd-create,
-  -android-cloexec-open,
-  -android-cloexec-openat,
-  -android-cloexec-pipe,
-  -android-cloexec-pipe2,
-  -android-cloexec-socket,
-  -android-cloexec-socketpair,
-  -abseil-duration-compare,
-  -abseil-duration-division,
-  -abseil-faster-absl-roundtrip-conversions,
-  -abseil-no-internal-duration-functions,
-  -abseil-no-internal-linkage-in-header,
-  -abseil-string-find-startswith,
-  -abseil-string-find-str-contains,
-  -abseil-time-comparison,
-  -abseil-upgrade-duration-conversions,
-  -abseil-upgrade-string-view,
-  -abseil-redundant-string-cstr
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-analyzer-cplusplus.NewDelete,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
+  -clang-analyzer-cplusplus.Move,
+  -clang-analyzer-optin.cplusplus.VirtualCall,
+  -clang-analyzer-optin.cplusplus.UninitializedObject,
+  misc-*,
+  -misc-definitions-in-headers,
+  -misc-include-cleaner,
+  -misc-non-private-member-variables-in-classes,
+  -misc-unused-parameters,
+  -misc-no-recursion,
+  portability-*,
+  -portability-restrict-system-includes,
+  -portability-simd-intrinsics,
+  readability-*,
+  -readability-avoid-const-params-in-decls,
+  -readability-braces-around-statements,
+  -readability-convert-member-functions-to-static,
+  -readability-else-after-return,
+  -readability-function-cognitive-complexity,
+  -readability-implicit-bool-conversion,
+  -readability-isolate-declaration,
+  -readability-magic-numbers,
+  -readability-named-parameter,
+  -readability-non-const-parameter,
+  -readability-qualified-auto,
+  -readability-redundant-access-specifiers,
+  -readability-redundant-declaration,
+  -readability-redundant-member-init,
+  -readability-simplify-boolean-expr,
+  -readability-static-accessed-through-instance,
+  -readability-string-compare,
+  -readability-use-anyof-allof
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: '.*'
+
+FormatStyle: file
+
+CheckOptions:
+  - key: cert-dcl16-c.IgnoreMacros
+    value: true
+  - key: cert-err34-c.IgnoreMacros
+    value: true
+  - key: readability-function-size.LineThreshold
+    value: 200
+  - key: readability-function-size.StatementThreshold
+    value: 150
+  - key: readability-function-size.BranchThreshold
+    value: 50
+  - key: readability-function-size.ParameterThreshold
+    value: 12
+  - key: readability-function-size.NestingThreshold
+    value: 8

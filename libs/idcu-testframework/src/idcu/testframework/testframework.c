@@ -1,11 +1,11 @@
 #include "idcu/testframework/testframework.h"
 #include "idcu/log/log.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
 #include <inttypes.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <windows.h>
 
 #define IDCU_MAX_TEST_SUITES 64
@@ -29,8 +29,8 @@ typedef struct idcu_TestSuite {
 static idcu_TestSuite g_suites[IDCU_MAX_TEST_SUITES];
 static size_t g_suite_count = 0;
 static int g_initialized = 0;
-static idcu_TestSuite* g_current_suite = NULL;
-static idcu_Test* g_current_test = NULL;
+static idcu_TestSuite *g_current_suite = NULL;
+static idcu_Test *g_current_test = NULL;
 
 static uint64_t get_time_ms(void) {
 #ifdef _WIN32
@@ -63,7 +63,7 @@ void idcu_test_framework_shutdown(void) {
     }
 
     for (size_t i = 0; i < g_suite_count; i++) {
-        idcu_TestSuite* suite = &g_suites[i];
+        idcu_TestSuite *suite = &g_suites[i];
         if (suite->result.tests) {
             free(suite->result.tests);
             suite->result.tests = NULL;
@@ -77,7 +77,8 @@ void idcu_test_framework_shutdown(void) {
     IDCU_LOG_INFO("[testframework] Shutdown");
 }
 
-int idcu_test_suite_register(const char* name, idcu_TestSuiteSetupFunc setup, idcu_TestSuiteTeardownFunc teardown) {
+int idcu_test_suite_register(const char *name, idcu_TestSuiteSetupFunc setup,
+                             idcu_TestSuiteTeardownFunc teardown) {
     if (!g_initialized || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -91,7 +92,7 @@ int idcu_test_suite_register(const char* name, idcu_TestSuiteSetupFunc setup, id
         }
     }
 
-    idcu_TestSuite* suite = &g_suites[g_suite_count];
+    idcu_TestSuite *suite = &g_suites[g_suite_count];
     strncpy(suite->name, name, IDCU_TEST_SUITE_NAME_MAX - 1);
     suite->name[IDCU_TEST_SUITE_NAME_MAX - 1] = '\0';
     suite->setup = setup;
@@ -104,13 +105,13 @@ int idcu_test_suite_register(const char* name, idcu_TestSuiteSetupFunc setup, id
     return IDCU_ERR_OK;
 }
 
-int idcu_test_suite_unregister(const char* name) {
+int idcu_test_suite_unregister(const char *name) {
     if (!g_initialized || !name) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     for (size_t i = 0; i < g_suite_count; i++) {
-        idcu_TestSuite* suite = &g_suites[i];
+        idcu_TestSuite *suite = &g_suites[i];
         if (strcmp(suite->name, name) == 0) {
             if (suite->result.tests) {
                 free(suite->result.tests);
@@ -130,12 +131,12 @@ int idcu_test_suite_unregister(const char* name) {
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_test_register(const char* suite_name, const char* test_name, idcu_TestFunc func) {
+int idcu_test_register(const char *suite_name, const char *test_name, idcu_TestFunc func) {
     if (!g_initialized || !suite_name || !test_name || !func) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_TestSuite* suite = NULL;
+    idcu_TestSuite *suite = NULL;
     for (size_t i = 0; i < g_suite_count; i++) {
         if (strcmp(g_suites[i].name, suite_name) == 0) {
             suite = &g_suites[i];
@@ -150,7 +151,7 @@ int idcu_test_register(const char* suite_name, const char* test_name, idcu_TestF
         return IDCU_ERR_LIMIT_EXCEEDED;
     }
 
-    idcu_Test* test = &suite->tests[suite->test_count];
+    idcu_Test *test = &suite->tests[suite->test_count];
     strncpy(test->name, test_name, IDCU_TEST_NAME_MAX - 1);
     test->name[IDCU_TEST_NAME_MAX - 1] = '\0';
     test->func = func;
@@ -161,7 +162,7 @@ int idcu_test_register(const char* suite_name, const char* test_name, idcu_TestF
     return IDCU_ERR_OK;
 }
 
-static int run_test(idcu_TestSuite* suite, idcu_Test* test) {
+static int run_test(idcu_TestSuite *suite, idcu_Test *test) {
     g_current_suite = suite;
     g_current_test = test;
 
@@ -186,24 +187,25 @@ static int run_test(idcu_TestSuite* suite, idcu_Test* test) {
 
     test->result.duration_ms = get_time_ms() - start;
 
-    const char* status_str = test->result.status == IDCU_TEST_STATUS_PASSED ? "PASSED" :
-                             test->result.status == IDCU_TEST_STATUS_FAILED ? "FAILED" :
-                             test->result.status == IDCU_TEST_STATUS_SKIPPED ? "SKIPPED" : "ERROR";
+    const char *status_str = test->result.status == IDCU_TEST_STATUS_PASSED    ? "PASSED"
+                             : test->result.status == IDCU_TEST_STATUS_FAILED  ? "FAILED"
+                             : test->result.status == IDCU_TEST_STATUS_SKIPPED ? "SKIPPED"
+                                                                               : "ERROR";
 
-    IDCU_LOG_INFO("[testframework] %s.%s: %s (%" PRIu64 " ms)",
-                 suite->name, test->name, status_str, test->result.duration_ms);
+    IDCU_LOG_INFO("[testframework] %s.%s: %s (%" PRIu64 " ms)", suite->name, test->name, status_str,
+                  test->result.duration_ms);
 
     g_current_test = NULL;
     g_current_suite = NULL;
     return IDCU_ERR_OK;
 }
 
-static int run_test_suite(idcu_TestSuite* suite) {
+static int run_test_suite(idcu_TestSuite *suite) {
     if (suite->result.tests) {
         free(suite->result.tests);
     }
 
-    suite->result.tests = (idcu_TestResult*)calloc(suite->test_count, sizeof(idcu_TestResult));
+    suite->result.tests = (idcu_TestResult *)calloc(suite->test_count, sizeof(idcu_TestResult));
     if (!suite->result.tests) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -221,25 +223,26 @@ static int run_test_suite(idcu_TestSuite* suite) {
         memcpy(&suite->result.tests[i], &suite->tests[i].result, sizeof(idcu_TestResult));
 
         switch (suite->tests[i].result.status) {
-            case IDCU_TEST_STATUS_PASSED:
-                suite->result.passed_count++;
-                break;
-            case IDCU_TEST_STATUS_FAILED:
-                suite->result.failed_count++;
-                break;
-            case IDCU_TEST_STATUS_SKIPPED:
-                suite->result.skipped_count++;
-                break;
-            default:
-                suite->result.failed_count++;
-                break;
+        case IDCU_TEST_STATUS_PASSED:
+            suite->result.passed_count++;
+            break;
+        case IDCU_TEST_STATUS_FAILED:
+            suite->result.failed_count++;
+            break;
+        case IDCU_TEST_STATUS_SKIPPED:
+            suite->result.skipped_count++;
+            break;
+        default:
+            suite->result.failed_count++;
+            break;
         }
         suite->result.total_duration_ms += suite->tests[i].result.duration_ms;
     }
 
-    IDCU_LOG_INFO("[testframework] Suite %s complete: %zu passed, %zu failed, %zu skipped (%" PRIu64 " ms)",
-                 suite->name, suite->result.passed_count, suite->result.failed_count,
-                 suite->result.skipped_count, suite->result.total_duration_ms);
+    IDCU_LOG_INFO("[testframework] Suite %s complete: %zu passed, %zu failed, %zu skipped (%" PRIu64
+                  " ms)",
+                  suite->name, suite->result.passed_count, suite->result.failed_count,
+                  suite->result.skipped_count, suite->result.total_duration_ms);
 
     return IDCU_ERR_OK;
 }
@@ -258,13 +261,13 @@ int idcu_test_run_all(void) {
     size_t total = 0, passed = 0, failed = 0, skipped = 0;
     idcu_test_get_total_result(&total, &passed, &failed, &skipped);
 
-    IDCU_LOG_INFO("[testframework] All tests complete: %zu passed, %zu failed, %zu skipped",
-                 passed, failed, skipped);
+    IDCU_LOG_INFO("[testframework] All tests complete: %zu passed, %zu failed, %zu skipped", passed,
+                  failed, skipped);
 
     return IDCU_ERR_OK;
 }
 
-int idcu_test_run_suite(const char* suite_name) {
+int idcu_test_run_suite(const char *suite_name) {
     if (!g_initialized || !suite_name) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -278,12 +281,12 @@ int idcu_test_run_suite(const char* suite_name) {
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_test_run_single(const char* suite_name, const char* test_name) {
+int idcu_test_run_single(const char *suite_name, const char *test_name) {
     if (!g_initialized || !suite_name || !test_name) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_TestSuite* suite = NULL;
+    idcu_TestSuite *suite = NULL;
     for (size_t i = 0; i < g_suite_count; i++) {
         if (strcmp(g_suites[i].name, suite_name) == 0) {
             suite = &g_suites[i];
@@ -304,7 +307,7 @@ int idcu_test_run_single(const char* suite_name, const char* test_name) {
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_test_get_suite_result(const char* suite_name, idcu_TestSuiteResult* result) {
+int idcu_test_get_suite_result(const char *suite_name, idcu_TestSuiteResult *result) {
     if (!g_initialized || !suite_name || !result) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -319,7 +322,8 @@ int idcu_test_get_suite_result(const char* suite_name, idcu_TestSuiteResult* res
     return IDCU_ERR_NOT_FOUND;
 }
 
-int idcu_test_get_total_result(size_t* total_tests, size_t* total_passed, size_t* total_failed, size_t* total_skipped) {
+int idcu_test_get_total_result(size_t *total_tests, size_t *total_passed, size_t *total_failed,
+                               size_t *total_skipped) {
     if (!g_initialized || !total_tests || !total_passed || !total_failed || !total_skipped) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -339,14 +343,15 @@ int idcu_test_get_total_result(size_t* total_tests, size_t* total_passed, size_t
     return IDCU_ERR_OK;
 }
 
-static void set_test_status(idcu_TestStatus status, const char* format, va_list args) {
+static void set_test_status(idcu_TestStatus status, const char *format, va_list args) {
     if (g_current_test) {
         g_current_test->result.status = status;
-        vsnprintf(g_current_test->result.error_message, sizeof(g_current_test->result.error_message), format, args);
+        vsnprintf(g_current_test->result.error_message,
+                  sizeof(g_current_test->result.error_message), format, args);
     }
 }
 
-void idcu_test_assert(bool condition, const char* message, ...) {
+void idcu_test_assert(bool condition, const char *message, ...) {
     if (!condition) {
         va_list args;
         va_start(args, message);
@@ -355,7 +360,7 @@ void idcu_test_assert(bool condition, const char* message, ...) {
     }
 }
 
-void idcu_test_assert_int_eq(int64_t expected, int64_t actual, const char* message, ...) {
+void idcu_test_assert_int_eq(int64_t expected, int64_t actual, const char *message, ...) {
     if (expected != actual) {
         char full_msg[2048];
         va_list args;
@@ -366,12 +371,13 @@ void idcu_test_assert_int_eq(int64_t expected, int64_t actual, const char* messa
                  " (expected: %" PRId64 ", actual: %" PRId64 ")", expected, actual);
         if (g_current_test) {
             g_current_test->result.status = IDCU_TEST_STATUS_FAILED;
-            strncpy(g_current_test->result.error_message, full_msg, sizeof(g_current_test->result.error_message) - 1);
+            strncpy(g_current_test->result.error_message, full_msg,
+                    sizeof(g_current_test->result.error_message) - 1);
         }
     }
 }
 
-void idcu_test_assert_int_ne(int64_t expected, int64_t actual, const char* message, ...) {
+void idcu_test_assert_int_ne(int64_t expected, int64_t actual, const char *message, ...) {
     if (expected == actual) {
         va_list args;
         va_start(args, message);
@@ -380,7 +386,7 @@ void idcu_test_assert_int_ne(int64_t expected, int64_t actual, const char* messa
     }
 }
 
-void idcu_test_assert_str_eq(const char* expected, const char* actual, const char* message, ...) {
+void idcu_test_assert_str_eq(const char *expected, const char *actual, const char *message, ...) {
     if (!expected || !actual || strcmp(expected, actual) != 0) {
         va_list args;
         va_start(args, message);
@@ -389,7 +395,7 @@ void idcu_test_assert_str_eq(const char* expected, const char* actual, const cha
     }
 }
 
-void idcu_test_assert_str_ne(const char* expected, const char* actual, const char* message, ...) {
+void idcu_test_assert_str_ne(const char *expected, const char *actual, const char *message, ...) {
     if (expected && actual && strcmp(expected, actual) == 0) {
         va_list args;
         va_start(args, message);
@@ -398,7 +404,7 @@ void idcu_test_assert_str_ne(const char* expected, const char* actual, const cha
     }
 }
 
-void idcu_test_assert_ptr_eq(const void* expected, const void* actual, const char* message, ...) {
+void idcu_test_assert_ptr_eq(const void *expected, const void *actual, const char *message, ...) {
     if (expected != actual) {
         va_list args;
         va_start(args, message);
@@ -407,7 +413,7 @@ void idcu_test_assert_ptr_eq(const void* expected, const void* actual, const cha
     }
 }
 
-void idcu_test_assert_ptr_ne(const void* expected, const void* actual, const char* message, ...) {
+void idcu_test_assert_ptr_ne(const void *expected, const void *actual, const char *message, ...) {
     if (expected == actual) {
         va_list args;
         va_start(args, message);
@@ -416,14 +422,14 @@ void idcu_test_assert_ptr_ne(const void* expected, const void* actual, const cha
     }
 }
 
-void idcu_test_fail(const char* message, ...) {
+void idcu_test_fail(const char *message, ...) {
     va_list args;
     va_start(args, message);
     set_test_status(IDCU_TEST_STATUS_FAILED, message, args);
     va_end(args);
 }
 
-void idcu_test_skip(const char* message, ...) {
+void idcu_test_skip(const char *message, ...) {
     va_list args;
     va_start(args, message);
     set_test_status(IDCU_TEST_STATUS_SKIPPED, message, args);

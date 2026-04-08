@@ -1,6 +1,6 @@
 #include "idcu/http_server/http_server.h"
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 int main(void) {

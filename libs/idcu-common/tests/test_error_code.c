@@ -3,8 +3,8 @@
 #include <string.h>
 
 static void test_err_to_str(void) {
-    const char* str;
-    
+    const char *str;
+
     str = idcu_err_to_str(IDCU_ERR_OK);
     if (str == NULL) {
         printf("Test failed: Error string should not be NULL for OK\n");
@@ -14,7 +14,7 @@ static void test_err_to_str(void) {
         printf("Test failed: Error string should be non-empty\n");
         return;
     }
-    
+
     str = idcu_err_to_str(IDCU_ERR_INVALID_PARAM);
     if (str == NULL) {
         printf("Test failed: Error string should not be NULL\n");
@@ -24,19 +24,19 @@ static void test_err_to_str(void) {
         printf("Test failed: Error string should be non-empty\n");
         return;
     }
-    
+
     str = idcu_err_to_str(IDCU_ERR_NO_MEMORY);
     if (str == NULL) {
         printf("Test failed: Error string should not be NULL\n");
         return;
     }
-    
+
     str = idcu_err_to_str(-9999); // Unknown error code
     if (str == NULL) {
         printf("Test failed: Error string should not be NULL for unknown code\n");
         return;
     }
-    
+
     printf("Test passed: err_to_str\n");
 }
 
@@ -49,7 +49,7 @@ static void test_err_is_ok(void) {
         printf("Test failed: SUCCESS should be is_ok\n");
         return;
     }
-    
+
     if (idcu_err_is_ok(IDCU_ERR_INVALID_PARAM) != 0) {
         printf("Test failed: Invalid param should not be is_ok\n");
         return;
@@ -58,7 +58,7 @@ static void test_err_is_ok(void) {
         printf("Test failed: No memory should not be is_ok\n");
         return;
     }
-    
+
     printf("Test passed: err_is_ok\n");
 }
 
@@ -75,17 +75,17 @@ static void test_error_code_aliases(void) {
         printf("Test failed: Memory error aliases should match\n");
         return;
     }
-    
+
     printf("Test passed: error_code_aliases\n");
 }
 
 int main(void) {
     printf("Running Error Code Tests...\n\n");
-    
+
     test_err_to_str();
     test_err_is_ok();
     test_error_code_aliases();
-    
+
     printf("\nAll tests completed!\n");
     return 0;
 }

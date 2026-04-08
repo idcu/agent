@@ -2,8 +2,8 @@
  * UDP 示例
  */
 
-#include "idcu/network/network_layer.h"
 #include "idcu/log/log.h"
+#include "idcu/network/network_layer.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -36,10 +36,10 @@ int main() {
         goto cleanup;
     }
 
-    const char* message = "Hello UDP!";
+    const char *message = "Hello UDP!";
     size_t sent;
-    ret = idcu_network_socket_sendto(&sock2, message, strlen(message), 
-                                      "127.0.0.1", sock1.local_port, &sent);
+    ret = idcu_network_socket_sendto(&sock2, message, strlen(message), "127.0.0.1",
+                                     sock1.local_port, &sent);
     if (ret != IDCU_ERR_OK) {
         printf("Failed to send: %d\n", ret);
         goto cleanup;

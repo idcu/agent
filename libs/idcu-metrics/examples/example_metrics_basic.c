@@ -2,8 +2,8 @@
  * 简单指标示例
  */
 
-#include "idcu/metrics/metrics.h"
 #include "idcu/common/string_buf.h"
+#include "idcu/metrics/metrics.h"
 #include <stdio.h>
 
 int main() {
@@ -16,9 +16,12 @@ int main() {
 
     // 注册各种类型的指标
     printf("Registering metrics...\n");
-    idcu_metrics_register(&collector, "http_requests_total", "Total HTTP requests", IDCU_METRIC_COUNTER);
-    idcu_metrics_register(&collector, "memory_usage_bytes", "Current memory usage", IDCU_METRIC_GAUGE);
-    idcu_metrics_register(&collector, "request_duration_ms", "Request duration", IDCU_METRIC_HISTOGRAM);
+    idcu_metrics_register(&collector, "http_requests_total", "Total HTTP requests",
+                          IDCU_METRIC_COUNTER);
+    idcu_metrics_register(&collector, "memory_usage_bytes", "Current memory usage",
+                          IDCU_METRIC_GAUGE);
+    idcu_metrics_register(&collector, "request_duration_ms", "Request duration",
+                          IDCU_METRIC_HISTOGRAM);
     printf("✓ Metrics registered\n\n");
 
     // 更新指标

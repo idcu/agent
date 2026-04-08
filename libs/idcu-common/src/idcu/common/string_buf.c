@@ -1,14 +1,13 @@
 #include "idcu/common/string_buf.h"
+#include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <inttypes.h>
 
 #define IDCU_STRBUF_DEFAULT_CAPACITY 32
 #define IDCU_STRBUF_GROWTH_FACTOR 2
 
-int idcu_strbuf_init(idcu_StringBuf* buf, size_t initial_capacity)
-{
+int idcu_strbuf_init(idcu_StringBuf *buf, size_t initial_capacity) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -17,7 +16,7 @@ int idcu_strbuf_init(idcu_StringBuf* buf, size_t initial_capacity)
         initial_capacity = IDCU_STRBUF_DEFAULT_CAPACITY;
     }
 
-    buf->data = (char*)malloc(initial_capacity);
+    buf->data = (char *)malloc(initial_capacity);
     if (!buf->data) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -29,17 +28,16 @@ int idcu_strbuf_init(idcu_StringBuf* buf, size_t initial_capacity)
     return IDCU_ERR_OK;
 }
 
-void idcu_strbuf_destroy(idcu_StringBuf* buf)
-{
-    if (!buf) return;
+void idcu_strbuf_destroy(idcu_StringBuf *buf) {
+    if (!buf)
+        return;
     free(buf->data);
     buf->data = NULL;
     buf->size = 0;
     buf->capacity = 0;
 }
 
-static int idcu_strbuf_ensure_capacity(idcu_StringBuf* buf, size_t needed)
-{
+static int idcu_strbuf_ensure_capacity(idcu_StringBuf *buf, size_t needed) {
     if (buf->size + needed < buf->capacity) {
         return IDCU_ERR_OK;
     }
@@ -49,7 +47,7 @@ static int idcu_strbuf_ensure_capacity(idcu_StringBuf* buf, size_t needed)
         new_capacity *= IDCU_STRBUF_GROWTH_FACTOR;
     }
 
-    char* new_data = (char*)realloc(buf->data, new_capacity);
+    char *new_data = (char *)realloc(buf->data, new_capacity);
     if (!new_data) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -59,8 +57,7 @@ static int idcu_strbuf_ensure_capacity(idcu_StringBuf* buf, size_t needed)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_append(idcu_StringBuf* buf, const char* str)
-{
+int idcu_strbuf_append(idcu_StringBuf *buf, const char *str) {
     if (!buf || !str) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -76,8 +73,7 @@ int idcu_strbuf_append(idcu_StringBuf* buf, const char* str)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_append_n(idcu_StringBuf* buf, const char* str, size_t n)
-{
+int idcu_strbuf_append_n(idcu_StringBuf *buf, const char *str, size_t n) {
     if (!buf || !str) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -93,8 +89,7 @@ int idcu_strbuf_append_n(idcu_StringBuf* buf, const char* str, size_t n)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_append_char(idcu_StringBuf* buf, char c)
-{
+int idcu_strbuf_append_char(idcu_StringBuf *buf, char c) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -109,8 +104,7 @@ int idcu_strbuf_append_char(idcu_StringBuf* buf, char c)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_append_int(idcu_StringBuf* buf, int64_t value)
-{
+int idcu_strbuf_append_int(idcu_StringBuf *buf, int64_t value) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -120,8 +114,7 @@ int idcu_strbuf_append_int(idcu_StringBuf* buf, int64_t value)
     return idcu_strbuf_append(buf, temp);
 }
 
-int idcu_strbuf_append_double(idcu_StringBuf* buf, double value, int precision)
-{
+int idcu_strbuf_append_double(idcu_StringBuf *buf, double value, int precision) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -131,8 +124,7 @@ int idcu_strbuf_append_double(idcu_StringBuf* buf, double value, int precision)
     return idcu_strbuf_append(buf, temp);
 }
 
-int idcu_strbuf_append_format(idcu_StringBuf* buf, const char* format, ...)
-{
+int idcu_strbuf_append_format(idcu_StringBuf *buf, const char *format, ...) {
     if (!buf || !format) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -144,8 +136,7 @@ int idcu_strbuf_append_format(idcu_StringBuf* buf, const char* format, ...)
     return ret;
 }
 
-int idcu_strbuf_append_format_v(idcu_StringBuf* buf, const char* format, va_list args)
-{
+int idcu_strbuf_append_format_v(idcu_StringBuf *buf, const char *format, va_list args) {
     if (!buf || !format) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -173,8 +164,7 @@ int idcu_strbuf_append_format_v(idcu_StringBuf* buf, const char* format, va_list
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_insert(idcu_StringBuf* buf, size_t pos, const char* str)
-{
+int idcu_strbuf_insert(idcu_StringBuf *buf, size_t pos, const char *str) {
     if (!buf || !str || pos > buf->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -191,8 +181,7 @@ int idcu_strbuf_insert(idcu_StringBuf* buf, size_t pos, const char* str)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_remove(idcu_StringBuf* buf, size_t pos, size_t len)
-{
+int idcu_strbuf_remove(idcu_StringBuf *buf, size_t pos, size_t len) {
     if (!buf || pos >= buf->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -206,8 +195,7 @@ int idcu_strbuf_remove(idcu_StringBuf* buf, size_t pos, size_t len)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_clear(idcu_StringBuf* buf)
-{
+int idcu_strbuf_clear(idcu_StringBuf *buf) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -219,8 +207,7 @@ int idcu_strbuf_clear(idcu_StringBuf* buf)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_reserve(idcu_StringBuf* buf, size_t new_capacity)
-{
+int idcu_strbuf_reserve(idcu_StringBuf *buf, size_t new_capacity) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -229,7 +216,7 @@ int idcu_strbuf_reserve(idcu_StringBuf* buf, size_t new_capacity)
         return IDCU_ERR_OK;
     }
 
-    char* new_data = (char*)realloc(buf->data, new_capacity);
+    char *new_data = (char *)realloc(buf->data, new_capacity);
     if (!new_data) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -239,8 +226,7 @@ int idcu_strbuf_reserve(idcu_StringBuf* buf, size_t new_capacity)
     return IDCU_ERR_OK;
 }
 
-int idcu_strbuf_resize(idcu_StringBuf* buf, size_t new_size, char fill_char)
-{
+int idcu_strbuf_resize(idcu_StringBuf *buf, size_t new_size, char fill_char) {
     if (!buf) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -262,61 +248,45 @@ int idcu_strbuf_resize(idcu_StringBuf* buf, size_t new_size, char fill_char)
     return IDCU_ERR_OK;
 }
 
-const char* idcu_strbuf_data(const idcu_StringBuf* buf)
-{
-    return buf ? buf->data : NULL;
-}
+const char *idcu_strbuf_data(const idcu_StringBuf *buf) { return buf ? buf->data : NULL; }
 
-char* idcu_strbuf_detach(idcu_StringBuf* buf)
-{
+char *idcu_strbuf_detach(idcu_StringBuf *buf) {
     if (!buf) {
         return NULL;
     }
-    char* result = buf->data;
+    char *result = buf->data;
     buf->data = NULL;
     buf->size = 0;
     buf->capacity = 0;
     return result;
 }
 
-size_t idcu_strbuf_size(const idcu_StringBuf* buf)
-{
-    return buf ? buf->size : 0;
-}
+size_t idcu_strbuf_size(const idcu_StringBuf *buf) { return buf ? buf->size : 0; }
 
-size_t idcu_strbuf_capacity(const idcu_StringBuf* buf)
-{
-    return buf ? buf->capacity : 0;
-}
+size_t idcu_strbuf_capacity(const idcu_StringBuf *buf) { return buf ? buf->capacity : 0; }
 
-int idcu_strbuf_empty(const idcu_StringBuf* buf)
-{
-    return buf ? (buf->size == 0) : 1;
-}
+int idcu_strbuf_empty(const idcu_StringBuf *buf) { return buf ? (buf->size == 0) : 1; }
 
-int idcu_strbuf_compare(const idcu_StringBuf* buf, const char* str)
-{
+int idcu_strbuf_compare(const idcu_StringBuf *buf, const char *str) {
     if (!buf || !str) {
         return (buf ? 1 : -1);
     }
     return strcmp(buf->data, str);
 }
 
-int idcu_strbuf_find(const idcu_StringBuf* buf, const char* substr, size_t start_pos)
-{
+int idcu_strbuf_find(const idcu_StringBuf *buf, const char *substr, size_t start_pos) {
     if (!buf || !substr || start_pos >= buf->size) {
         return -1;
     }
 
-    char* found = strstr(buf->data + start_pos, substr);
+    char *found = strstr(buf->data + start_pos, substr);
     if (!found) {
         return -1;
     }
     return (int)(found - buf->data);
 }
 
-int idcu_strbuf_replace(idcu_StringBuf* buf, const char* old_str, const char* new_str)
-{
+int idcu_strbuf_replace(idcu_StringBuf *buf, const char *old_str, const char *new_str) {
     if (!buf || !old_str || !new_str) {
         return IDCU_ERR_INVALID_PARAM;
     }

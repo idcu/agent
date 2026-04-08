@@ -1,6 +1,6 @@
-#include "module_def.h"
 #include "idcu/config/config.h"
 #include "idcu/log/log.h"
+#include "module_def.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -9,18 +9,16 @@ static uint64_t g_last_modified_time = 0;
 static int g_check_interval = 5000;
 static int g_counter = 0;
 
-static void config_change_callback(const char* section, const char* key, 
-                                    const char* old_value, const char* new_value, void* user_data) {
-    IDCU_LOG_INFO("[config_module] Config changed: [%s] %s: '%s' -> '%s'",
-                  section, key,
-                  old_value ? old_value : "(null)",
-                  new_value ? new_value : "(null)");
+static void config_change_callback(const char *section, const char *key, const char *old_value,
+                                   const char *new_value, void *user_data) {
+    IDCU_LOG_INFO("[config_module] Config changed: [%s] %s: '%s' -> '%s'", section, key,
+                  old_value ? old_value : "(null)", new_value ? new_value : "(null)");
 }
 
 static int config_module_init() {
     IDCU_LOG_INFO("[config_module] Initializing config module");
-    
-    const char* config_path = idcu_config_get_string("general", "config_path", "config/agent.cfg");
+
+    const char *config_path = idcu_config_get_string("general", "config_path", "config/agent.cfg");
     int ret = idcu_config_init(config_path);
     if (ret != IDCU_ERR_SUCCESS) {
         IDCU_LOG_ERROR("[config_module] Failed to initialize config: %d", ret);
@@ -34,14 +32,15 @@ static int config_module_init() {
 
     idcu_config_get_last_modified_time(&g_last_modified_time);
     g_check_interval = idcu_config_get_int("config", "check_interval_ms", 5000);
-    
+
     g_initialized = 1;
     IDCU_LOG_INFO("[config_module] Config module initialized successfully");
     return 0;
 }
 
 static int config_module_run() {
-    if (!g_initialized) return 0;
+    if (!g_initialized)
+        return 0;
 
     g_counter++;
     if (g_counter % (g_check_interval / 10) == 0) {
@@ -80,5 +79,5 @@ int idcu_config_module_reload(void) {
     return idcu_config_reload();
 }
 
-IDCU_REGISTER_MODULE(config_module, IDCU_MODULE_VERSION(1, 0, 0), 
-                     config_module_init, config_module_run, config_module_stop);
+IDCU_REGISTER_MODULE(config_module, IDCU_MODULE_VERSION(1, 0, 0), config_module_init,
+                     config_module_run, config_module_stop);

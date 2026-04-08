@@ -2,18 +2,17 @@
 #include <stdio.h>
 #include <string.h>
 
-int api_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data) {
+int api_handler(idcu_HttpRequest *request, idcu_HttpResponse *response, void *user_data) {
     (void)user_data;
-    
+
     char message[256];
-    snprintf(message, sizeof(message), 
-             "API request to: %s (method: %s)",
-             request->path,
-             request->method == IDCU_HTTP_METHOD_GET ? "GET" :
-             request->method == IDCU_HTTP_METHOD_POST ? "POST" :
-             request->method == IDCU_HTTP_METHOD_PUT ? "PUT" :
-             request->method == IDCU_HTTP_METHOD_DELETE ? "DELETE" : "UNKNOWN");
-    
+    snprintf(message, sizeof(message), "API request to: %s (method: %s)", request->path,
+             request->method == IDCU_HTTP_METHOD_GET      ? "GET"
+             : request->method == IDCU_HTTP_METHOD_POST   ? "POST"
+             : request->method == IDCU_HTTP_METHOD_PUT    ? "PUT"
+             : request->method == IDCU_HTTP_METHOD_DELETE ? "DELETE"
+                                                          : "UNKNOWN");
+
     idcu_http_response_set_body(response, message, strlen(message));
     return IDCU_ERR_OK;
 }

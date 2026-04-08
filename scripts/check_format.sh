@@ -1,58 +1,43 @@
 #!/bin/bash
-# 检查代码格式
+# Check code format (Linux/macOS version)
 
-echo "=== 检查代码格式 (clang-format) ==="
+echo "=== Check code format (clang-format) ==="
 
-# 检查 clang-format 是否安装
+# Check if clang-format is installed
 if ! command -v clang-format &> /dev/null; then
-    echo "错误: 未找到 clang-format，请先安装"
+    echo "ERROR: clang-format not found, please install it first"
+    echo "Ubuntu/Debian: sudo apt-get install clang-format"
+    echo "macOS: brew install clang-format"
     exit 1
 fi
 
-# 定义要检查的目录
-DIRS=(
-    "libs"
-    "modules"
-    "app"
-    "tests"
-)
+# Define directories to check
+DIRS="libs modules app tests"
 
-# 收集所有源文件
-FILES=()
-for dir in "${DIRS[@]}"; do
+# Run clang-format check
+echo "Checking source files..."
+NEED_FORMAT=0
+
+for dir in $DIRS; do
     if [ -d "$dir" ]; then
         while IFS= read -r -d $'\0' file; do
-            FILES+=("$file")
-        done < <(find "$dir" -type f \( -name "*.c" -o -name "*.h" \) -print0)
+            clang-format --dry-run --Werror "$file" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+                echo "Needs formatting: $file"
+                ((NEED_FORMAT++))
+            fi
+        done < <(find "$dir" -name "*.c" -o -name "*.h" -print0)
     fi
 done
 
-if [ ${#FILES[@]} -eq 0 ]; then
-    echo "警告: 未找到任何源文件"
-    exit 0
-fi
-
-# 运行 clang-format 检查
-echo "正在检查 ${#FILES[@]} 个文件..."
-
-# 检查哪些文件需要格式化
-NEED_FORMAT=()
-for file in "${FILES[@]}"; do
-    if ! clang-format --dry-run --Werror "$file" > /dev/null 2>&1; then
-        NEED_FORMAT+=("$file")
-    fi
-done
-
-if [ ${#NEED_FORMAT[@]} -eq 0 ]; then
-    echo "✅ 所有文件格式正确"
-    exit 0
-else
-    echo "❌ ${#NEED_FORMAT[@]} 个文件需要格式化:"
-    for file in "${NEED_FORMAT[@]}"; do
-        echo "  - $file"
-    done
+if [ "$NEED_FORMAT" -eq 0 ]; then
     echo ""
-    echo "运行以下命令自动修复:"
-    echo "  ./scripts/format.sh"
+    echo "All files are properly formatted"
+else
+    echo ""
+    echo "$NEED_FORMAT files need formatting"
+    echo ""
+    echo "Run the following command to auto-fix:"
+    echo "  scripts/format.sh"
     exit 1
 fi

@@ -1,11 +1,10 @@
 #include "network_integration.h"
-#include "module_def.h"
 #include "idcu/log/log.h"
+#include "module_def.h"
 
-static idcu_NetworkIntegration* g_network_integration = NULL;
+static idcu_NetworkIntegration *g_network_integration = NULL;
 
-int idcu_network_integration_init(idcu_NetworkIntegration* integration)
-{
+int idcu_network_integration_init(idcu_NetworkIntegration *integration) {
     if (!integration) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -16,8 +15,7 @@ int idcu_network_integration_init(idcu_NetworkIntegration* integration)
     return IDCU_ERR_OK;
 }
 
-void idcu_network_integration_destroy(idcu_NetworkIntegration* integration)
-{
+void idcu_network_integration_destroy(idcu_NetworkIntegration *integration) {
     if (!integration || !integration->initialized) {
         return;
     }
@@ -29,23 +27,17 @@ void idcu_network_integration_destroy(idcu_NetworkIntegration* integration)
 
 static idcu_NetworkIntegration s_network_integration;
 
-static int network_integration_module_init(void)
-{
+static int network_integration_module_init(void) {
     return idcu_network_integration_init(&s_network_integration);
 }
 
-static int network_integration_module_run(void)
-{
-    return 0;
-}
+static int network_integration_module_run(void) { return 0; }
 
-static int network_integration_module_stop(void)
-{
+static int network_integration_module_stop(void) {
     idcu_network_integration_destroy(&s_network_integration);
     return 0;
 }
 
-IDCU_REGISTER_MODULE(network_integration, IDCU_MODULE_VERSION(1, 0, 0), 
-                      network_integration_module_init, 
-                      network_integration_module_run, 
-                      network_integration_module_stop);
+IDCU_REGISTER_MODULE(network_integration, IDCU_MODULE_VERSION(1, 0, 0),
+                     network_integration_module_init, network_integration_module_run,
+                     network_integration_module_stop);

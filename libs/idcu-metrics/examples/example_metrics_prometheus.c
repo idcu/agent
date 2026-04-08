@@ -2,9 +2,9 @@
  * Prometheus 导出示例
  */
 
+#include "idcu/log/log.h"
 #include "idcu/metrics/metrics.h"
 #include "idcu/metrics/prometheus_exporter.h"
-#include "idcu/log/log.h"
 #include <stdio.h>
 
 int main() {
@@ -32,10 +32,8 @@ int main() {
     // 初始化 Prometheus 导出器
     printf("Initializing Prometheus exporter...\n");
     idcu_PrometheusExporter exporter;
-    int ret = idcu_prometheus_exporter_init(&exporter, 
-                                           idcu_global_metrics_collector(),
-                                           "127.0.0.1", 
-                                           9090);
+    int ret = idcu_prometheus_exporter_init(&exporter, idcu_global_metrics_collector(), "127.0.0.1",
+                                            9090);
     if (ret != IDCU_ERR_OK) {
         printf("✗ Failed to initialize Prometheus exporter: %d\n", ret);
         idcu_global_metrics_destroy();

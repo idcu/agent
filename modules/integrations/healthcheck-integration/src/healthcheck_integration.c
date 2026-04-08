@@ -1,11 +1,10 @@
 #include "healthcheck_integration.h"
-#include "module_def.h"
 #include "idcu/log/log.h"
+#include "module_def.h"
 
-static idcu_HealthcheckIntegration* g_healthcheck_integration = NULL;
+static idcu_HealthcheckIntegration *g_healthcheck_integration = NULL;
 
-int idcu_healthcheck_integration_init(idcu_HealthcheckIntegration* integration)
-{
+int idcu_healthcheck_integration_init(idcu_HealthcheckIntegration *integration) {
     if (!integration) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -16,8 +15,7 @@ int idcu_healthcheck_integration_init(idcu_HealthcheckIntegration* integration)
     return IDCU_ERR_OK;
 }
 
-void idcu_healthcheck_integration_destroy(idcu_HealthcheckIntegration* integration)
-{
+void idcu_healthcheck_integration_destroy(idcu_HealthcheckIntegration *integration) {
     if (!integration || !integration->initialized) {
         return;
     }
@@ -29,23 +27,17 @@ void idcu_healthcheck_integration_destroy(idcu_HealthcheckIntegration* integrati
 
 static idcu_HealthcheckIntegration s_healthcheck_integration;
 
-static int healthcheck_integration_module_init(void)
-{
+static int healthcheck_integration_module_init(void) {
     return idcu_healthcheck_integration_init(&s_healthcheck_integration);
 }
 
-static int healthcheck_integration_module_run(void)
-{
-    return 0;
-}
+static int healthcheck_integration_module_run(void) { return 0; }
 
-static int healthcheck_integration_module_stop(void)
-{
+static int healthcheck_integration_module_stop(void) {
     idcu_healthcheck_integration_destroy(&s_healthcheck_integration);
     return 0;
 }
 
-IDCU_REGISTER_MODULE(healthcheck_integration, IDCU_MODULE_VERSION(1, 0, 0), 
-                      healthcheck_integration_module_init, 
-                      healthcheck_integration_module_run, 
-                      healthcheck_integration_module_stop);
+IDCU_REGISTER_MODULE(healthcheck_integration, IDCU_MODULE_VERSION(1, 0, 0),
+                     healthcheck_integration_module_init, healthcheck_integration_module_run,
+                     healthcheck_integration_module_stop);

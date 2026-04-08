@@ -1,11 +1,10 @@
 #include "json_integration.h"
-#include "module_def.h"
 #include "idcu/log/log.h"
+#include "module_def.h"
 
-static idcu_JsonIntegration* g_json_integration = NULL;
+static idcu_JsonIntegration *g_json_integration = NULL;
 
-int idcu_json_integration_init(idcu_JsonIntegration* integration)
-{
+int idcu_json_integration_init(idcu_JsonIntegration *integration) {
     if (!integration) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -16,8 +15,7 @@ int idcu_json_integration_init(idcu_JsonIntegration* integration)
     return IDCU_ERR_OK;
 }
 
-void idcu_json_integration_destroy(idcu_JsonIntegration* integration)
-{
+void idcu_json_integration_destroy(idcu_JsonIntegration *integration) {
     if (!integration || !integration->initialized) {
         return;
     }
@@ -29,23 +27,16 @@ void idcu_json_integration_destroy(idcu_JsonIntegration* integration)
 
 static idcu_JsonIntegration s_json_integration;
 
-static int json_integration_module_init(void)
-{
+static int json_integration_module_init(void) {
     return idcu_json_integration_init(&s_json_integration);
 }
 
-static int json_integration_module_run(void)
-{
-    return 0;
-}
+static int json_integration_module_run(void) { return 0; }
 
-static int json_integration_module_stop(void)
-{
+static int json_integration_module_stop(void) {
     idcu_json_integration_destroy(&s_json_integration);
     return 0;
 }
 
-IDCU_REGISTER_MODULE(json_integration, IDCU_MODULE_VERSION(1, 0, 0), 
-                      json_integration_module_init, 
-                      json_integration_module_run, 
-                      json_integration_module_stop);
+IDCU_REGISTER_MODULE(json_integration, IDCU_MODULE_VERSION(1, 0, 0), json_integration_module_init,
+                     json_integration_module_run, json_integration_module_stop);

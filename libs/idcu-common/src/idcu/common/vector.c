@@ -5,8 +5,7 @@
 #define IDCU_VECTOR_DEFAULT_CAPACITY 8
 #define IDCU_VECTOR_GROWTH_FACTOR 2
 
-int idcu_vector_init(idcu_Vector* vec, size_t element_size, size_t initial_capacity)
-{
+int idcu_vector_init(idcu_Vector *vec, size_t element_size, size_t initial_capacity) {
     if (!vec || element_size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -15,7 +14,7 @@ int idcu_vector_init(idcu_Vector* vec, size_t element_size, size_t initial_capac
         initial_capacity = IDCU_VECTOR_DEFAULT_CAPACITY;
     }
 
-    vec->data = (void**)malloc(initial_capacity * sizeof(void*));
+    vec->data = (void **)malloc(initial_capacity * sizeof(void *));
     if (!vec->data) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -28,9 +27,8 @@ int idcu_vector_init(idcu_Vector* vec, size_t element_size, size_t initial_capac
     return IDCU_ERR_OK;
 }
 
-int idcu_vector_init_with_dtor(idcu_Vector* vec, size_t element_size, size_t initial_capacity,
-                                void (*element_dtor)(void*))
-{
+int idcu_vector_init_with_dtor(idcu_Vector *vec, size_t element_size, size_t initial_capacity,
+                               void (*element_dtor)(void *)) {
     int ret = idcu_vector_init(vec, element_size, initial_capacity);
     if (ret == IDCU_ERR_OK) {
         vec->element_dtor = element_dtor;
@@ -38,9 +36,9 @@ int idcu_vector_init_with_dtor(idcu_Vector* vec, size_t element_size, size_t ini
     return ret;
 }
 
-void idcu_vector_destroy(idcu_Vector* vec)
-{
-    if (!vec) return;
+void idcu_vector_destroy(idcu_Vector *vec) {
+    if (!vec)
+        return;
 
     if (vec->element_dtor) {
         for (size_t i = 0; i < vec->size; ++i) {
@@ -58,10 +56,9 @@ void idcu_vector_destroy(idcu_Vector* vec)
     vec->capacity = 0;
 }
 
-static int idcu_vector_grow(idcu_Vector* vec)
-{
+static int idcu_vector_grow(idcu_Vector *vec) {
     size_t new_capacity = vec->capacity * IDCU_VECTOR_GROWTH_FACTOR;
-    void** new_data = (void**)realloc(vec->data, new_capacity * sizeof(void*));
+    void **new_data = (void **)realloc(vec->data, new_capacity * sizeof(void *));
     if (!new_data) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -70,8 +67,7 @@ static int idcu_vector_grow(idcu_Vector* vec)
     return IDCU_ERR_OK;
 }
 
-int idcu_vector_push_back(idcu_Vector* vec, const void* element)
-{
+int idcu_vector_push_back(idcu_Vector *vec, const void *element) {
     if (!vec || !element) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -83,7 +79,7 @@ int idcu_vector_push_back(idcu_Vector* vec, const void* element)
         }
     }
 
-    void* new_element = malloc(vec->element_size);
+    void *new_element = malloc(vec->element_size);
     if (!new_element) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -93,13 +89,12 @@ int idcu_vector_push_back(idcu_Vector* vec, const void* element)
     return IDCU_ERR_OK;
 }
 
-int idcu_vector_pop_back(idcu_Vector* vec, void* out_element)
-{
+int idcu_vector_pop_back(idcu_Vector *vec, void *out_element) {
     if (!vec || vec->size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    void* element = vec->data[--vec->size];
+    void *element = vec->data[--vec->size];
     if (out_element) {
         memcpy(out_element, element, vec->element_size);
     }
@@ -112,8 +107,7 @@ int idcu_vector_pop_back(idcu_Vector* vec, void* out_element)
     return IDCU_ERR_OK;
 }
 
-int idcu_vector_insert(idcu_Vector* vec, size_t index, const void* element)
-{
+int idcu_vector_insert(idcu_Vector *vec, size_t index, const void *element) {
     if (!vec || !element || index > vec->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -129,7 +123,7 @@ int idcu_vector_insert(idcu_Vector* vec, size_t index, const void* element)
         vec->data[i] = vec->data[i - 1];
     }
 
-    void* new_element = malloc(vec->element_size);
+    void *new_element = malloc(vec->element_size);
     if (!new_element) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -140,13 +134,12 @@ int idcu_vector_insert(idcu_Vector* vec, size_t index, const void* element)
     return IDCU_ERR_OK;
 }
 
-int idcu_vector_remove(idcu_Vector* vec, size_t index)
-{
+int idcu_vector_remove(idcu_Vector *vec, size_t index) {
     if (!vec || index >= vec->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    void* element = vec->data[index];
+    void *element = vec->data[index];
 
     if (vec->element_dtor) {
         vec->element_dtor(element);
@@ -161,27 +154,25 @@ int idcu_vector_remove(idcu_Vector* vec, size_t index)
     return IDCU_ERR_OK;
 }
 
-void* idcu_vector_get(const idcu_Vector* vec, size_t index)
-{
+void *idcu_vector_get(const idcu_Vector *vec, size_t index) {
     if (!vec || index >= vec->size) {
         return NULL;
     }
     return vec->data[index];
 }
 
-int idcu_vector_set(idcu_Vector* vec, size_t index, const void* element)
-{
+int idcu_vector_set(idcu_Vector *vec, size_t index, const void *element) {
     if (!vec || !element || index >= vec->size) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    void* old_element = vec->data[index];
+    void *old_element = vec->data[index];
     if (vec->element_dtor) {
         vec->element_dtor(old_element);
     }
     free(old_element);
 
-    void* new_element = malloc(vec->element_size);
+    void *new_element = malloc(vec->element_size);
     if (!new_element) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -191,24 +182,15 @@ int idcu_vector_set(idcu_Vector* vec, size_t index, const void* element)
     return IDCU_ERR_OK;
 }
 
-size_t idcu_vector_size(const idcu_Vector* vec)
-{
-    return vec ? vec->size : 0;
-}
+size_t idcu_vector_size(const idcu_Vector *vec) { return vec ? vec->size : 0; }
 
-size_t idcu_vector_capacity(const idcu_Vector* vec)
-{
-    return vec ? vec->capacity : 0;
-}
+size_t idcu_vector_capacity(const idcu_Vector *vec) { return vec ? vec->capacity : 0; }
 
-bool idcu_vector_empty(const idcu_Vector* vec)
-{
-    return vec ? (vec->size == 0) : true;
-}
+bool idcu_vector_empty(const idcu_Vector *vec) { return vec ? (vec->size == 0) : true; }
 
-void idcu_vector_clear(idcu_Vector* vec)
-{
-    if (!vec) return;
+void idcu_vector_clear(idcu_Vector *vec) {
+    if (!vec)
+        return;
 
     if (vec->element_dtor) {
         for (size_t i = 0; i < vec->size; ++i) {
@@ -223,8 +205,7 @@ void idcu_vector_clear(idcu_Vector* vec)
     vec->size = 0;
 }
 
-int idcu_vector_reserve(idcu_Vector* vec, size_t new_capacity)
-{
+int idcu_vector_reserve(idcu_Vector *vec, size_t new_capacity) {
     if (!vec) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -233,7 +214,7 @@ int idcu_vector_reserve(idcu_Vector* vec, size_t new_capacity)
         return IDCU_ERR_OK;
     }
 
-    void** new_data = (void**)realloc(vec->data, new_capacity * sizeof(void*));
+    void **new_data = (void **)realloc(vec->data, new_capacity * sizeof(void *));
     if (!new_data) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -242,8 +223,7 @@ int idcu_vector_reserve(idcu_Vector* vec, size_t new_capacity)
     return IDCU_ERR_OK;
 }
 
-int idcu_vector_resize(idcu_Vector* vec, size_t new_size, const void* default_value)
-{
+int idcu_vector_resize(idcu_Vector *vec, size_t new_size, const void *default_value) {
     if (!vec) {
         return IDCU_ERR_INVALID_PARAM;
     }

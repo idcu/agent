@@ -1,7 +1,6 @@
 #include "idcu/common/lock.h"
 
-int idcu_mutex_init(idcu_Mutex* lock)
-{
+int idcu_mutex_init(idcu_Mutex *lock) {
     if (!lock) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -17,8 +16,7 @@ int idcu_mutex_init(idcu_Mutex* lock)
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_mutex_destroy(idcu_Mutex* lock)
-{
+void idcu_mutex_destroy(idcu_Mutex *lock) {
     if (!lock || !lock->initialized) {
         return;
     }
@@ -31,8 +29,7 @@ void idcu_mutex_destroy(idcu_Mutex* lock)
     lock->initialized = 0;
 }
 
-int idcu_mutex_lock(idcu_Mutex* lock)
-{
+int idcu_mutex_lock(idcu_Mutex *lock) {
     if (!lock || !lock->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -47,8 +44,7 @@ int idcu_mutex_lock(idcu_Mutex* lock)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_mutex_unlock(idcu_Mutex* lock)
-{
+int idcu_mutex_unlock(idcu_Mutex *lock) {
     if (!lock || !lock->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -63,8 +59,7 @@ int idcu_mutex_unlock(idcu_Mutex* lock)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_rwlock_init(idcu_RwLock* lock)
-{
+int idcu_rwlock_init(idcu_RwLock *lock) {
     if (!lock) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -80,8 +75,7 @@ int idcu_rwlock_init(idcu_RwLock* lock)
     return IDCU_ERR_SUCCESS;
 }
 
-void idcu_rwlock_destroy(idcu_RwLock* lock)
-{
+void idcu_rwlock_destroy(idcu_RwLock *lock) {
     if (!lock || !lock->initialized) {
         return;
     }
@@ -92,8 +86,7 @@ void idcu_rwlock_destroy(idcu_RwLock* lock)
     lock->initialized = 0;
 }
 
-int idcu_rwlock_rdlock(idcu_RwLock* lock)
-{
+int idcu_rwlock_rdlock(idcu_RwLock *lock) {
     if (!lock || !lock->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -108,8 +101,7 @@ int idcu_rwlock_rdlock(idcu_RwLock* lock)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_rwlock_wrlock(idcu_RwLock* lock)
-{
+int idcu_rwlock_wrlock(idcu_RwLock *lock) {
     if (!lock || !lock->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }
@@ -124,8 +116,7 @@ int idcu_rwlock_wrlock(idcu_RwLock* lock)
     return IDCU_ERR_SUCCESS;
 }
 
-int idcu_rwlock_unlock(idcu_RwLock* lock)
-{
+int idcu_rwlock_unlock(idcu_RwLock *lock) {
     if (!lock || !lock->initialized) {
         return IDCU_ERR_NOT_INITIALIZED;
     }

@@ -1,13 +1,13 @@
 #include "idcu/security_enhanced/security_enhanced.h"
 #include "idcu/log/log.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #ifdef _WIN32
-#include <windows.h>
 #include <wincrypt.h>
+#include <windows.h>
 #pragma comment(lib, "advapi32.lib")
 #else
 #include <fcntl.h>
@@ -16,15 +16,20 @@
 
 static int g_initialized = 0;
 
-static const char* g_base64_chars = 
+static const char *g_base64_chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static int base64_char_to_index(char c) {
-    if (c >= 'A' && c <= 'Z') return c - 'A';
-    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
-    if (c >= '0' && c <= '9') return c - '0' + 52;
-    if (c == '+') return 62;
-    if (c == '/') return 63;
+    if (c >= 'A' && c <= 'Z')
+        return c - 'A';
+    if (c >= 'a' && c <= 'z')
+        return c - 'a' + 26;
+    if (c >= '0' && c <= '9')
+        return c - '0' + 52;
+    if (c == '+')
+        return 62;
+    if (c == '/')
+        return 63;
     return -1;
 }
 
@@ -57,7 +62,7 @@ void idcu_security_shutdown(void) {
     IDCU_LOG_INFO("[security-enhanced] Shutdown");
 }
 
-int idcu_security_random_bytes(uint8_t* buffer, size_t size) {
+int idcu_security_random_bytes(uint8_t *buffer, size_t size) {
     if (!g_initialized || !buffer || size == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -87,27 +92,27 @@ int idcu_security_random_bytes(uint8_t* buffer, size_t size) {
     return IDCU_ERR_OK;
 }
 
-int idcu_security_generate_key(uint8_t* key, size_t key_size) {
+int idcu_security_generate_key(uint8_t *key, size_t key_size) {
     return idcu_security_random_bytes(key, key_size);
 }
 
-int idcu_security_generate_iv(uint8_t* iv, size_t iv_size) {
+int idcu_security_generate_iv(uint8_t *iv, size_t iv_size) {
     return idcu_security_random_bytes(iv, iv_size);
 }
 
-int idcu_security_generate_salt(uint8_t* salt, size_t salt_size) {
+int idcu_security_generate_salt(uint8_t *salt, size_t salt_size) {
     return idcu_security_random_bytes(salt, salt_size);
 }
 
-int idcu_security_random_int(uint64_t* result, uint64_t min, uint64_t max) {
+int idcu_security_random_int(uint64_t *result, uint64_t min, uint64_t max) {
     if (!g_initialized || !result || min >= max) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     uint64_t range = max - min + 1;
     uint64_t random_val;
-    
-    int ret = idcu_security_random_bytes((uint8_t*)&random_val, sizeof(random_val));
+
+    int ret = idcu_security_random_bytes((uint8_t *)&random_val, sizeof(random_val));
     if (ret != IDCU_ERR_OK) {
         return ret;
     }
@@ -116,7 +121,7 @@ int idcu_security_random_int(uint64_t* result, uint64_t min, uint64_t max) {
     return IDCU_ERR_OK;
 }
 
-int idcu_security_hash(const void* data, size_t data_size, uint8_t* hash, size_t* hash_size) {
+int idcu_security_hash(const void *data, size_t data_size, uint8_t *hash, size_t *hash_size) {
     (void)data;
     (void)data_size;
     (void)hash;
@@ -125,8 +130,8 @@ int idcu_security_hash(const void* data, size_t data_size, uint8_t* hash, size_t
     return IDCU_ERR_OK;
 }
 
-int idcu_security_hmac(const void* data, size_t data_size, const uint8_t* key, size_t key_size,
-                        uint8_t* hmac, size_t* hmac_size) {
+int idcu_security_hmac(const void *data, size_t data_size, const uint8_t *key, size_t key_size,
+                       uint8_t *hmac, size_t *hmac_size) {
     (void)data;
     (void)data_size;
     (void)key;
@@ -137,11 +142,9 @@ int idcu_security_hmac(const void* data, size_t data_size, const uint8_t* key, s
     return IDCU_ERR_OK;
 }
 
-int idcu_security_encrypt(idcu_SecurityAlgorithm alg,
-                          const uint8_t* key, size_t key_size,
-                          const uint8_t* iv, size_t iv_size,
-                          const void* plaintext, size_t plaintext_size,
-                          void* ciphertext, size_t* ciphertext_size) {
+int idcu_security_encrypt(idcu_SecurityAlgorithm alg, const uint8_t *key, size_t key_size,
+                          const uint8_t *iv, size_t iv_size, const void *plaintext,
+                          size_t plaintext_size, void *ciphertext, size_t *ciphertext_size) {
     (void)alg;
     (void)key;
     (void)key_size;
@@ -155,11 +158,9 @@ int idcu_security_encrypt(idcu_SecurityAlgorithm alg,
     return IDCU_ERR_OK;
 }
 
-int idcu_security_decrypt(idcu_SecurityAlgorithm alg,
-                          const uint8_t* key, size_t key_size,
-                          const uint8_t* iv, size_t iv_size,
-                          const void* ciphertext, size_t ciphertext_size,
-                          void* plaintext, size_t* plaintext_size) {
+int idcu_security_decrypt(idcu_SecurityAlgorithm alg, const uint8_t *key, size_t key_size,
+                          const uint8_t *iv, size_t iv_size, const void *ciphertext,
+                          size_t ciphertext_size, void *plaintext, size_t *plaintext_size) {
     (void)alg;
     (void)key;
     (void)key_size;
@@ -173,8 +174,8 @@ int idcu_security_decrypt(idcu_SecurityAlgorithm alg,
     return IDCU_ERR_OK;
 }
 
-int idcu_security_hash_password(const char* password, const uint8_t* salt, size_t salt_size,
-                                 uint8_t* hash, size_t* hash_size) {
+int idcu_security_hash_password(const char *password, const uint8_t *salt, size_t salt_size,
+                                uint8_t *hash, size_t *hash_size) {
     (void)password;
     (void)salt;
     (void)salt_size;
@@ -184,8 +185,8 @@ int idcu_security_hash_password(const char* password, const uint8_t* salt, size_
     return IDCU_ERR_OK;
 }
 
-int idcu_security_verify_password(const char* password, const uint8_t* salt, size_t salt_size,
-                                    const uint8_t* hash, size_t hash_size) {
+int idcu_security_verify_password(const char *password, const uint8_t *salt, size_t salt_size,
+                                  const uint8_t *hash, size_t hash_size) {
     (void)password;
     (void)salt;
     (void)salt_size;
@@ -195,7 +196,8 @@ int idcu_security_verify_password(const char* password, const uint8_t* salt, siz
     return IDCU_ERR_OK;
 }
 
-int idcu_security_base64_encode(const void* data, size_t data_size, char* output, size_t* output_size) {
+int idcu_security_base64_encode(const void *data, size_t data_size, char *output,
+                                size_t *output_size) {
     if (!data || !output_size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -211,8 +213,8 @@ int idcu_security_base64_encode(const void* data, size_t data_size, char* output
         return IDCU_ERR_BUFFER_TOO_SMALL;
     }
 
-    const uint8_t* src = (const uint8_t*)data;
-    char* dst = output;
+    const uint8_t *src = (const uint8_t *)data;
+    char *dst = output;
     size_t i = 0;
 
     while (i < data_size) {
@@ -238,14 +240,17 @@ int idcu_security_base64_encode(const void* data, size_t data_size, char* output
     return IDCU_ERR_OK;
 }
 
-int idcu_security_base64_decode(const char* input, size_t input_size, void* output, size_t* output_size) {
+int idcu_security_base64_decode(const char *input, size_t input_size, void *output,
+                                size_t *output_size) {
     if (!input || !output_size) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     size_t padding = 0;
-    if (input_size >= 2 && input[input_size - 1] == '=') padding++;
-    if (input_size >= 2 && input[input_size - 2] == '=') padding++;
+    if (input_size >= 2 && input[input_size - 1] == '=')
+        padding++;
+    if (input_size >= 2 && input[input_size - 2] == '=')
+        padding++;
 
     size_t required_size = (input_size * 3) / 4 - padding;
     if (!output) {
@@ -258,7 +263,7 @@ int idcu_security_base64_decode(const char* input, size_t input_size, void* outp
         return IDCU_ERR_BUFFER_TOO_SMALL;
     }
 
-    uint8_t* dst = (uint8_t*)output;
+    uint8_t *dst = (uint8_t *)output;
     size_t src_idx = 0;
     size_t dst_idx = 0;
 
@@ -268,9 +273,11 @@ int idcu_security_base64_decode(const char* input, size_t input_size, void* outp
 
         for (int j = 0; j < 4 && src_idx < input_size; j++, src_idx++) {
             char c = input[src_idx];
-            if (c == '=') break;
+            if (c == '=')
+                break;
             int idx = base64_char_to_index(c);
-            if (idx < 0) continue;
+            if (idx < 0)
+                continue;
             val = (val << 6) | idx;
             count++;
         }
@@ -286,7 +293,8 @@ int idcu_security_base64_decode(const char* input, size_t input_size, void* outp
     return IDCU_ERR_OK;
 }
 
-int idcu_security_hex_encode(const void* data, size_t data_size, char* output, size_t* output_size) {
+int idcu_security_hex_encode(const void *data, size_t data_size, char *output,
+                             size_t *output_size) {
     if (!data || !output_size) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -302,9 +310,9 @@ int idcu_security_hex_encode(const void* data, size_t data_size, char* output, s
         return IDCU_ERR_BUFFER_TOO_SMALL;
     }
 
-    const uint8_t* src = (const uint8_t*)data;
-    char* dst = output;
-    const char* hex_chars = "0123456789abcdef";
+    const uint8_t *src = (const uint8_t *)data;
+    char *dst = output;
+    const char *hex_chars = "0123456789abcdef";
 
     for (size_t i = 0; i < data_size; i++) {
         *dst++ = hex_chars[(src[i] >> 4) & 0xF];
@@ -316,7 +324,8 @@ int idcu_security_hex_encode(const void* data, size_t data_size, char* output, s
     return IDCU_ERR_OK;
 }
 
-int idcu_security_hex_decode(const char* input, size_t input_size, void* output, size_t* output_size) {
+int idcu_security_hex_decode(const char *input, size_t input_size, void *output,
+                             size_t *output_size) {
     if (!input || !output_size || input_size % 2 != 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -332,19 +341,25 @@ int idcu_security_hex_decode(const char* input, size_t input_size, void* output,
         return IDCU_ERR_BUFFER_TOO_SMALL;
     }
 
-    uint8_t* dst = (uint8_t*)output;
+    uint8_t *dst = (uint8_t *)output;
     for (size_t i = 0; i < input_size; i += 2) {
         char c1 = input[i];
         char c2 = input[i + 1];
 
         uint8_t val = 0;
-        if (c1 >= '0' && c1 <= '9') val = (c1 - '0') << 4;
-        else if (c1 >= 'a' && c1 <= 'f') val = (c1 - 'a' + 10) << 4;
-        else if (c1 >= 'A' && c1 <= 'F') val = (c1 - 'A' + 10) << 4;
+        if (c1 >= '0' && c1 <= '9')
+            val = (c1 - '0') << 4;
+        else if (c1 >= 'a' && c1 <= 'f')
+            val = (c1 - 'a' + 10) << 4;
+        else if (c1 >= 'A' && c1 <= 'F')
+            val = (c1 - 'A' + 10) << 4;
 
-        if (c2 >= '0' && c2 <= '9') val |= (c2 - '0');
-        else if (c2 >= 'a' && c2 <= 'f') val |= (c2 - 'a' + 10);
-        else if (c2 >= 'A' && c2 <= 'F') val |= (c2 - 'A' + 10);
+        if (c2 >= '0' && c2 <= '9')
+            val |= (c2 - '0');
+        else if (c2 >= 'a' && c2 <= 'f')
+            val |= (c2 - 'a' + 10);
+        else if (c2 >= 'A' && c2 <= 'F')
+            val |= (c2 - 'A' + 10);
 
         dst[i / 2] = val;
     }

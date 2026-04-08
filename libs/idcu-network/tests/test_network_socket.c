@@ -1,7 +1,7 @@
-#include "idcu/network/network_layer.h"
 #include "idcu/log/log.h"
-#include <stdio.h>
+#include "idcu/network/network_layer.h"
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 int main(void) {

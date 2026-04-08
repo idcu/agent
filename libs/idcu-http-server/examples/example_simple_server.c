@@ -2,14 +2,14 @@
 #include "idcu/log/log.h"
 #include <stdio.h>
 
-int hello_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data) {
+int hello_handler(idcu_HttpRequest *request, idcu_HttpResponse *response, void *user_data) {
     (void)request;
     (void)user_data;
     idcu_http_response_set_body(response, "Hello, World!", 13);
     return IDCU_ERR_OK;
 }
 
-int echo_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data) {
+int echo_handler(idcu_HttpRequest *request, idcu_HttpResponse *response, void *user_data) {
     (void)user_data;
     if (request->body_length > 0) {
         idcu_http_response_set_body(response, request->body, request->body_length);
@@ -19,7 +19,7 @@ int echo_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void* u
     return IDCU_ERR_OK;
 }
 
-int json_handler(idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data) {
+int json_handler(idcu_HttpRequest *request, idcu_HttpResponse *response, void *user_data) {
     (void)request;
     (void)user_data;
     idcu_http_response_set_json_body(response, "{\"message\":\"Success\",\"status\":200}");

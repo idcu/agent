@@ -1,8 +1,8 @@
 #include "audit_log.h"
 #include "idcu/log/log.h"
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #ifdef _WIN32
@@ -12,13 +12,13 @@
 #endif
 
 struct idcu_AuditLog {
-    idcu_AuditEntry* entries;
+    idcu_AuditEntry *entries;
     size_t max_entries;
     size_t current_count;
     size_t head;
     size_t tail;
     char log_path[512];
-    FILE* log_file;
+    FILE *log_file;
     int initialized;
 };
 
@@ -37,48 +37,32 @@ static uint64_t get_current_timestamp_ms(void) {
 #endif
 }
 
-static const char* level_strings[] = {
-    "INFO",
-    "WARNING",
-    "ERROR",
-    "CRITICAL"
-};
+static const char *level_strings[] = {"INFO", "WARNING", "ERROR", "CRITICAL"};
 
-static const char* action_strings[] = {
-    "LOGIN",
-    "LOGOUT",
-    "ACCESS",
-    "MODIFY",
-    "DELETE",
-    "CREATE",
-    "EXECUTE",
-    "DENIED",
-    "CONFIG_CHANGE",
-    "MODULE_LOAD",
-    "MODULE_UNLOAD",
-    "CUSTOM"
-};
+static const char *action_strings[] = {"LOGIN",         "LOGOUT",      "ACCESS",        "MODIFY",
+                                       "DELETE",        "CREATE",      "EXECUTE",       "DENIED",
+                                       "CONFIG_CHANGE", "MODULE_LOAD", "MODULE_UNLOAD", "CUSTOM"};
 
-const char* idcu_audit_level_to_string(idcu_AuditLevel level) {
+const char *idcu_audit_level_to_string(idcu_AuditLevel level) {
     if (level < 0 || level >= sizeof(level_strings) / sizeof(level_strings[0])) {
         return "UNKNOWN";
     }
     return level_strings[level];
 }
 
-const char* idcu_audit_action_to_string(idcu_AuditAction action) {
+const char *idcu_audit_action_to_string(idcu_AuditAction action) {
     if (action < 0 || action >= sizeof(action_strings) / sizeof(action_strings[0])) {
         return "UNKNOWN";
     }
     return action_strings[action];
 }
 
-int idcu_audit_log_init(idcu_AuditLog** audit_log, const char* log_path) {
+int idcu_audit_log_init(idcu_AuditLog **audit_log, const char *log_path) {
     if (!audit_log) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    *audit_log = (idcu_AuditLog*)malloc(sizeof(idcu_AuditLog));
+    *audit_log = (idcu_AuditLog *)malloc(sizeof(idcu_AuditLog));
     if (!*audit_log) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -86,7 +70,8 @@ int idcu_audit_log_init(idcu_AuditLog** audit_log, const char* log_path) {
     memset(*audit_log, 0, sizeof(idcu_AuditLog));
 
     (*audit_log)->max_entries = IDCU_AUDIT_MAX_ENTRIES;
-    (*audit_log)->entries = (idcu_AuditEntry*)calloc((*audit_log)->max_entries, sizeof(idcu_AuditEntry));
+    (*audit_log)->entries =
+        (idcu_AuditEntry *)calloc((*audit_log)->max_entries, sizeof(idcu_AuditEntry));
     if (!(*audit_log)->entries) {
         free(*audit_log);
         *audit_log = NULL;
@@ -96,7 +81,7 @@ int idcu_audit_log_init(idcu_AuditLog** audit_log, const char* log_path) {
     if (log_path) {
         strncpy((*audit_log)->log_path, log_path, sizeof((*audit_log)->log_path) - 1);
         (*audit_log)->log_path[sizeof((*audit_log)->log_path) - 1] = '\0';
-        
+
         (*audit_log)->log_file = fopen(log_path, "a");
         if (!(*audit_log)->log_file) {
             IDCU_LOG_WARN("[audit_log] Failed to open audit log file: %s", log_path);
@@ -112,7 +97,7 @@ int idcu_audit_log_init(idcu_AuditLog** audit_log, const char* log_path) {
     return IDCU_ERR_OK;
 }
 
-void idcu_audit_log_destroy(idcu_AuditLog* audit_log) {
+void idcu_audit_log_destroy(idcu_AuditLog *audit_log) {
     if (!audit_log) {
         return;
     }
@@ -132,41 +117,38 @@ void idcu_audit_log_destroy(idcu_AuditLog* audit_log) {
     IDCU_LOG_INFO("[audit_log] Destroyed");
 }
 
-static void write_entry_to_file(idcu_AuditLog* audit_log, const idcu_AuditEntry* entry) {
+static void write_entry_to_file(idcu_AuditLog *audit_log, const idcu_AuditEntry *entry) {
     if (!audit_log || !audit_log->log_file || !entry) {
         return;
     }
 
     time_t t = (time_t)(entry->timestamp / 1000);
-    struct tm* tm_info = localtime(&t);
+    struct tm *tm_info = localtime(&t);
     char time_buf[64];
     strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
 
-    fprintf(audit_log->log_file, "[%s.%03u] [%s] [%s] Event: %s, User: %s, Resource: %s, Success: %d, Session: %llu, Details: %s\n",
+    fprintf(audit_log->log_file,
+            "[%s.%03u] [%s] [%s] Event: %s, User: %s, Resource: %s, Success: %d, Session: %llu, "
+            "Details: %s\n",
             time_buf, (unsigned int)(entry->timestamp % 1000),
-            idcu_audit_level_to_string(entry->level),
-            idcu_audit_action_to_string(entry->action),
-            entry->event_name,
-            entry->user_name,
-            entry->resource,
-            entry->success,
-            (unsigned long long)entry->session_id,
-            entry->details);
-    
+            idcu_audit_level_to_string(entry->level), idcu_audit_action_to_string(entry->action),
+            entry->event_name, entry->user_name, entry->resource, entry->success,
+            (unsigned long long)entry->session_id, entry->details);
+
     fflush(audit_log->log_file);
 }
 
-int idcu_audit_log_log(idcu_AuditLog* audit_log, const idcu_AuditEntry* entry) {
+int idcu_audit_log_log(idcu_AuditLog *audit_log, const idcu_AuditEntry *entry) {
     if (!audit_log || !audit_log->initialized || !entry) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_AuditEntry* new_entry = &audit_log->entries[audit_log->tail];
+    idcu_AuditEntry *new_entry = &audit_log->entries[audit_log->tail];
     memcpy(new_entry, entry, sizeof(idcu_AuditEntry));
     new_entry->timestamp = get_current_timestamp_ms();
 
     audit_log->tail = (audit_log->tail + 1) % audit_log->max_entries;
-    
+
     if (audit_log->current_count >= audit_log->max_entries) {
         audit_log->head = (audit_log->head + 1) % audit_log->max_entries;
     } else {
@@ -179,17 +161,17 @@ int idcu_audit_log_log(idcu_AuditLog* audit_log, const idcu_AuditEntry* entry) {
     return IDCU_ERR_OK;
 }
 
-int idcu_audit_log_log_simple(idcu_AuditLog* audit_log, idcu_AuditLevel level,
-                              idcu_AuditAction action, const char* event_name,
-                              const char* user_name, const char* resource,
-                              const char* details, int success) {
+int idcu_audit_log_log_simple(idcu_AuditLog *audit_log, idcu_AuditLevel level,
+                              idcu_AuditAction action, const char *event_name,
+                              const char *user_name, const char *resource, const char *details,
+                              int success) {
     if (!audit_log || !audit_log->initialized) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     idcu_AuditEntry entry;
     memset(&entry, 0, sizeof(entry));
-    
+
     entry.level = level;
     entry.action = action;
     entry.success = success;
@@ -218,17 +200,17 @@ int idcu_audit_log_log_simple(idcu_AuditLog* audit_log, idcu_AuditLevel level,
     return idcu_audit_log_log(audit_log, &entry);
 }
 
-int idcu_audit_log_query(idcu_AuditLog* audit_log, uint64_t start_time, uint64_t end_time,
-                         idcu_AuditEntry** entries, size_t* count) {
+int idcu_audit_log_query(idcu_AuditLog *audit_log, uint64_t start_time, uint64_t end_time,
+                         idcu_AuditEntry **entries, size_t *count) {
     if (!audit_log || !audit_log->initialized || !entries || !count) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
     size_t result_count = 0;
     size_t idx = audit_log->head;
-    
+
     for (size_t i = 0; i < audit_log->current_count; i++) {
-        idcu_AuditEntry* entry = &audit_log->entries[idx];
+        idcu_AuditEntry *entry = &audit_log->entries[idx];
         if (entry->timestamp >= start_time && entry->timestamp <= end_time) {
             result_count++;
         }
@@ -241,7 +223,7 @@ int idcu_audit_log_query(idcu_AuditLog* audit_log, uint64_t start_time, uint64_t
         return IDCU_ERR_OK;
     }
 
-    *entries = (idcu_AuditEntry*)malloc(result_count * sizeof(idcu_AuditEntry));
+    *entries = (idcu_AuditEntry *)malloc(result_count * sizeof(idcu_AuditEntry));
     if (!*entries) {
         return IDCU_ERR_NO_MEMORY;
     }
@@ -249,7 +231,7 @@ int idcu_audit_log_query(idcu_AuditLog* audit_log, uint64_t start_time, uint64_t
     idx = audit_log->head;
     size_t copy_idx = 0;
     for (size_t i = 0; i < audit_log->current_count; i++) {
-        idcu_AuditEntry* entry = &audit_log->entries[idx];
+        idcu_AuditEntry *entry = &audit_log->entries[idx];
         if (entry->timestamp >= start_time && entry->timestamp <= end_time) {
             memcpy(&(*entries)[copy_idx], entry, sizeof(idcu_AuditEntry));
             copy_idx++;
@@ -262,23 +244,24 @@ int idcu_audit_log_query(idcu_AuditLog* audit_log, uint64_t start_time, uint64_t
     return IDCU_ERR_OK;
 }
 
-void idcu_audit_log_free_entries(idcu_AuditEntry* entries, size_t count) {
+void idcu_audit_log_free_entries(idcu_AuditEntry *entries, size_t count) {
     if (entries) {
         free(entries);
     }
 }
 
-int idcu_audit_log_set_max_entries(idcu_AuditLog* audit_log, size_t max_entries) {
+int idcu_audit_log_set_max_entries(idcu_AuditLog *audit_log, size_t max_entries) {
     if (!audit_log || !audit_log->initialized || max_entries == 0) {
         return IDCU_ERR_INVALID_PARAM;
     }
 
-    idcu_AuditEntry* new_entries = (idcu_AuditEntry*)calloc(max_entries, sizeof(idcu_AuditEntry));
+    idcu_AuditEntry *new_entries = (idcu_AuditEntry *)calloc(max_entries, sizeof(idcu_AuditEntry));
     if (!new_entries) {
         return IDCU_ERR_NO_MEMORY;
     }
 
-    size_t copy_count = (audit_log->current_count < max_entries) ? audit_log->current_count : max_entries;
+    size_t copy_count =
+        (audit_log->current_count < max_entries) ? audit_log->current_count : max_entries;
     size_t idx = audit_log->head;
     for (size_t i = 0; i < copy_count; i++) {
         memcpy(&new_entries[i], &audit_log->entries[idx], sizeof(idcu_AuditEntry));
@@ -296,7 +279,7 @@ int idcu_audit_log_set_max_entries(idcu_AuditLog* audit_log, size_t max_entries)
     return IDCU_ERR_OK;
 }
 
-int idcu_audit_log_flush(idcu_AuditLog* audit_log) {
+int idcu_audit_log_flush(idcu_AuditLog *audit_log) {
     if (!audit_log || !audit_log->initialized) {
         return IDCU_ERR_INVALID_PARAM;
     }
@@ -309,7 +292,7 @@ int idcu_audit_log_flush(idcu_AuditLog* audit_log) {
     return IDCU_ERR_OK;
 }
 
-int idcu_audit_log_clear(idcu_AuditLog* audit_log) {
+int idcu_audit_log_clear(idcu_AuditLog *audit_log) {
     if (!audit_log || !audit_log->initialized) {
         return IDCU_ERR_INVALID_PARAM;
     }

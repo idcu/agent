@@ -1,0 +1,14 @@
+{
+  "module": {
+    "name": "demo-minimal",
+    "version": "1.0.0",
+    "type": "static",
+    "auto_adapt": true
+  },
+  "build": {
+    "c_standard": "auto",
+    "src": "auto",
+    "includes": ["include"],
+    "deps": []
+  }
+}
