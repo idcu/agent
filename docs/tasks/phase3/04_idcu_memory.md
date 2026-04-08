@@ -1,306 +1,291 @@
 # 任务 3.4: idcu-memory - 内存池管理库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建内存池管理库，支持：
-- 固定大小内存块分配
-- 内存池初始化和销毁
-- 快速的分配和释放
-- 内存使用统计
-- 线程安全
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建高效的内存池管理库，支持多粒度内存块分配（最多 8 个尺寸类别）、线程安全操作、内存使用统计、峰值使用追踪、安全检查（空指针、缓冲区溢出），满足分配/释放延迟 ≤ 100ns、内存碎片率 ≤ 5% 的性能要求。
 
-```bash
-mkdir -p libs/idcu-memory/include/idcu/memory
-mkdir -p libs/idcu-memory/src/idcu/memory
-mkdir -p libs/idcu-memory/tests
-mkdir -p libs/idcu-memory/examples
+### 1.2 不做什么
+- 不实现可变大小内存块（仅支持固定尺寸类别）
+- 不实现内存压缩或垃圾回收
+- 不实现跨进程共享内存
+- 不实现持久化内存池
+
+### 1.3 输入
+- 内存池初始化配置
+- 分配大小（字节）
+- 要释放的内存指针
+- 安全检查参数
+
+### 1.4 输出
+- 分配的内存指针
+- 统计信息（空闲块数、累计分配、峰值使用等）
+- 安全检查结果
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用（提供锁、错误码等）
+- phase2 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **内存池架构**: 多尺寸类别（Size Class）设计，最多 8 个类别
+- **空闲链表**: 每个尺寸类别独立的空闲链表
+- **线程安全**: 每个尺寸类别独立锁，减少锁竞争
+- **安全检查**: 内存保护标记（Guard）、头部魔法数验证
+
+### 2.2 核心逻辑
+```
+初始化流程：
+1. 预配置 8 个尺寸类别（如 16、32、64、128、256、512、1024、2048 字节）
+2. 为每个类别分配内存块数组
+3. 初始化空闲链表
+4. 初始化统计计数器
+
+分配流程：
+1. 根据请求大小选择最小满足的尺寸类别
+2. 获取该类别的锁
+3. 从空闲链表取一个块
+4. 标记为使用中
+5. 写入块头部信息
+6. 返回数据指针（跳过头部）
+
+释放流程：
+1. 验证指针有效性（检查魔法数）
+2. 获取尺寸类别索引
+3. 获取该类别的锁
+4. 标记为空闲
+5. 插回空闲链表
 ```
 
-### 2. 创建内存池头文件 (memory_pool.h)
-
-创建 `libs/idcu-memory/include/idcu/memory/memory_pool.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_MEMORY_MEMORY_POOL_H
-#define IDCU_MEMORY_MEMORY_POOL_H
+// 关键常量
+#define IDCU_MEM_POOL_MAX_BLOCKS        1024
+#define IDCU_MEM_POOL_MAX_SIZE_CLASSES 8
+#define IDCU_MEM_GUARD_SIZE             16
+#define IDCU_POOL_HEADER_MAGIC          0x49444355  // "IDCU"
 
-#include "idcu/common/error_code.h"
-#include "idcu/common/lock.h"
-#include <stddef.h>
-#include <stdint.h>
+// 内存块头部
+typedef struct {
+    uint8_t  size_class;
+    uint32_t block_idx;
+    uint32_t magic;
+} idcu_PoolBlockHeader;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// 内存块
+typedef struct {
+    void*    data;
+    uint8_t  in_use;
+    uint32_t alloc_size;
+    uint8_t  size_class;
+} idcu_PoolBlock;
 
-typedef struct idcu_MemoryBlock
-{
-    struct idcu_MemoryBlock* next;
-    uint8_t in_use;
-} idcu_MemoryBlock;
+// 尺寸类别
+typedef struct {
+    uint32_t        block_size;
+    uint32_t        block_count;
+    idcu_PoolBlock* blocks;
+    uint32_t        free_count;
+    uint32_t*       free_list;
+    uint32_t        free_head;
+    idcu_Mutex      class_lock;
+} idcu_SizeClass;
 
-typedef struct
-{
-    uint8_t* memory;
-    size_t block_size;
-    size_t block_count;
-    size_t total_size;
-    idcu_MemoryBlock* free_list;
-    idcu_Mutex lock;
-    uint64_t alloc_count;
-    uint64_t free_count;
-    uint64_t peak_usage;
-    uint64_t current_usage;
-    int initialized;
+// 内存池主结构体
+typedef struct {
+    idcu_SizeClass size_classes[IDCU_MEM_POOL_MAX_SIZE_CLASSES];
+    uint32_t       num_size_classes;
+    idcu_Mutex     lock;
+    uint64_t       total_allocated;
+    uint64_t       total_freed;
+    uint64_t       peak_usage;
+    uint32_t       null_check_count;
+    uint32_t       overflow_check_count;
 } idcu_MemoryPool;
 
-int  idcu_memory_pool_init(idcu_MemoryPool* pool, size_t block_size, size_t block_count);
-void idcu_memory_pool_destroy(idcu_MemoryPool* pool);
+// 核心 API
+int   idcu_mem_pool_init(idcu_MemoryPool* pool);
+void  idcu_mem_pool_destroy(idcu_MemoryPool* pool);
+void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size);
+void  idcu_mem_pool_free(idcu_MemoryPool* pool, void* ptr);
 
-void* idcu_memory_pool_alloc(idcu_MemoryPool* pool);
-void  idcu_memory_pool_free(idcu_MemoryPool* pool, void* ptr);
+// 统计 API
+uint32_t idcu_mem_pool_get_free_count(idcu_MemoryPool* pool, uint32_t size);
+uint64_t idcu_mem_pool_get_total_allocated(idcu_MemoryPool* pool);
+uint64_t idcu_mem_pool_get_peak_usage(idcu_MemoryPool* pool);
 
-void* idcu_memory_pool_calloc(idcu_MemoryPool* pool);
-void* idcu_memory_pool_realloc(idcu_MemoryPool* pool, void* ptr);
-
-int idcu_memory_pool_is_from(const idcu_MemoryPool* pool, const void* ptr);
-
-size_t idcu_memory_pool_get_block_size(const idcu_MemoryPool* pool);
-size_t idcu_memory_pool_get_block_count(const idcu_MemoryPool* pool);
-size_t idcu_memory_pool_get_free_count(const idcu_MemoryPool* pool);
-size_t idcu_memory_pool_get_used_count(const idcu_MemoryPool* pool);
-
-uint64_t idcu_memory_pool_get_alloc_count(const idcu_MemoryPool* pool);
-uint64_t idcu_memory_pool_get_free_count_total(const idcu_MemoryPool* pool);
-uint64_t idcu_memory_pool_get_peak_usage(const idcu_MemoryPool* pool);
-uint64_t idcu_memory_pool_get_current_usage(const idcu_MemoryPool* pool);
-
-void idcu_memory_pool_reset_stats(idcu_MemoryPool* pool);
-
-typedef struct
-{
-    size_t block_size;
-    size_t block_count;
-    size_t free_count;
-    size_t used_count;
-    uint64_t total_allocated;
-    uint64_t total_freed;
-    uint64_t peak_usage;
-    uint64_t current_usage;
-} idcu_MemoryPoolStats;
-
-void idcu_memory_pool_get_stats(const idcu_MemoryPool* pool, idcu_MemoryPoolStats* stats);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+// 安全检查 API
+int idcu_mem_check_null(const void* ptr, const char* context);
+int idcu_mem_check_overflow(const void* ptr, size_t size, const char* context);
+int idcu_mem_safe_copy(void* dst, size_t dst_size, const void* src, size_t src_size);
+int idcu_mem_pool_get_safety_stats(idcu_MemoryPool* pool, uint32_t* null_checks,
+                                   uint32_t* overflow_checks);
 ```
 
-### 3. 创建内存管理头文件 (memory.h)
+### 2.4 跨平台适配
+- 使用 idcu-common 中的跨平台互斥锁
+- 内存对齐使用标准 C 库函数
+- 所有代码使用标准 C 库，无平台特定 API
 
-创建 `libs/idcu-memory/include/idcu/memory/memory.h`：
+---
 
-```c
-#ifndef IDCU_MEMORY_MEMORY_H
-#define IDCU_MEMORY_MEMORY_H
+## 3. 验收标准（可量化）
 
-#include "memory_pool.h"
-#include <stddef.h>
+### 3.1 功能验收
+- [ ] 可以初始化和销毁内存池
+- [ ] 可以分配和释放不同大小的内存块
+- [ ] 自动选择合适的尺寸类别
+- [ ] 线程安全：多线程并发分配/释放不崩溃
+- [ ] 内存保护标记正确工作
+- [ ] 空指针检查和缓冲区溢出检查正常工作
+- [ ] 统计信息（空闲块数、累计分配、峰值使用）正确
+- [ ] idcu_mem_pool_destroy 正确释放所有资源，无内存泄漏
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+### 3.2 性能验收
+- 单次分配延迟 ≤ 100ns（平均值）
+- 单次释放延迟 ≤ 100ns（平均值）
+- 内存碎片率 ≤ 5%（长时间运行后）
+- 多线程（4 线程）吞吐量 ≥ 1,000,000 次/秒
+- 初始化时间 ≤ 10ms
 
-void* idcu_malloc(size_t size);
-void* idcu_calloc(size_t count, size_t size);
-void* idcu_realloc(void* ptr, size_t size);
-void  idcu_free(void* ptr);
+### 3.3 异常验收
+- [ ] 分配超过最大块大小时返回 NULL
+- [ ] 释放无效指针时安全处理（不崩溃）
+- [ ] 内存池已满时返回 NULL
+- [ ] 传入 NULL 池指针时返回明确错误码
 
-void* idcu_malloc_aligned(size_t size, size_t alignment);
-void  idcu_free_aligned(void* ptr);
+---
 
-typedef struct
-{
-    uint64_t total_allocated;
-    uint64_t total_freed;
-    uint64_t current_usage;
-    uint64_t peak_usage;
-    uint64_t allocation_count;
-} idcu_MemoryStats;
+## 4. 执行计划
 
-void idcu_memory_get_stats(idcu_MemoryStats* stats);
-void idcu_memory_reset_stats(void);
+### 4.1 工期
+4 小时/人
 
-#ifdef __cplusplus
-}
-#endif
+### 4.2 里程碑
+- D1-00: 完成头文件定义和数据结构（45 分钟）
+- D1-45: 完成初始化/销毁和核心分配/释放逻辑（1.5 小时）
+- D1-135: 完成统计和安全检查功能（45 分钟）
+- D1-180: 完成单元测试（30 分钟）
 
-#endif
+### 4.3 人力
+1 人（技能要求：C 语言 + 内存管理 + 多线程编程）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，结构体前缀 idcu_
+- 所有公共 API 有 Doxygen 风格注释
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 85%
+- 测试用例覆盖：各种尺寸分配、多线程、异常场景、安全检查
+- 性能测试用例验证分配/释放延迟和吞吐量
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build && cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::memory)`
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：多线程环境下锁竞争导致性能下降  
+应对：每个尺寸类别使用独立锁，减少锁竞争范围
+
+### 6.2 风险2
+描述：内存碎片问题  
+应对：使用多个尺寸类别，每个请求选择最小满足的类别
+
+---
+
+## 7. 详细实现步骤
+
+### 步骤 1: 确认目录结构
+```bash
+# 目录结构已存在
+libs/idcu-memory/
+├── include/idcu/memory/
+├── src/idcu/memory/
+├── tests/
+├── examples/
+├── CMakeLists.txt
+├── README.md
+└── module.json
 ```
 
-### 4. 创建 CMakeLists.txt
+### 步骤 2: 确认头文件 memory_pool.h
+确认 libs/idcu-memory/include/idcu/memory/memory_pool.h 中的 API 定义完整。
 
-创建 `libs/idcu-memory/CMakeLists.txt`：
+### 步骤 3: 确认实现文件 memory_pool.c
+确认 libs/idcu-memory/src/idcu/memory/memory_pool.c 中的实现完整。
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-memory VERSION 1.0.0 LANGUAGES C)
+### 步骤 4: 确认 CMakeLists.txt
+确认 libs/idcu-memory/CMakeLists.txt 配置正确，使用 idcu-module-build。
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+### 步骤 5: 确认 module.json
+确认 libs/idcu-memory/module.json 元数据完整。
 
-add_library(idcu-memory STATIC
-    src/idcu/memory/memory_pool.c
-    src/idcu/memory/memory.c
-)
+### 步骤 6: 确认 README.md
+确认 libs/idcu-memory/README.md 文档完整。
 
-target_include_directories(idcu-memory PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+---
 
-target_link_libraries(idcu-memory PRIVATE
-    idcu::common
-)
+## 8. 验证检查清单
 
-add_library(idcu::memory ALIAS idcu-memory)
+- [ ] 头文件 memory_pool.h 已存在且 API 完整
+- [ ] 实现文件 memory_pool.c 已存在且实现完整
+- [ ] CMakeLists.txt 已存在且配置正确
+- [ ] module.json 已存在
+- [ ] README.md 已存在
+- [ ] 可以正常编译通过
+- [ ] 单元测试通过率 100%
+- [ ] 性能测试达标（分配/释放 ≤ 100ns）
+- [ ] 内存泄漏检测通过（Valgrind/AddressSanitizer）
+- [ ] 多线程测试通过
+- [ ] 跨平台测试通过（Windows + Linux）
+- [ ] 已提交 Git
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+---
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
-
-### 5. 创建模块配置文件 (module.yaml)
-
-创建 `libs/idcu-memory/module.yaml`：
-
-```yaml
-name: idcu-memory
-version: 1.0.0
-description: Memory pool management library for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-
-build:
-  type: cmake
-  targets:
-    - idcu-memory
-
-headers:
-  - idcu/memory/memory_pool.h
-  - idcu/memory/memory.h
-
-features:
-  - memory_pool: Fixed-size block memory pool
-  - fast_alloc: Fast allocation and deallocation
-  - thread_safe: Thread-safe operations
-  - stats: Memory usage statistics
-  - aligned_alloc: Aligned memory allocation
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 6. 创建 README.md
-
-创建 `libs/idcu-memory/README.md`：
-
-```markdown
-# idcu-memory
-
-IDCU Agent 的内存池管理库。
-
-## 功能特性
-
-- **内存池**: 固定大小内存块分配
-- **快速分配**: 高效的内存分配和释放
-- **线程安全**: 多线程环境安全使用
-- **统计信息**: 内存使用统计
-- **对齐分配**: 对齐内存分配支持
-
-## 快速开始
-
-### 使用内存池
-
-```c
-#include "idcu/memory/memory_pool.h"
-
-idcu_MemoryPool pool;
-idcu_memory_pool_init(&pool, 64, 1024);
-
-void* ptr = idcu_memory_pool_alloc(&pool);
-if (ptr) {
-    memset(ptr, 0, 64);
-    idcu_memory_pool_free(&pool, ptr);
-}
-
-idcu_MemoryPoolStats stats;
-idcu_memory_pool_get_stats(&pool, &stats);
-printf("Used: %zu, Free: %zu\n", stats.used_count, stats.free_count);
-
-idcu_memory_pool_destroy(&pool);
-```
-
-### 使用标准分配器
-
-```c
-#include "idcu/memory/memory.h"
-
-void* ptr = idcu_malloc(1024);
-if (ptr) {
-    idcu_free(ptr);
-}
-```
-
-## API 文档
-
-详见 [include/idcu/memory/](include/idcu/memory/)
-```
-
-## 验证检查清单
-
-- [ ] 内存池头文件已创建
-- [ ] 内存管理头文件已创建
-- [ ] 实现文件已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
-- [ ] README.md 已创建
-- [ ] 内存池可以正常分配和释放
-- [ ] 统计功能正常工作
-
-## Git 提交
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-memory/
 git commit -m "feat: add idcu-memory library
 
-- Add memory pool with fixed-size blocks
-- Add fast allocation and deallocation
-- Add thread-safe operations
-- Add memory usage statistics
-- Add aligned memory allocation
+- Add multi-size-class memory pool
+- Add fast allocation and deallocation (≤100ns)
+- Add thread-safe operations with per-class locks
+- Add memory usage statistics (peak usage, free count)
+- Add safety checks (null pointer, buffer overflow)
+- Add memory guard for corruption detection
 - Add CMake build configuration
-- Add module.yaml metadata"
+- Add unit tests with 85%+ coverage"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 内存耗尽 | 内存池太小 | 增加 block_count 参数 |
-| 双倍释放 | 重复释放同一指针 | 确保每个指针只释放一次 |
-| 野指针 | 使用已释放的内存 | 使用内存池统计追踪使用情况 |
+| 分配返回 NULL | 内存池已满或请求过大 | 检查尺寸类别配置，增加块数量 |
+| 释放崩溃 | 释放无效指针或双重释放 | 使用安全检查函数验证指针 |
+| 性能不达标 | 锁竞争严重 | 确认使用了多个尺寸类别，减少锁粒度 |
+| 内存泄漏 | 忘记调用 destroy | 确保所有内存池都被正确销毁 |
+| 内存碎片 | 尺寸类别不匹配 | 调整尺寸类别配置，更好地匹配分配模式 |

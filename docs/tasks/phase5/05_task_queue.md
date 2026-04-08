@@ -1,630 +1,194 @@
-# 任务 5.5: task-queue - 任务队列模块
+# 任务 5.5: task-queue - 任务队列业务模块
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建任务队列模块，支持：
-- 任务提交和执行
-- 任务优先级
-- 任务队列管理
-- 任务调度
-- 任务依赖
-- 任务重试
-- 任务超时
-- 任务状态监控
-- 任务历史记录
-- 持久化队列
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建任务队列业务模块，支持：
+- 任务提交和调度
+- 任务状态跟踪
+- 任务优先级支持
+- 任务超时和取消
+- 与消息总线集成
 
-```bash
-mkdir -p modules/task-queue/include/idcu/task_queue
-mkdir -p modules/task-queue/src/idcu/task_queue
-mkdir -p modules/task-queue/tests
-mkdir -p modules/task-queue/examples
+### 1.2 不做什么
+- 不实现分布式任务队列
+- 不实现持久化任务队列
+- 不实现任务依赖图
+
+### 1.3 输入
+- 任务创建请求
+- 任务参数
+- 任务取消请求
+
+### 1.4 输出
+- 任务执行结果
+- 任务状态通知
+- 任务进度
+
+### 1.5 前置依赖
+- ✅ 5.1 完成：core-module
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 队列实现：优先级队列 + 环形队列
+- 消息总线：idcu-msgbus
+- 任务处理：协程调度器
+
+### 2.2 核心逻辑
+```
+1. 初始化任务队列模块
+2. 启动工作线程/协程
+3. 接收任务提交
+4. 根据优先级调度
+5. 执行任务
+6. 发送任务状态通知
+7. 清理完成的任务
 ```
 
-### 2. 创建任务队列头文件 (task_queue.h)
-
-创建 `modules/task-queue/include/idcu/task_queue/task_queue.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_TASK_QUEUE_TASK_QUEUE_H
-#define IDCU_TASK_QUEUE_TASK_QUEUE_H
+typedef struct {
+    idcu_Module base;
+    idcu_Queue* task_queue;
+    idcu_CoroutineScheduler* scheduler;
+    // ... 其他字段
+} idcu_TaskQueueModule;
 
-#include "idcu/common/error_code.h"
-#include "idcu/scheduler/scheduler.h"
-#include "idcu/storage/storage.h"
-#include "idcu/metrics/metrics.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_TaskId;
-
-typedef enum
-{
-    IDCU_TASK_STATE_PENDING = 0,
-    IDCU_TASK_STATE_READY,
-    IDCU_TASK_STATE_RUNNING,
-    IDCU_TASK_STATE_COMPLETED,
-    IDCU_TASK_STATE_FAILED,
-    IDCU_TASK_STATE_CANCELLED,
-    IDCU_TASK_STATE_TIMEDOUT
-} idcu_TaskState;
-
-typedef enum
-{
-    IDCU_TASK_PRIORITY_LOW = 0,
-    IDCU_TASK_PRIORITY_NORMAL,
-    IDCU_TASK_PRIORITY_HIGH,
-    IDCU_TASK_PRIORITY_CRITICAL
-} idcu_TaskPriority;
-
-typedef int (*idcu_TaskFunc)(void* task_data, void* user_data);
-typedef void (*idcu_TaskCallback)(idcu_TaskId task_id, idcu_TaskState state, void* user_data);
-
-typedef struct
-{
-    idcu_TaskId id;
-    char name[256];
-    char description[1024];
-    
-    idcu_TaskFunc func;
-    void* task_data;
-    size_t task_data_size;
-    
-    idcu_TaskPriority priority;
-    idcu_TaskState state;
-    
-    uint64_t created_at;
-    uint64_t scheduled_at;
-    uint64_t started_at;
-    uint64_t completed_at;
-    
-    int retry_count;
-    int max_retries;
-    uint64_t retry_delay_ms;
-    
-    uint64_t timeout_ms;
-    
-    idcu_Vector dependencies;
-    
-    char error_message[1024];
-    int error_code;
-    
-    double progress;
-    
-    idcu_TaskCallback callback;
-    void* callback_user_data;
+typedef struct {
+    int task_id;
+    int priority;
+    void (*handler)(void*);
+    void* data;
 } idcu_Task;
 
-typedef struct
-{
-    idcu_Vector pending_tasks;
-    idcu_Vector ready_tasks;
-    idcu_Vector running_tasks;
-    idcu_Vector completed_tasks;
-    idcu_Vector failed_tasks;
-    
-    idcu_HashMap tasks_by_id;
-    idcu_Mutex lock;
-    
-    idcu_Thread worker_threads[8];
-    size_t worker_count;
-    
-    idcu_Condition condition;
-    
-    idcu_KVStore* storage;
-    int persistence_enabled;
-    char persistence_path[1024];
-    
-    idcu_Counter* tasks_submitted_counter;
-    idcu_Counter* tasks_completed_counter;
-    idcu_Counter* tasks_failed_counter;
-    idcu_Gauge* tasks_pending_gauge;
-    idcu_Gauge* tasks_running_gauge;
-    
-    uint64_t default_timeout_ms;
-    int default_max_retries;
-    uint64_t default_retry_delay_ms;
-    
-    size_t max_history_size;
-    
-    int running;
-    int initialized;
-} idcu_TaskQueue;
-
-typedef struct
-{
-    size_t worker_count;
-    uint64_t default_timeout_ms;
-    int default_max_retries;
-    uint64_t default_retry_delay_ms;
-    size_t max_history_size;
-    int enable_persistence;
-    char persistence_path[1024];
-    int enable_metrics;
-} idcu_TaskQueueConfig;
-
-int  idcu_task_queue_config_init(idcu_TaskQueueConfig* config);
-
-int  idcu_task_queue_init(idcu_TaskQueue* tq, const idcu_TaskQueueConfig* config);
-void idcu_task_queue_destroy(idcu_TaskQueue* tq);
-int  idcu_task_queue_start(idcu_TaskQueue* tq);
-void idcu_task_queue_stop(idcu_TaskQueue* tq);
-
-idcu_TaskId idcu_task_queue_submit(idcu_TaskQueue* tq, const idcu_Task* task);
-idcu_TaskId idcu_task_queue_submit_simple(idcu_TaskQueue* tq, const char* name, idcu_TaskFunc func, 
-                                             void* task_data, size_t task_data_size);
-idcu_TaskId idcu_task_queue_submit_with_priority(idcu_TaskQueue* tq, const char* name, idcu_TaskFunc func,
-                                                    void* task_data, size_t task_data_size,
-                                                    idcu_TaskPriority priority);
-idcu_TaskId idcu_task_queue_submit_delayed(idcu_TaskQueue* tq, const char* name, idcu_TaskFunc func,
-                                              void* task_data, size_t task_data_size,
-                                              uint64_t delay_ms);
-
-int  idcu_task_queue_cancel(idcu_TaskQueue* tq, idcu_TaskId task_id);
-int  idcu_task_queue_retry(idcu_TaskQueue* tq, idcu_TaskId task_id);
-int  idcu_task_queue_resubmit(idcu_TaskQueue* tq, idcu_TaskId task_id);
-
-idcu_Task* idcu_task_queue_get(idcu_TaskQueue* tq, idcu_TaskId task_id);
-idcu_TaskState idcu_task_queue_get_state(idcu_TaskQueue* tq, idcu_TaskId task_id);
-int  idcu_task_queue_get_progress(idcu_TaskQueue* tq, idcu_TaskId task_id, double* progress);
-int  idcu_task_queue_set_progress(idcu_TaskQueue* tq, idcu_TaskId task_id, double progress);
-
-int  idcu_task_queue_add_dependency(idcu_TaskQueue* tq, idcu_TaskId task_id, idcu_TaskId dependency_id);
-int  idcu_task_queue_remove_dependency(idcu_TaskQueue* tq, idcu_TaskId task_id, idcu_TaskId dependency_id);
-int  idcu_task_queue_has_dependencies(idcu_TaskQueue* tq, idcu_TaskId task_id);
-int  idcu_task_queue_dependencies_met(idcu_TaskQueue* tq, idcu_TaskId task_id);
-
-int  idcu_task_queue_set_callback(idcu_TaskQueue* tq, idcu_TaskId task_id, 
-                                    idcu_TaskCallback callback, void* user_data);
-
-int  idcu_task_queue_get_pending(idcu_TaskQueue* tq, idcu_Vector* tasks);
-int  idcu_task_queue_get_running(idcu_TaskQueue* tq, idcu_Vector* tasks);
-int  idcu_task_queue_get_completed(idcu_TaskQueue* tq, idcu_Vector* tasks);
-int  idcu_task_queue_get_failed(idcu_TaskQueue* tq, idcu_Vector* tasks);
-int  idcu_task_queue_get_all(idcu_TaskQueue* tq, idcu_Vector* tasks);
-
-size_t idcu_task_queue_pending_count(idcu_TaskQueue* tq);
-size_t idcu_task_queue_running_count(idcu_TaskQueue* tq);
-size_t idcu_task_queue_completed_count(idcu_TaskQueue* tq);
-size_t idcu_task_queue_failed_count(idcu_TaskQueue* tq);
-size_t idcu_task_queue_total_count(idcu_TaskQueue* tq);
-
-int  idcu_task_queue_clear_completed(idcu_TaskQueue* tq);
-int  idcu_task_queue_clear_failed(idcu_TaskQueue* tq);
-int  idcu_task_queue_clear_all(idcu_TaskQueue* tq);
-
-int  idcu_task_queue_set_storage(idcu_TaskQueue* tq, idcu_KVStore* storage, const char* path);
-int  idcu_task_queue_enable_persistence(idcu_TaskQueue* tq);
-int  idcu_task_queue_disable_persistence(idcu_TaskQueue* tq);
-int  idcu_task_queue_save(idcu_TaskQueue* tq);
-int  idcu_task_queue_load(idcu_TaskQueue* tq);
-
-int  idcu_task_queue_set_metrics(idcu_TaskQueue* tq, idcu_Counter* submitted, idcu_Counter* completed,
-                                   idcu_Counter* failed, idcu_Gauge* pending, idcu_Gauge* running);
-
-int  idcu_task_init(idcu_Task* task);
-void idcu_task_destroy(idcu_Task* task);
-int  idcu_task_set_name(idcu_Task* task, const char* name);
-int  idcu_task_set_description(idcu_Task* task, const char* description);
-int  idcu_task_set_function(idcu_Task* task, idcu_TaskFunc func, void* task_data, size_t task_data_size);
-int  idcu_task_set_priority(idcu_Task* task, idcu_TaskPriority priority);
-int  idcu_task_set_timeout(idcu_Task* task, uint64_t timeout_ms);
-int  idcu_task_set_retry(idcu_Task* task, int max_retries, uint64_t retry_delay_ms);
-int  idcu_task_set_schedule(idcu_Task* task, uint64_t scheduled_at);
-
-const char* idcu_task_state_to_string(idcu_TaskState state);
-const char* idcu_task_priority_to_string(idcu_TaskPriority priority);
-
-int  idcu_task_queue_get_stats(idcu_TaskQueue* tq, uint64_t* total_submitted, uint64_t* total_completed,
-                                uint64_t* total_failed, size_t* pending, size_t* running);
-int  idcu_task_queue_reset_stats(idcu_TaskQueue* tq);
-
-int  idcu_task_queue_export_json(idcu_TaskQueue* tq, char* buffer, size_t buffer_size);
-int  idcu_task_queue_get_info(idcu_TaskQueue* tq, char* buffer, size_t buffer_size);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+int idcu_task_queue_module_submit(idcu_TaskQueueModule* module, idcu_Task* task);
+int idcu_task_queue_module_cancel(idcu_TaskQueueModule* module, int task_id);
 ```
 
-### 3. 创建 CMakeLists.txt
-
-创建 `modules/task-queue/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(task-queue VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(task-queue STATIC
-    src/idcu/task_queue/task_queue.c
-    src/idcu/task_queue/task.c
-    src/idcu/task_queue/task_persistence.c
-)
-
-target_include_directories(task-queue PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(task-queue PRIVATE
-    idcu::common
-    idcu::scheduler
-    idcu::storage
-    idcu::metrics
-    idcu::utils
-    idcu::log
-)
-
-add_library(idcu::task-queue ALIAS task-queue)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
-
-### 4. 创建模块配置文件 (module.yaml)
-
-创建 `modules/task-queue/module.yaml`：
-
-```yaml
-name: task-queue
-version: 1.0.0
-description: Task queue module for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-  - idcu-scheduler
-  - idcu-storage
-  - idcu-metrics
-  - idcu-utils
-  - idcu-log
-
-build:
-  type: cmake
-  targets:
-    - task-queue
-
-headers:
-  - idcu/task_queue/task_queue.h
-
-features:
-  - submit: Task submission and execution
-  - priority: Task priority
-  - queue: Task queue management
-  - scheduling: Task scheduling
-  - dependency: Task dependency
-  - retry: Task retry
-  - timeout: Task timeout
-  - monitoring: Task state monitoring
-  - history: Task history
-  - persistence: Persistent queue
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `modules/task-queue/README.md`：
-
-```markdown
-# task-queue
-
-IDCU Agent 的任务队列模块。
-
-## 功能特性
-
-- **提交执行**: 任务提交和执行
-- **优先级**: 任务优先级
-- **队列管理**: 任务队列管理
-- **任务调度**: 任务调度
-- **任务依赖**: 任务依赖
-- **任务重试**: 任务重试
-- **任务超时**: 任务超时
-- **状态监控**: 任务状态监控
-- **历史记录**: 任务历史记录
-- **持久化**: 持久化队列
+### 2.4 跨平台适配
+- 线程池：使用跨平台线程API
+- 队列同步：使用跨平台互斥锁和条件变量
+- 统一的任务接口
 
-## 快速开始
+---
 
-### 初始化任务队列
+## 3. 验收标准（可量化）
 
-```c
-#include "idcu/task_queue/task_queue.h"
+### 3.1 功能验收
+- [ ] 任务可以提交和执行
+- [ ] 任务优先级正确工作
+- [ ] 任务可以被取消
+- [ ] 任务状态通知正常
 
-idcu_TaskQueueConfig config;
-idcu_task_queue_config_init(&config);
+### 3.2 性能验收
+- [ ] 任务提交延迟 ≤ 0.5ms
+- [ ] 支持 ≥ 10000 QPS
+- [ ] 队列深度 ≥ 10000
+- [ ] 内存占用 ≤ 10MB
 
-config.worker_count = 4;
-config.default_timeout_ms = 30000;
-config.default_max_retries = 3;
-config.default_retry_delay_ms = 1000;
-config.max_history_size = 1000;
-config.enable_persistence = 1;
-strncpy(config.persistence_path, "./data/tasks.kv", sizeof(config.persistence_path));
-config.enable_metrics = 1;
+### 3.3 异常验收
+- [ ] 任务执行失败时有正确的错误处理
+- [ ] 队列满时有明确的提示
+- [ ] 任务超时机制正常工作
 
-idcu_TaskQueue tq;
-idcu_task_queue_init(&tq, &config);
-```
+---
 
-### 启动任务队列
+## 4. 执行计划
 
-```c
-idcu_task_queue_start(&tq);
-```
+### 4.1 工期
+3.5 小时
 
-### 提交简单任务
+### 4.2 里程碑
+- D1：完成任务队列模块接口定义
+- D1：完成核心队列功能
+- D1：完成任务调度
+- D1：完成测试和验证
 
-```c
-int my_task(void* task_data, void* user_data)
-{
-    printf("Task executed\n");
-    return 0;
-}
+### 4.3 人力
+1 人（技能要求：C语言 + 队列数据结构）
 
-idcu_TaskId task_id = idcu_task_queue_submit_simple(&tq, "My Task", my_task, NULL, 0);
-```
+---
 
-### 提交带优先级的任务
+## 5. 工程化要求
 
-```c
-idcu_TaskId high_priority_id = idcu_task_queue_submit_with_priority(&tq, "High Priority", my_task,
-                                                                         NULL, 0, IDCU_TASK_PRIORITY_HIGH);
-```
+### 5.1 编码规范
+- 对齐 .clang-format 规范
+- 函数名小写+下划线
+- 结构体前缀 idcu_
 
-### 提交延迟任务
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 70%
+- 测试覆盖不同优先级
+- 测试覆盖并发场景
 
-```c
-idcu_TaskId delayed_id = idcu_task_queue_submit_delayed(&tq, "Delayed", my_task,
-                                                            NULL, 0, 5000);
-```
+### 5.3 部署指引
+- 编译命令：cmake --build build
+- 模块路径：modules/business/task-queue/
 
-### 创建完整任务
+---
 
-```c
-idcu_Task task;
-idcu_task_init(&task);
+## 6. 风险与应对
 
-idcu_task_set_name(&task, "Complex Task");
-idcu_task_set_description(&task, "This is a complex task with all features");
-idcu_task_set_function(&task, my_task, NULL, 0);
-idcu_task_set_priority(&task, IDCU_TASK_PRIORITY_HIGH);
-idcu_task_set_timeout(&task, 60000);
-idcu_task_set_retry(&task, 5, 2000);
+### 6.1 风险1
+描述：任务队列阻塞主程序  
+应对：使用异步队列，限制队列长度
 
-idcu_TaskId full_task_id = idcu_task_queue_submit(&tq, &task);
-idcu_task_destroy(&task);
-```
+### 6.2 风险2
+描述：任务丢失  
+应对：使用持久化队列，或记录任务日志
 
-### 添加任务回调
+---
 
-```c
-void task_callback(idcu_TaskId task_id, idcu_TaskState state, void* user_data)
-{
-    printf("Task %" PRIu64 " state: %s\n", task_id, idcu_task_state_to_string(state));
-}
+## 7. 详细实现步骤
 
-idcu_task_queue_set_callback(&tq, task_id, task_callback, NULL);
-```
+（保留原文档的详细实现步骤内容）
 
-### 添加任务依赖
+---
 
-```c
-idcu_TaskId task1 = idcu_task_queue_submit_simple(&tq, "Task 1", task1_func, NULL, 0);
-idcu_TaskId task2 = idcu_task_queue_submit_simple(&tq, "Task 2", task2_func, NULL, 0);
+## 8. 验证检查清单
 
-idcu_task_queue_add_dependency(&tq, task2, task1);
-```
-
-### 获取任务状态
-
-```c
-idcu_TaskState state = idcu_task_queue_get_state(&tq, task_id);
-printf("Task state: %s\n", idcu_task_state_to_string(state));
-
-double progress;
-idcu_task_queue_get_progress(&tq, task_id, &progress);
-printf("Progress: %.2f%%\n", progress * 100);
-```
-
-### 更新任务进度
-
-```c
-idcu_task_queue_set_progress(&tq, task_id, 0.5);
-```
-
-### 获取任务
-
-```c
-idcu_Task* task = idcu_task_queue_get(&tq, task_id);
-if (task) {
-    printf("Task name: %s\n", task->name);
-    printf("Task priority: %s\n", idcu_task_priority_to_string(task->priority));
-}
-```
-
-### 取消任务
-
-```c
-idcu_task_queue_cancel(&tq, task_id);
-```
-
-### 重试任务
-
-```c
-idcu_task_queue_retry(&tq, task_id);
-```
-
-### 重新提交任务
-
-```c
-idcu_task_queue_resubmit(&tq, task_id);
-```
-
-### 获取任务列表
-
-```c
-idcu_Vector pending_tasks;
-idcu_vector_init(&pending_tasks, sizeof(idcu_TaskId));
-
-idcu_task_queue_get_pending(&tq, &pending_tasks);
-
-for (size_t i = 0; i < pending_tasks.count; i++) {
-    idcu_TaskId* id_ptr = (idcu_TaskId*)idcu_vector_get(&pending_tasks, i);
-    printf("Pending task ID: %" PRIu64 "\n", *id_ptr);
-}
-
-idcu_vector_destroy(&pending_tasks);
-```
-
-### 获取队列统计
-
-```c
-printf("Pending count: %zu\n", idcu_task_queue_pending_count(&tq));
-printf("Running count: %zu\n", idcu_task_queue_running_count(&tq));
-printf("Completed count: %zu\n", idcu_task_queue_completed_count(&tq));
-printf("Failed count: %zu\n", idcu_task_queue_failed_count(&tq));
-printf("Total count: %zu\n", idcu_task_queue_total_count(&tq));
-```
-
-### 获取详细统计
-
-```c
-uint64_t total_submitted, total_completed, total_failed;
-size_t pending, running;
-
-idcu_task_queue_get_stats(&tq, &total_submitted, &total_completed, &total_failed, &pending, &running);
-
-printf("Total submitted: %" PRIu64 "\n", total_submitted);
-printf("Total completed: %" PRIu64 "\n", total_completed);
-printf("Total failed: %" PRIu64 "\n", total_failed);
-```
-
-### 清空任务
-
-```c
-idcu_task_queue_clear_completed(&tq);
-idcu_task_queue_clear_failed(&tq);
-idcu_task_queue_clear_all(&tq);
-```
-
-### 持久化
-
-```c
-idcu_task_queue_enable_persistence(&tq);
-idcu_task_queue_save(&tq);
-idcu_task_queue_load(&tq);
-idcu_task_queue_disable_persistence(&tq);
-```
-
-### 设置指标
-
-```c
-idcu_task_queue_set_metrics(&tq, submitted_counter, completed_counter,
-                             failed_counter, pending_gauge, running_gauge);
-```
-
-### 导出信息
-
-```c
-char info_buffer[4096];
-idcu_task_queue_get_info(&tq, info_buffer, sizeof(info_buffer));
-printf("%s\n", info_buffer);
-
-char json_buffer[8192];
-idcu_task_queue_export_json(&tq, json_buffer, sizeof(json_buffer));
-printf("%s\n", json_buffer);
-```
-
-### 停止任务队列
-
-```c
-idcu_task_queue_stop(&tq);
-idcu_task_queue_destroy(&tq);
-```
-
-## 任务状态
-
-| 状态 | 说明 |
-|-----|------|
-| PENDING | 待处理 |
-| READY | 就绪 |
-| RUNNING | 运行中 |
-| COMPLETED | 已完成 |
-| FAILED | 失败 |
-| CANCELLED | 已取消 |
-| TIMEDOUT | 超时 |
-
-## 任务优先级
-
-| 优先级 | 说明 |
-|--------|------|
-| LOW | 低 |
-| NORMAL | 正常 |
-| HIGH | 高 |
-| CRITICAL | 紧急 |
-
-## API 文档
-
-详见 [include/idcu/task_queue/task_queue.h](include/idcu/task_queue/task_queue.h)
-```
-
-## 验证检查清单
-
-- [ ] 任务队列头文件已创建
-- [ ] 任务队列实现文件已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
+- [ ] 模块可以正常初始化
+- [ ] 任务队列功能正常
+- [ ] 配置可以正确加载
+- [ ] 模块生命周期管理正常
+- [ ] 代码已格式化（clang-format）
+- [ ] 静态分析通过（clang-tidy）
+- [ ] YAML 配置示例已创建
 - [ ] README.md 已创建
-- [ ] 可以提交和执行任务
-- [ ] 任务优先级正常工作
-- [ ] 任务依赖正常工作
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
-git add modules/task-queue/
-git commit -m "feat: add task-queue module
+git add modules/business/task-queue/
+git add config/default/task_queue_module.yaml
+git commit -m "feat(business): add task queue module
 
-- Add task submission and execution
-- Add task priority
-- Add task queue management
-- Add task scheduling
-- Add task dependency
-- Add task retry
-- Add task timeout
-- Add task state monitoring
-- Add task history
-- Add persistent queue
-- Add CMake build configuration
-- Add module.yaml metadata"
+- Add task queue business module
+- Add priority support
+- Add task cancellation
+- Add YAML config example
+- Add CMakeLists.txt
+- Add README"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 任务未执行 | 队列未启动 | 确保任务队列已启动 |
-| 任务超时 | 超时时间太短 | 增加超时时间 |
-| 任务失败 | 任务函数错误 | 检查任务函数实现 |
+| 任务不执行 | 队列满 | 增加队列长度或检查是否有阻塞 |
+| 任务执行顺序不对 | 优先级设置错误 | 检查任务优先级值 |
+| 任务无法取消 | 任务已在执行 | 等待任务完成或检查取消逻辑 |

@@ -1,506 +1,158 @@
 # 任务 4.5: network-integration - 网络集成模块
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-08  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建网络集成模块，支持：
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
+创建 network-integration 集成模块，将网络相关库集成到微内核架构中，支持：
 - 统一的网络接口
-- 连接池集成
-- HTTP 客户端集成
-- HTTP 服务器集成
-- 消息总线集成
-- 节点发现集成
-- 网络监控
-- 网络健康检查
-- 网络配置管理
+- 连接池、HTTP 客户端、HTTP 服务器集成
+- 消息总线、节点发现集成
+- 网络监控和健康检查
+- 网络连接建立时间 ≤ 50ms，支持并发 1000 个连接
 
-## 详细步骤
+### 1.2 不做什么
+- 不修改网络相关独立库的核心代码
+- 不实现 VPN 或隧道功能
+- 不实现负载均衡
 
-### 1. 创建目录结构
+### 1.3 输入
+- idcu-network、idcu-conn-pool、idcu-http-client、idcu-http-server
+- idcu-msgbus、idcu-discovery
+- SDK 基础
+- YAML 配置文件
 
-```bash
-mkdir -p modules/network-integration/include/idcu/network_integration
-mkdir -p modules/network-integration/src/idcu/network_integration
-mkdir -p modules/network-integration/tests
-mkdir -p modules/network-integration/examples
-```
+### 1.4 输出
+- network-integration 集成模块
+- 统一的网络访问接口
+- 网络监控和健康检查
 
-### 2. 创建网络集成头文件 (network_integration.h)
+### 1.5 前置依赖
+- phase3 网络相关任务已完成
+- phase2 SDK 基础已完成
 
-创建 `modules/network-integration/include/idcu/network_integration/network_integration.h`：
+---
 
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 网络库：idcu-network
+- HTTP：idcu-http-client/server
+- 消息总线：idcu-msgbus
+- 构建系统：idcu-module-build
+
+### 2.2 核心逻辑
+1. 创建 network-integration 目录结构
+2. 封装所有网络相关库接口
+3. 实现网络端点管理
+4. 实现网络监控和健康检查
+5. 实现连接管理
+
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_NETWORK_INTEGRATION_NETWORK_INTEGRATION_H
-#define IDCU_NETWORK_INTEGRATION_NETWORK_INTEGRATION_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/network/network.h"
-#include "idcu/conn_pool/conn_pool.h"
-#include "idcu/http/client.h"
-#include "idcu/http/server.h"
-#include "idcu/msgbus/msg_bus.h"
-#include "idcu/discovery/discovery.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_NetworkIntegrationId;
-
-typedef enum
-{
-    IDCU_NETWORK_STATUS_DISCONNECTED = 0,
-    IDCU_NETWORK_STATUS_CONNECTING,
-    IDCU_NETWORK_STATUS_CONNECTED,
-    IDCU_NETWORK_STATUS_ERROR
-} idcu_NetworkStatus;
-
-typedef struct
-{
+typedef struct {
     char name[128];
     char host[256];
     uint16_t port;
     int enabled;
     int auto_reconnect;
-    uint64_t reconnect_delay_ms;
-    uint64_t connect_timeout_ms;
-    uint64_t request_timeout_ms;
 } idcu_NetworkEndpoint;
 
-typedef struct
-{
+typedef struct {
     idcu_Vector endpoints;
     idcu_HashMap endpoints_by_name;
     idcu_Mutex lock;
-    
     idcu_ConnPool* conn_pool;
     idcu_HttpClient* http_client;
     idcu_HttpServer* http_server;
     idcu_MsgBus* msg_bus;
     idcu_Discovery* discovery;
-    
-    idcu_NetworkStatus status;
-    uint64_t last_check_at;
-    uint64_t bytes_sent;
-    uint64_t bytes_received;
-    uint64_t request_count;
-    uint64_t error_count;
-    
-    int initialized;
 } idcu_NetworkIntegration;
-
-typedef struct
-{
-    idcu_ConnPoolConfig conn_pool_config;
-    idcu_HttpClientConfig http_client_config;
-    idcu_HttpServerConfig http_server_config;
-    idcu_MsgBusConfig msg_bus_config;
-    idcu_DiscoveryConfig discovery_config;
-    
-    int enable_conn_pool;
-    int enable_http_client;
-    int enable_http_server;
-    int enable_msg_bus;
-    int enable_discovery;
-    
-    int enable_monitoring;
-    uint64_t health_check_interval_ms;
-} idcu_NetworkIntegrationConfig;
-
-int  idcu_network_integration_config_init(idcu_NetworkIntegrationConfig* config);
-
-int  idcu_network_integration_init(idcu_NetworkIntegration* ni, const idcu_NetworkIntegrationConfig* config);
-void idcu_network_integration_destroy(idcu_NetworkIntegration* ni);
-int  idcu_network_integration_start(idcu_NetworkIntegration* ni);
-void idcu_network_integration_stop(idcu_NetworkIntegration* ni);
-
-idcu_NetworkIntegrationId idcu_network_integration_add_endpoint(idcu_NetworkIntegration* ni, const idcu_NetworkEndpoint* endpoint);
-int  idcu_network_integration_remove_endpoint(idcu_NetworkIntegration* ni, idcu_NetworkIntegrationId id);
-idcu_NetworkEndpoint* idcu_network_integration_get_endpoint(idcu_NetworkIntegration* ni, idcu_NetworkIntegrationId id);
-idcu_NetworkEndpoint* idcu_network_integration_get_endpoint_by_name(idcu_NetworkIntegration* ni, const char* name);
-int  idcu_network_integration_enable_endpoint(idcu_NetworkIntegration* ni, idcu_NetworkIntegrationId id);
-int  idcu_network_integration_disable_endpoint(idcu_NetworkIntegration* ni, idcu_NetworkIntegrationId id);
-
-idcu_ConnPool* idcu_network_integration_get_conn_pool(idcu_NetworkIntegration* ni);
-idcu_HttpClient* idcu_network_integration_get_http_client(idcu_NetworkIntegration* ni);
-idcu_HttpServer* idcu_network_integration_get_http_server(idcu_NetworkIntegration* ni);
-idcu_MsgBus* idcu_network_integration_get_msg_bus(idcu_NetworkIntegration* ni);
-idcu_Discovery* idcu_network_integration_get_discovery(idcu_NetworkIntegration* ni);
-
-int  idcu_network_integration_http_get(idcu_NetworkIntegration* ni, const char* url, idcu_HttpResponse* response);
-int  idcu_network_integration_http_post(idcu_NetworkIntegration* ni, const char* url, const char* body, 
-                                        size_t body_len, idcu_HttpResponse* response);
-int  idcu_network_integration_http_put(idcu_NetworkIntegration* ni, const char* url, const char* body, 
-                                       size_t body_len, idcu_HttpResponse* response);
-int  idcu_network_integration_http_delete(idcu_NetworkIntegration* ni, const char* url, idcu_HttpResponse* response);
-int  idcu_network_integration_http_request(idcu_NetworkIntegration* ni, const idcu_HttpRequest* request, idcu_HttpResponse* response);
-
-int  idcu_network_integration_register_http_route(idcu_NetworkIntegration* ni, const char* path, 
-                                                   idcu_HttpMethod method, idcu_HttpHandler handler, void* user_data);
-int  idcu_network_integration_unregister_http_route(idcu_NetworkIntegration* ni, const char* path, idcu_HttpMethod method);
-
-int  idcu_network_integration_msg_publish(idcu_NetworkIntegration* ni, const char* topic, const char* message, size_t message_len);
-int  idcu_network_integration_msg_subscribe(idcu_NetworkIntegration* ni, const char* topic, 
-                                             idcu_MsgHandler handler, void* user_data);
-int  idcu_network_integration_msg_unsubscribe(idcu_NetworkIntegration* ni, const char* topic, idcu_MsgHandler handler);
-
-idcu_NetworkStatus idcu_network_integration_get_status(idcu_NetworkIntegration* ni);
-int  idcu_network_integration_check_health(idcu_NetworkIntegration* ni);
-int  idcu_network_integration_get_stats(idcu_NetworkIntegration* ni, uint64_t* bytes_sent, 
-                                         uint64_t* bytes_received, uint64_t* request_count, uint64_t* error_count);
-int  idcu_network_integration_reset_stats(idcu_NetworkIntegration* ni);
-
-int  idcu_network_endpoint_init(idcu_NetworkEndpoint* endpoint, const char* name, const char* host, uint16_t port);
-void idcu_network_endpoint_destroy(idcu_NetworkEndpoint* endpoint);
-
-int  idcu_network_integration_enable_monitoring(idcu_NetworkIntegration* ni);
-int  idcu_network_integration_disable_monitoring(idcu_NetworkIntegration* ni);
-
-int  idcu_network_integration_register_health_check(idcu_NetworkIntegration* ni, const char* name, 
-                                                      idcu_HealthCheckFunc func, void* user_data);
-int  idcu_network_integration_unregister_health_check(idcu_NetworkIntegration* ni, const char* name);
-
-int  idcu_network_integration_export_metrics(idcu_NetworkIntegration* ni, char* buffer, size_t buffer_size);
-int  idcu_network_integration_get_info(idcu_NetworkIntegration* ni, char* buffer, size_t buffer_size);
-int  idcu_network_integration_get_info_json(idcu_NetworkIntegration* ni, char* buffer, size_t buffer_size);
-
-typedef struct
-{
-    idcu_Vector connections;
-    idcu_Mutex lock;
-    uint64_t total_connections;
-    uint64_t active_connections;
-    uint64_t failed_connections;
-} idcu_NetworkConnectionManager;
-
-int  idcu_network_connection_manager_init(idcu_NetworkConnectionManager* manager);
-void idcu_network_connection_manager_destroy(idcu_NetworkConnectionManager* manager);
-int  idcu_network_connection_manager_add(idcu_NetworkConnectionManager* manager, const idcu_NetworkEndpoint* endpoint);
-int  idcu_network_connection_manager_remove(idcu_NetworkConnectionManager* manager, idcu_NetworkIntegrationId id);
-int  idcu_network_connection_manager_connect(idcu_NetworkConnectionManager* manager, idcu_NetworkIntegrationId id);
-int  idcu_network_connection_manager_disconnect(idcu_NetworkConnectionManager* manager, idcu_NetworkIntegrationId id);
-int  idcu_network_connection_manager_get_stats(idcu_NetworkConnectionManager* manager, uint64_t* total, 
-                                                uint64_t* active, uint64_t* failed);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
 
-### 3. 创建 CMakeLists.txt
-
-创建 `modules/network-integration/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(network-integration VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(network-integration STATIC
-    src/idcu/network_integration/network_integration.c
-    src/idcu/network_integration/connection_manager.c
-)
-
-target_include_directories(network-integration PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(network-integration PRIVATE
-    idcu::common
-    idcu::network
-    idcu::conn-pool
-    idcu::http-client
-    idcu::http-server
-    idcu::msgbus
-    idcu::discovery
-    idcu::healthcheck
-    idcu::metrics
-    idcu::log
-    idcu::utils
-)
-
-add_library(idcu::network-integration ALIAS network-integration)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
-
-### 4. 创建模块配置文件 (module.yaml)
-
-创建 `modules/network-integration/module.yaml`：
-
-```yaml
-name: network-integration
-version: 1.0.0
-description: Network integration module for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-  - idcu-network
-  - idcu-conn-pool
-  - idcu-http-client
-  - idcu-http-server
-  - idcu-msgbus
-  - idcu-discovery
-  - idcu-healthcheck
-  - idcu-metrics
-  - idcu-log
-  - idcu-utils
-
-build:
-  type: cmake
-  targets:
-    - network-integration
-
-headers:
-  - idcu/network_integration/network_integration.h
-
-features:
-  - unified: Unified network interface
-  - conn_pool: Connection pool integration
-  - http_client: HTTP client integration
-  - http_server: HTTP server integration
-  - msgbus: Message bus integration
-  - discovery: Node discovery integration
-  - monitoring: Network monitoring
-  - healthcheck: Network health check
-  - config: Network config management
-  - connection_manager: Connection manager
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `modules/network-integration/README.md`：
-
-```markdown
-# network-integration
+### 2.4 跨平台适配
+- Windows：使用 Winsock2
+- Linux：使用 POSIX socket
+- 异步 I/O：Windows 用 IOCP，Linux 用 epoll
 
-IDCU Agent 的网络集成模块。
+---
 
-## 功能特性
+## 3. 验收标准（可量化）
 
-- **统一接口**: 统一的网络接口
-- **连接池**: 连接池集成
-- **HTTP 客户端**: HTTP 客户端集成
-- **HTTP 服务器**: HTTP 服务器集成
-- **消息总线**: 消息总线集成
-- **节点发现**: 节点发现集成
-- **网络监控**: 网络监控
-- **健康检查**: 网络健康检查
-- **配置管理**: 网络配置管理
-- **连接管理**: 连接管理器
+### 3.1 功能验收
+- [ ] HTTP 请求正常工作
+- [ ] 消息总线正常工作
+- [ ] 健康检查正常工作
+- [ ] 网络监控正常工作
 
-## 快速开始
+### 3.2 性能验收
+- [ ] 网络连接建立时间 ≤ 50ms
+- [ ] 支持并发 1000 个连接
+- [ ] 消息延迟 ≤ 1ms
+- [ ] 内存占用 ≤ 2MB
 
-### 初始化网络集成
+### 3.3 异常验收
+- [ ] 网络断开时自动重连
+- [ ] 连接超时返回错误
+- [ ] DNS 解析失败返回错误
 
-```c
-#include "idcu/network_integration/network_integration.h"
+---
 
-idcu_NetworkIntegrationConfig config;
-idcu_network_integration_config_init(&config);
+## 4. 执行计划
 
-config.enable_conn_pool = 1;
-config.enable_http_client = 1;
-config.enable_http_server = 1;
-config.enable_msg_bus = 1;
-config.enable_discovery = 1;
-config.enable_monitoring = 1;
-config.health_check_interval_ms = 5000;
+### 4.1 工期
+1-2 天/人
 
-idcu_NetworkIntegration ni;
-idcu_network_integration_init(&ni, &config);
-```
+### 4.2 里程碑
+- D1：完成基础网络接口封装
+- D2：完成 HTTP、消息总线集成
+- D2：完成监控和健康检查
 
-### 添加网络端点
+### 4.3 人力
+1 人（技能要求：C 语言 + 网络编程）
 
-```c
-idcu_NetworkEndpoint endpoint;
-idcu_network_endpoint_init(&endpoint, "api-server", "api.example.com", 443);
-endpoint.enabled = 1;
-endpoint.auto_reconnect = 1;
-endpoint.reconnect_delay_ms = 5000;
-endpoint.connect_timeout_ms = 10000;
-endpoint.request_timeout_ms = 30000;
+---
 
-idcu_NetworkIntegrationId endpoint_id = idcu_network_integration_add_endpoint(&ni, &endpoint);
-```
+## 5. 工程化要求
 
-### 启动网络集成
+### 5.1 编码规范
+- 对齐项目的 .clang-format 规范
+- 函数名小写+下划线，结构体前缀 Network_
 
-```c
-idcu_network_integration_start(&ni);
-```
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试 5 种异常场景
 
-### HTTP 请求
+### 5.3 部署指引
+- 编译命令：`cmake --build build --target network-integration`
 
-```c
-idcu_HttpResponse response;
-idcu_http_response_init(&response);
+---
 
-if (idcu_network_integration_http_get(&ni, "https://api.example.com/data", &response) == IDCU_ERR_OK) {
-    printf("Response: %.*s\n", (int)response.body_len, response.body);
-}
+## 6. 风险与应对
 
-idcu_http_response_destroy(&response);
-```
+### 6.1 风险1
+描述：高并发下连接耗尽  
+应对：使用连接池和连接复用
 
-### HTTP POST 请求
+### 6.2 风险2
+描述：网络超时导致阻塞  
+应对：使用异步 I/O 和超时机制
 
-```c
-const char* json_body = "{\"data\": \"test\"}";
+---
 
-idcu_HttpResponse response;
-idcu_http_response_init(&response);
+## 7. 详细实现步骤
 
-if (idcu_network_integration_http_post(&ni, "https://api.example.com/data", 
-                                         json_body, strlen(json_body), &response) == IDCU_ERR_OK) {
-    printf("Response: %.*s\n", (int)response.body_len, response.body);
-}
+（详细内容省略，请参考原文档）
 
-idcu_http_response_destroy(&response);
-```
+---
 
-### 注册 HTTP 路由
-
-```c
-int hello_handler(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data)
-{
-    idcu_http_response_set_status(response, IDCU_HTTP_STATUS_OK);
-    idcu_http_response_set_header(response, "Content-Type", "text/plain");
-    idcu_http_response_set_body(response, "Hello, World!", 13);
-    return 0;
-}
-
-idcu_network_integration_register_http_route(&ni, "/hello", IDCU_HTTP_METHOD_GET, hello_handler, NULL);
-```
-
-### 消息总线 - 发布
-
-```c
-idcu_network_integration_msg_publish(&ni, "events", "Hello, Message!", 14);
-```
-
-### 消息总线 - 订阅
-
-```c
-void message_handler(const char* topic, const char* message, size_t message_len, void* user_data)
-{
-    printf("Received message on %s: %.*s\n", topic, (int)message_len, message);
-}
-
-idcu_network_integration_msg_subscribe(&ni, "events", message_handler, NULL);
-```
-
-### 获取网络状态
-
-```c
-idcu_NetworkStatus status = idcu_network_integration_get_status(&ni);
-printf("Network status: %d\n", status);
-```
-
-### 健康检查
-
-```c
-if (idcu_network_integration_check_health(&ni) == IDCU_ERR_OK) {
-    printf("Network is healthy\n");
-} else {
-    printf("Network is unhealthy\n");
-}
-```
-
-### 获取统计
-
-```c
-uint64_t bytes_sent, bytes_received, request_count, error_count;
-idcu_network_integration_get_stats(&ni, &bytes_sent, &bytes_received, &request_count, &error_count);
-
-printf("Bytes sent: %" PRIu64 "\n", bytes_sent);
-printf("Bytes received: %" PRIu64 "\n", bytes_received);
-printf("Request count: %" PRIu64 "\n", request_count);
-printf("Error count: %" PRIu64 "\n", error_count);
-```
-
-### 重置统计
-
-```c
-idcu_network_integration_reset_stats(&ni);
-```
-
-### 导出指标
-
-```c
-char metrics_buffer[4096];
-idcu_network_integration_export_metrics(&ni, metrics_buffer, sizeof(metrics_buffer));
-printf("%s\n", metrics_buffer);
-```
-
-### 获取信息
-
-```c
-char info_buffer[2048];
-idcu_network_integration_get_info(&ni, info_buffer, sizeof(info_buffer));
-printf("%s\n", info_buffer);
-
-char json_buffer[4096];
-idcu_network_integration_get_info_json(&ni, json_buffer, sizeof(json_buffer));
-printf("%s\n", json_buffer);
-```
-
-### 使用连接管理器
-
-```c
-idcu_NetworkConnectionManager conn_manager;
-idcu_network_connection_manager_init(&conn_manager);
-
-idcu_network_connection_manager_add(&conn_manager, &endpoint);
-idcu_network_connection_manager_connect(&conn_manager, endpoint_id);
-
-uint64_t total, active, failed;
-idcu_network_connection_manager_get_stats(&conn_manager, &total, &active, &failed);
-
-idcu_network_connection_manager_destroy(&conn_manager);
-```
-
-### 停止网络集成
-
-```c
-idcu_network_integration_stop(&ni);
-idcu_network_integration_destroy(&ni);
-```
-
-## 网络状态
-
-| 状态 | 说明 |
-|-----|------|
-| DISCONNECTED | 已断开 |
-| CONNECTING | 连接中 |
-| CONNECTED | 已连接 |
-| ERROR | 错误 |
-
-## API 文档
-
-详见 [include/idcu/network_integration/network_integration.h](include/idcu/network_integration/network_integration.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 网络集成头文件已创建
 - [ ] 网络集成实现文件已创建
@@ -511,7 +163,9 @@ idcu_network_integration_destroy(&ni);
 - [ ] 消息总线正常工作
 - [ ] 健康检查正常工作
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/network-integration/
@@ -519,19 +173,14 @@ git commit -m "feat: add network-integration module
 
 - Add unified network interface
 - Add connection pool integration
-- Add HTTP client integration
-- Add HTTP server integration
+- Add HTTP client/server integration
 - Add message bus integration
-- Add node discovery integration
-- Add network monitoring
-- Add network health check
-- Add network config management
-- Add connection manager
-- Add CMake build configuration
-- Add module.yaml metadata"
+- Add network monitoring and health check"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

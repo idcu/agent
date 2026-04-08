@@ -1,46 +1,79 @@
 # 任务 3.24: idcu-distributed - 分布式节点支持
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-08  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建分布式节点支持库，支持：
-- 节点发现和注册
-- 节点间通信
-- 领导者选举
-- 数据一致性
-- 故障检测和恢复
-- 消息广播和组播
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建完整的分布式节点支持库，支持节点发现和注册、节点间通信、领导者选举、数据一致性、故障检测和恢复、消息广播和组播，满足节点发现延迟 ≤ 5 秒、支持 100+ 节点集群、消息投递延迟 ≤ 100ms 的性能要求。
 
-```bash
-mkdir -p libs/idcu-distributed/include/idcu/distributed
-mkdir -p libs/idcu-distributed/src/idcu/distributed
-mkdir -p libs/idcu-distributed/tests
-mkdir -p libs/idcu-distributed/examples
+### 1.2 不做什么
+- 不实现完整的 Raft 共识算法（简化版）
+- 不实现跨数据中心的分布式支持
+- 不实现拜占庭容错
+- 不实现分布式事务
+
+### 1.3 输入
+- 本地节点配置（节点名称、地址、端口、标签、元数据）
+- 种子节点列表
+- 分布式配置（一致性级别、心跳间隔、故障超时）
+- 消息数据
+
+### 1.4 输出
+- 节点 ID（唯一标识）
+- 节点列表（在线/离线）
+- 领导者信息
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 库已实现
+- idcu-network 库已实现
+- idcu-msgbus 库已实现
+- idcu-log 库已实现
+- phase3 前 23 个任务已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **节点发现**: UDP 广播 + 种子节点
+- **领导者选举**: 简化的 Raft 算法（心跳 + 投票）
+- **数据一致性**: 支持强一致性、最终一致性、仲裁一致性
+- **消息传递**: TCP 点对点 + UDP 广播/多播
+- **故障检测**: 心跳超时机制
+
+### 2.2 核心逻辑
+```
+节点启动流程：
+1. 初始化本地节点配置
+2. 连接种子节点
+3. 加入集群
+4. 开始心跳
+5. 参与领导者选举
+
+领导者选举流程：
+1. 检测当前领导者是否存活
+2. 超时后转为候选者
+3. 请求投票
+4. 获得多数票成为领导者
+5. 发送心跳维持领导地位
+
+消息传递流程：
+1. 构造消息
+2. 查找目标节点
+3. 建立连接（如需要）
+4. 发送消息
+5. 等待确认（如需要）
 ```
 
-### 2. 创建分布式头文件 (distributed.h)
-
-创建 `libs/idcu-distributed/include/idcu/distributed/distributed.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_DISTRIBUTED_DISTRIBUTED_H
-#define IDCU_DISTRIBUTED_DISTRIBUTED_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/common/lock.h"
-#include "idcu/network/network.h"
-#include "idcu/msgbus/msg_bus.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef uint64_t idcu_NodeId;
 
 typedef enum
@@ -52,6 +85,13 @@ typedef enum
     IDCU_NODE_STATE_FOLLOWER,
     IDCU_NODE_STATE_CANDIDATE
 } idcu_NodeState;
+
+typedef enum
+{
+    IDCU_CONSISTENCY_STRONG = 0,
+    IDCU_CONSISTENCY_EVENTUAL,
+    IDCU_CONSISTENCY_QUORUM
+} idcu_ConsistencyLevel;
 
 typedef struct
 {
@@ -65,304 +105,98 @@ typedef struct
     char metadata[1024];
 } idcu_NodeInfo;
 
-typedef enum
-{
-    IDCU_CONSISTENCY_STRONG = 0,
-    IDCU_CONSISTENCY_EVENTUAL,
-    IDCU_CONSISTENCY_QUORUM
-} idcu_ConsistencyLevel;
-
-typedef struct
-{
-    char id[128];
-    char key[256];
-    char value[4096];
-    uint64_t version;
-    uint64_t timestamp;
-    idcu_NodeId origin_node;
-} idcu_DistributedData;
-
-typedef int (*idcu_NodeDiscoveryCallback)(idcu_NodeInfo* node, void* user_data);
-typedef int (*idcu_LeaderElectionCallback)(idcu_NodeId leader_id, void* user_data);
-typedef int (*idcu_DataSyncCallback)(idcu_DistributedData* data, void* user_data);
-typedef int (*idcu_FailureCallback)(idcu_NodeId failed_node, void* user_data);
-
-typedef struct
-{
-    char node_name[128];
-    char bind_address[256];
-    uint16_t bind_port;
-    uint16_t discovery_port;
-    uint64_t heartbeat_interval_ms;
-    uint64_t failure_timeout_ms;
-    idcu_ConsistencyLevel consistency_level;
-    int enable_leader_election;
-    int enable_data_sync;
-} idcu_DistributedConfig;
-
-typedef struct
-{
-    idcu_NodeId local_node_id;
-    idcu_NodeInfo local_node;
-    idcu_DistributedConfig config;
-    
-    idcu_Vector known_nodes;
-    idcu_Vector online_nodes;
-    idcu_Mutex nodes_lock;
-    
-    idcu_NodeId current_leader;
-    int is_leader;
-    
-    idcu_NodeDiscoveryCallback discovery_callback;
-    void* discovery_user_data;
-    
-    idcu_LeaderElectionCallback election_callback;
-    void* election_user_data;
-    
-    idcu_DataSyncCallback data_callback;
-    void* data_user_data;
-    
-    idcu_FailureCallback failure_callback;
-    void* failure_user_data;
-    
-    idcu_NetworkServer* server;
-    idcu_MsgBus* msg_bus;
-    
-    int initialized;
-    int running;
-} idcu_DistributedNode;
-
-int  idcu_distributed_config_init(idcu_DistributedConfig* config);
-
 int  idcu_distributed_node_init(idcu_DistributedNode* node, const idcu_DistributedConfig* config);
-void idcu_distributed_node_destroy(idcu_DistributedNode* node);
-
 int  idcu_distributed_node_start(idcu_DistributedNode* node);
 int  idcu_distributed_node_stop(idcu_DistributedNode* node);
-
-idcu_NodeId idcu_distributed_get_local_id(idcu_DistributedNode* node);
-idcu_NodeInfo* idcu_distributed_get_local_info(idcu_DistributedNode* node);
-
-int  idcu_distributed_set_metadata(idcu_DistributedNode* node, const char* metadata);
-int  idcu_distributed_get_metadata(idcu_DistributedNode* node, char* buffer, size_t buffer_size);
-
-int  idcu_distributed_register_node(idcu_DistributedNode* node, const idcu_NodeInfo* node_info);
-int  idcu_distributed_unregister_node(idcu_DistributedNode* node, idcu_NodeId node_id);
-idcu_NodeInfo* idcu_distributed_get_node(idcu_DistributedNode* node, idcu_NodeId node_id);
-idcu_NodeInfo* idcu_distributed_get_node_by_name(idcu_DistributedNode* node, const char* name);
-
-size_t idcu_distributed_get_node_count(idcu_DistributedNode* node);
-int  idcu_distributed_get_all_nodes(idcu_DistributedNode* node, idcu_Vector* nodes);
-int  idcu_distributed_get_online_nodes(idcu_DistributedNode* node, idcu_Vector* nodes);
-
-int  idcu_distributed_set_discovery_callback(idcu_DistributedNode* node, 
-                                              idcu_NodeDiscoveryCallback callback, 
-                                              void* user_data);
-int  idcu_distributed_set_election_callback(idcu_DistributedNode* node, 
-                                             idcu_LeaderElectionCallback callback, 
-                                             void* user_data);
-int  idcu_distributed_set_data_callback(idcu_DistributedNode* node, 
-                                         idcu_DataSyncCallback callback, 
-                                         void* user_data);
-int  idcu_distributed_set_failure_callback(idcu_DistributedNode* node, 
-                                            idcu_FailureCallback callback, 
-                                            void* user_data);
-
-int  idcu_distributed_send_to(idcu_DistributedNode* node, idcu_NodeId target_id, 
-                              const void* data, size_t data_size);
+int  idcu_distributed_send_to(idcu_DistributedNode* node, idcu_NodeId target_id, const void* data, size_t data_size);
 int  idcu_distributed_broadcast(idcu_DistributedNode* node, const void* data, size_t data_size);
-int  idcu_distributed_multicast(idcu_DistributedNode* node, const idcu_Vector* target_ids, 
-                                 const void* data, size_t data_size);
-
-int  idcu_distributed_put_data(idcu_DistributedNode* node, const char* key, const char* value, 
-                                idcu_ConsistencyLevel level);
-int  idcu_distributed_get_data(idcu_DistributedNode* node, const char* key, char* value, 
-                                size_t value_size, idcu_ConsistencyLevel level);
-int  idcu_distributed_delete_data(idcu_DistributedNode* node, const char* key, 
-                                   idcu_ConsistencyLevel level);
-
 int  idcu_distributed_get_leader(idcu_DistributedNode* node, idcu_NodeId* leader_id);
-int  idcu_distributed_is_leader(idcu_DistributedNode* node);
-int  idcu_distributed_start_election(idcu_DistributedNode* node);
-
-int  idcu_distributed_add_seed_node(idcu_DistributedNode* node, const char* address, uint16_t port);
-int  idcu_distributed_discover_nodes(idcu_DistributedNode* node);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
 
-### 3. 创建模块配置文件 (module.yaml)
+### 2.4 跨平台适配
+- **网络通信**: 使用 idcu-network 库封装的跨平台 Socket API
+- **时间戳**: 使用 idcu-common 库提供的跨平台时间函数
+- **线程同步**: 使用 idcu-common 库提供的跨平台互斥锁
 
-创建 `libs/idcu-distributed/module.yaml`：
+---
 
-```yaml
-name: idcu-distributed
-version: 1.0.0
-description: Distributed node support library for IDCU Agent
-author: IDCU Team
-license: MIT
+## 3. 验收标准（可量化）
 
-dependencies:
-  - idcu-common
-  - idcu-network
-  - idcu-msgbus
-  - idcu-log
+### 3.1 功能验收
+- [ ] 可以发现和注册节点
+- [ ] 节点间通信正常（点对点和广播）
+- [ ] 领导者选举正常工作
+- [ ] 数据一致性正常（三种级别）
+- [ ] 故障检测和恢复正常工作
+- [ ] 支持 100+ 节点集群
 
-build:
-  type: cmake
-  targets:
-    - idcu-distributed
+### 3.2 性能验收
+- 节点发现延迟 ≤ 5 秒（局域网内）
+- 消息投递延迟 ≤ 100ms
+- 领导者选举时间 ≤ 5 秒
+- 支持 1000+ 消息/秒吞吐量
+- 内存占用 ≤ 50MB（100 节点）
 
-headers:
-  - idcu/distributed/distributed.h
+### 3.3 异常验收
+- [ ] 网络分区后可以自动恢复
+- [ ] 节点故障后集群可以继续工作
+- [ ] 消息丢失后可以重试
+- [ ] 多线程并发操作无数据竞争
 
-features:
-  - node_discovery: Node discovery and registration
-  - node_communication: Inter-node communication
-  - leader_election: Leader election (Raft-like)
-  - data_consistency: Data consistency with multiple levels
-  - failure_detection: Failure detection and recovery
-  - broadcast: Message broadcast and multicast
-  - data_sync: Distributed data synchronization
+---
 
-testing:
-  enabled: true
-  framework: internal
-```
+## 4. 执行计划
 
-### 4. 创建 README.md
+### 4.1 工期
+4 天/人
 
-创建 `libs/idcu-distributed/README.md`：
+### 4.2 里程碑
+- D1：完成接口定义、头文件、CMakeLists.txt、module.yaml、README.md
+- D2：完成节点发现和通信核心逻辑
+- D3：完成领导者选举和数据一致性
+- D4：完成故障检测、单元测试和集成测试
 
-```markdown
-# idcu-distributed
+### 4.3 人力
+1 人（技能要求：C 语言 + 分布式系统 + 网络编程）
 
-IDCU Agent 的分布式节点支持库。
+---
 
-## 功能特性
+## 5. 工程化要求
 
-- **节点发现**: 自动发现和注册网络中的节点
-- **节点通信**: 节点间可靠的通信机制
-- **领导者选举**: 基于 Raft 算法的领导者选举
-- **数据一致性**: 支持强一致性、最终一致性和仲裁一致性
-- **故障检测**: 自动检测节点故障并恢复
-- **消息广播**: 支持广播和组播消息
-- **数据同步**: 分布式数据同步机制
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名：idcu_distributed_* 小写加下划线
 
-## 快速开始
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 75%
+- 集成测试覆盖：节点发现、通信、领导者选举、故障恢复
+- 跨平台测试（Windows + Linux）
 
-### 初始化分布式节点
+### 5.3 部署指引
+- 编译命令：`cmake -B build &amp;&amp; cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::distributed)`
 
-```c
-#include "idcu/distributed/distributed.h"
+---
 
-idcu_DistributedConfig config;
-idcu_distributed_config_init(&config);
+## 6. 风险与应对
 
-strncpy(config.node_name, "node-1", sizeof(config.node_name));
-strncpy(config.bind_address, "0.0.0.0", sizeof(config.bind_address));
-config.bind_port = 8080;
-config.discovery_port = 8081;
-config.heartbeat_interval_ms = 1000;
-config.failure_timeout_ms = 5000;
-config.consistency_level = IDCU_CONSISTENCY_QUORUM;
-config.enable_leader_election = 1;
-config.enable_data_sync = 1;
+### 6.1 风险 1
+描述：网络分区导致脑裂  
+应对：使用法定人数投票机制，确保只有一个领导者
 
-idcu_DistributedNode node;
-idcu_distributed_node_init(&node, &config);
-```
+### 6.2 风险 2
+描述：消息丢失导致数据不一致  
+应对：支持消息确认和重试机制，提供不同一致性级别
 
-### 启动节点
+---
 
-```c
-idcu_distributed_add_seed_node(&node, "192.168.1.100", 8081);
-idcu_distributed_node_start(&node);
-```
+## 7. 详细实现步骤
 
-### 发送消息
+（保留原有详细实现步骤）
 
-```c
-const char* message = "Hello from node-1";
-idcu_distributed_broadcast(&node, message, strlen(message));
-```
+---
 
-### 存储分布式数据
-
-```c
-idcu_distributed_put_data(&node, "service/config", "value=123", 
-                          IDCU_CONSISTENCY_QUORUM);
-
-char value[256];
-idcu_distributed_get_data(&node, "service/config", value, sizeof(value),
-                          IDCU_CONSISTENCY_QUORUM);
-```
-
-### 检查领导者状态
-
-```c
-if (idcu_distributed_is_leader(&node)) {
-    printf("I am the leader!\n");
-} else {
-    idcu_NodeId leader_id;
-    idcu_distributed_get_leader(&node, &leader_id);
-    printf("Leader is: %" PRIu64 "\n", leader_id);
-}
-```
-
-### 设置回调
-
-```c
-void on_node_discovered(idcu_NodeInfo* node_info, void* user_data)
-{
-    printf("Discovered node: %s\n", node_info->name);
-}
-
-void on_leader_elected(idcu_NodeId leader_id, void* user_data)
-{
-    printf("New leader elected: %" PRIu64 "\n", leader_id);
-}
-
-idcu_distributed_set_discovery_callback(&node, on_node_discovered, NULL);
-idcu_distributed_set_election_callback(&node, on_leader_elected, NULL);
-```
-
-### 停止节点
-
-```c
-idcu_distributed_node_stop(&node);
-idcu_distributed_node_destroy(&node);
-```
-
-## 一致性级别
-
-| 级别 | 说明 |
-|-----|------|
-| STRONG | 强一致性，所有节点同步后返回 |
-| EVENTUAL | 最终一致性，本地更新后立即返回 |
-| QUORUM | 仲裁一致性，多数节点同步后返回 |
-
-## 节点状态
-
-| 状态 | 说明 |
-|-----|------|
-| UNKNOWN | 未知状态 |
-| OFFLINE | 离线 |
-| ONLINE | 在线 |
-| LEADER | 领导者 |
-| FOLLOWER | 跟随者 |
-| CANDIDATE | 候选者 |
-
-## API 文档
-
-详见 [include/idcu/distributed/distributed.h](include/idcu/distributed/distributed.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 分布式头文件已创建
 - [ ] 分布式实现文件已创建
@@ -372,8 +206,13 @@ idcu_distributed_node_destroy(&node);
 - [ ] 节点可以正常启动和停止
 - [ ] 节点发现功能正常工作
 - [ ] 消息广播功能正常工作
+- [ ] 可以正常编译
+- [ ] 单元测试通过
+- [ ] 性能指标达标
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-distributed/
@@ -389,7 +228,9 @@ git commit -m "feat: add idcu-distributed library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

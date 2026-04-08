@@ -1,10 +1,162 @@
 # 任务 1.6: 搭建测试框架
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建轻量级、易用的测试框架，支持 TDD（测试驱动开发）。
+---
 
-## 详细步骤
+## 1. 任务边界
+
+### 1.1 核心目标
+创建轻量级、易用的 C 语言测试框架，支持 TDD（测试驱动开发）。提供断言宏、测试用例注册、测试运行和结果统计功能。
+
+### 1.2 不做什么
+- 不集成第三方测试框架（如 CTest、Google Test）
+- 不实现测试覆盖率统计
+- 不实现测试并行执行
+
+### 1.3 输入
+- 无（从零创建）
+
+### 1.4 输出
+- 测试框架头文件：`libs/idcu-testframework/include/idcu/testframework/testframework.h`
+- 测试框架实现：`libs/idcu-testframework/src/testframework.c`
+- 示例测试代码
+- CMakeLists.txt 配置
+- README 文档
+
+### 1.5 前置依赖
+- 任务 1.5 已完成（代码质量工具已配置）
+- CMake 构建系统已配置
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 测试框架：自研轻量级框架
+- 断言方式：宏定义
+- 测试注册：使用 GCC/Clang 的 constructor 属性（或手动注册）
+
+### 2.2 核心逻辑
+```
+1. 定义测试统计结构体
+2. 定义测试函数类型
+3. 实现测试注册函数
+4. 实现断言宏（ASSERT、ASSERT_EQUAL、ASSERT_STRING_EQUAL）
+5. 实现测试用例注册宏（使用 constructor 属性）
+6. 实现测试运行函数
+7. 实现测试结果统计函数
+```
+
+### 2.3 数据结构/接口
+```c
+// 测试结果统计
+typedef struct {
+    int total_tests;
+    int passed_tests;
+    int failed_tests;
+} idcu_TestStats;
+
+// 测试函数类型
+typedef void (*idcu_TestFunc)(void);
+
+// API
+void idcu_test_register(const char* suite_name, const char* test_name, idcu_TestFunc func);
+void idcu_test_fail_current(void);
+int idcu_test_run_all(void);
+idcu_TestStats idcu_test_get_stats(void);
+
+// 宏
+IDCU_TEST_ASSERT(cond)
+IDCU_TEST_ASSERT_EQUAL(expected, actual)
+IDCU_TEST_ASSERT_STRING_EQUAL(expected, actual)
+IDCU_TEST_CASE(suite, name)
+```
+
+### 2.4 跨平台适配
+- constructor 属性：GCC/Clang 支持，MSVC 可能需要使用其他方式（如手动注册）
+- 标准 C 库：使用 stdio.h、stdbool.h、stdlib.h、string.h，确保跨平台兼容
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 测试框架头文件已创建
+- [ ] 测试框架实现已创建
+- [ ] CMakeLists.txt 已创建
+- [ ] 示例测试已创建
+- [ ] 可以编译测试框架
+- [ ] 可以运行示例测试
+- [ ] 示例测试通过
+- [ ] 断言失败时正确标记测试失败
+- [ ] 测试统计正确
+
+### 3.2 性能验收
+- 测试框架编译时间 ≤ 10 秒
+- 单个测试用例执行时间 ≤ 1ms
+- 支持至少 1024 个测试用例
+
+### 3.3 异常验收
+- [ ] 断言失败时给出明确的错误信息（文件名、行号）
+- [ ] 测试数量超过上限时给出警告
+- [ ] 测试失败时返回非零退出码
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+2 小时/人
+
+### 4.2 里程碑
+- D6-00: 创建测试框架头文件
+- D6-30: 创建测试框架实现
+- D6-60: 创建 CMakeLists.txt
+- D6-90: 创建示例测试
+- D6-120: 测试验证和提交
+
+### 4.3 人力
+1 人（技能要求：C 语言宏、GCC/Clang 属性）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 遵循项目 .clang-format 规范
+- 宏定义使用大写+下划线
+- 函数名使用小写+下划线
+- 提供清晰的 API 注释
+
+### 5.2 测试要求
+- 示例测试覆盖基本功能
+- 验证断言宏工作正常
+- 验证测试统计正确
+- 验证跨平台编译
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build -DBUILD_EXAMPLES=ON && cmake --build build`
+- 运行示例：`./build/libs/idcu-testframework/example_simple_test`
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：constructor 属性在某些编译器上不支持  
+应对：提供手动注册的备用方式
+
+### 6.2 风险2
+描述：宏定义使用复杂，容易出错  
+应对：提供清晰的示例和文档
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 创建测试框架目录结构
 
@@ -284,7 +436,9 @@ int main(void) {
 add_subdirectory(idcu-testframework)
 ```
 
-## 验证检查清单
+---
+
+## 8. 验证检查清单
 
 - [ ] 测试框架头文件已创建
 - [ ] 测试框架实现已创建
@@ -293,19 +447,12 @@ add_subdirectory(idcu-testframework)
 - [ ] 可以编译测试框架
 - [ ] 可以运行示例测试
 - [ ] 示例测试通过
+- [ ] libs/CMakeLists.txt 已更新
+- [ ] 已提交 Git
 
-## 运行测试
+---
 
-```bash
-# 构建
-cmake -B build -DBUILD_EXAMPLES=ON
-cmake --build build
-
-# 运行示例测试
-./build/libs/idcu-testframework/example_simple_test
-```
-
-## Git 提交
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-testframework/
@@ -322,16 +469,11 @@ git add libs/CMakeLists.txt
 git commit -m "chore: add testframework to build"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
 | constructor 属性不支持 | 编译器不支持该属性 | 使用手动注册方式 |
 | 测试没有运行 | 测试用例没有正确注册 | 检查 IDCU_TEST_CASE 宏的使用 |
-
-## 经验提示
-
-- TDD 从这里开始！先写测试，再写代码
-- 测试框架设计要简单易用
-- 提供清晰的测试输出，便于定位问题
-- 支持多种断言类型，满足不同测试需求

@@ -1,7 +1,15 @@
 # 任务 5.1: core-module - 核心基础模块
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
 创建核心基础模块，支持：
 - 模块初始化和清理
 - 配置加载和管理
@@ -13,10 +21,162 @@
 - 优雅关闭
 - 信号处理
 
-## 详细步骤
+### 1.2 不做什么
+- 不实现具体的业务逻辑
+- 不实现复杂的分布式协调
+- 不实现图形界面
+
+### 1.3 输入
+- 配置文件：config/app.yaml
+- 依赖库：idcu-common, idcu-log, idcu-config, idcu-healthcheck, idcu-metrics
+
+### 1.4 输出
+- 核心模块实例：idcu_CoreModule
+- 模块管理器：idcu_ModuleManager
+- 配置管理器访问接口
+- 日志访问接口
+
+### 1.5 前置依赖
+- ✅ phase2 完成：微内核和 SDK 基础
+- ✅ phase3 完成：核心库（log、config、healthcheck、metrics）
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 生命周期状态机：枚举状态转换
+- 配置管理：idcu-config
+- 日志：idcu-log
+- 健康检查：idcu-healthcheck
+- 指标：idcu-metrics
+
+### 2.2 核心逻辑
+```
+1. 初始化核心模块配置
+2. 创建模块实例
+3. 加载配置文件
+4. 初始化日志系统
+5. 初始化健康检查
+6. 初始化指标收集
+7. 注册信号处理器
+8. 启动模块
+9. 管理模块生命周期
+10. 优雅关闭
+```
+
+### 2.3 数据结构/接口
+```c
+typedef struct {
+    char name[128];
+    char version[64];
+    char config_path[1024];
+    char log_path[1024];
+    idcu_LogLevel log_level;
+    int enable_healthcheck;
+    int enable_metrics;
+    int enable_signals;
+    uint64_t graceful_shutdown_timeout_ms;
+} idcu_CoreModuleConfig;
+
+typedef struct {
+    idcu_CoreModuleId id;
+    idcu_CoreModuleState state;
+    idcu_ConfigManager config_manager;
+    idcu_Logger logger;
+    idcu_HealthCheck health_check;
+    idcu_MetricsRegistry metrics_registry;
+    // ... 其他字段
+} idcu_CoreModule;
+
+int idcu_core_module_init(idcu_CoreModule* module, const idcu_CoreModuleConfig* config);
+int idcu_core_module_start(idcu_CoreModule* module);
+int idcu_core_module_stop(idcu_CoreModule* module);
+void idcu_core_module_destroy(idcu_CoreModule* module);
+```
+
+### 2.4 跨平台适配
+- Windows：使用 SetConsoleCtrlHandler 处理信号
+- Linux：使用 sigaction 处理信号
+- 统一的模块生命周期接口
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 模块可以正常初始化和启动
+- [ ] 配置加载和保存正常工作
+- [ ] 日志系统正常工作
+- [ ] 健康检查集成正常
+- [ ] 指标收集集成正常
+- [ ] 信号处理正常工作
+- [ ] 优雅关闭功能正常
+
+### 3.2 性能验收
+- [ ] 模块初始化时间 ≤ 100ms
+- [ ] 配置加载时间 ≤ 50ms
+- [ ] 内存占用 ≤ 1MB
+- [ ] 信号响应时间 ≤ 10ms
+
+### 3.3 异常验收
+- [ ] 配置文件不存在时有明确错误提示
+- [ ] 信号处理失败不影响主流程
+- [ ] 模块可以从错误状态恢复
+- [ ] 优雅关闭超时后可以强制退出
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+4 小时
+
+### 4.2 里程碑
+- D1：完成核心模块头文件和接口定义
+- D1：完成核心模块实现
+- D1：完成模块管理器实现
+- D1：完成测试和验证
+
+### 4.3 人力
+1 人（技能要求：C语言 + 系统编程）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐 .clang-format 规范
+- 函数名小写+下划线
+- 结构体前缀 idcu_
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试覆盖所有生命周期状态
+- 测试覆盖信号处理场景
+
+### 5.3 部署指引
+- 编译命令：cmake --build build
+- 模块路径：modules/core-module/
+- 配置文件：config/app.yaml
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：跨平台信号处理差异导致兼容性问题  
+应对：分别实现 Windows 和 Linux 的信号处理，使用统一的抽象接口
+
+### 6.2 风险2
+描述：模块依赖关系复杂导致初始化顺序问题  
+应对：明确模块依赖关系，实现依赖排序算法
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 创建目录结构
-
 ```bash
 mkdir -p modules/core-module/include/idcu/core_module
 mkdir -p modules/core-module/src/idcu/core_module
@@ -25,550 +185,42 @@ mkdir -p modules/core-module/examples
 ```
 
 ### 2. 创建核心模块头文件 (core_module.h)
-
-创建 `modules/core-module/include/idcu/core_module/core_module.h`：
-
-```c
-#ifndef IDCU_CORE_MODULE_CORE_MODULE_H
-#define IDCU_CORE_MODULE_CORE_MODULE_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/log/log.h"
-#include "idcu/config/config.h"
-#include "idcu/healthcheck/healthcheck.h"
-#include "idcu/metrics/metrics.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_CoreModuleId;
-
-typedef enum
-{
-    IDCU_CORE_MODULE_STATE_UNINITIALIZED = 0,
-    IDCU_CORE_MODULE_STATE_INITIALIZING,
-    IDCU_CORE_MODULE_STATE_INITIALIZED,
-    IDCU_CORE_MODULE_STATE_STARTING,
-    IDCU_CORE_MODULE_STATE_RUNNING,
-    IDCU_CORE_MODULE_STATE_STOPPING,
-    IDCU_CORE_MODULE_STATE_STOPPED,
-    IDCU_CORE_MODULE_STATE_ERROR
-} idcu_CoreModuleState;
-
-typedef enum
-{
-    IDCU_CORE_MODULE_SIGNAL_TERM = 0,
-    IDCU_CORE_MODULE_SIGNAL_INT,
-    IDCU_CORE_MODULE_SIGNAL_HUP,
-    IDCU_CORE_MODULE_SIGNAL_USR1,
-    IDCU_CORE_MODULE_SIGNAL_USR2
-} idcu_CoreModuleSignal;
-
-typedef int (*idcu_CoreModuleInitFunc)(void* user_data);
-typedef int (*idcu_CoreModuleStartFunc)(void* user_data);
-typedef int (*idcu_CoreModuleStopFunc)(void* user_data);
-typedef int (*idcu_CoreModuleCleanupFunc)(void* user_data);
-typedef void (*idcu_CoreModuleSignalHandler)(idcu_CoreModuleSignal signal, void* user_data);
-
-typedef struct
-{
-    char name[128];
-    char version[64];
-    char description[512];
-    char config_path[1024];
-    char log_path[1024];
-    idcu_LogLevel log_level;
-    int enable_healthcheck;
-    int enable_metrics;
-    int enable_signals;
-    int graceful_shutdown_timeout_ms;
-} idcu_CoreModuleConfig;
-
-typedef struct
-{
-    idcu_CoreModuleId id;
-    char name[128];
-    char version[64];
-    idcu_CoreModuleState state;
-    
-    idcu_CoreModuleConfig config;
-    
-    idcu_ConfigManager config_manager;
-    idcu_Logger logger;
-    idcu_HealthCheck health_check;
-    idcu_MetricsRegistry metrics_registry;
-    
-    idcu_CoreModuleInitFunc init_func;
-    idcu_CoreModuleStartFunc start_func;
-    idcu_CoreModuleStopFunc stop_func;
-    idcu_CoreModuleCleanupFunc cleanup_func;
-    void* module_user_data;
-    
-    idcu_CoreModuleSignalHandler signal_handler;
-    void* signal_user_data;
-    
-    uint64_t started_at;
-    uint64_t uptime_ms;
-    
-    int initialized;
-} idcu_CoreModule;
-
-int  idcu_core_module_config_init(idcu_CoreModuleConfig* config);
-
-int  idcu_core_module_init(idcu_CoreModule* module, const idcu_CoreModuleConfig* config);
-void idcu_core_module_destroy(idcu_CoreModule* module);
-
-int  idcu_core_module_set_init_func(idcu_CoreModule* module, idcu_CoreModuleInitFunc func, void* user_data);
-int  idcu_core_module_set_start_func(idcu_CoreModule* module, idcu_CoreModuleStartFunc func, void* user_data);
-int  idcu_core_module_set_stop_func(idcu_CoreModule* module, idcu_CoreModuleStopFunc func, void* user_data);
-int  idcu_core_module_set_cleanup_func(idcu_CoreModule* module, idcu_CoreModuleCleanupFunc func, void* user_data);
-int  idcu_core_module_set_signal_handler(idcu_CoreModule* module, idcu_CoreModuleSignalHandler handler, void* user_data);
-
-int  idcu_core_module_load_config(idcu_CoreModule* module, const char* path);
-int  idcu_core_module_reload_config(idcu_CoreModule* module);
-int  idcu_core_module_save_config(idcu_CoreModule* module);
-
-int  idcu_core_module_start(idcu_CoreModule* module);
-int  idcu_core_module_stop(idcu_CoreModule* module);
-int  idcu_core_module_restart(idcu_CoreModule* module);
-
-idcu_CoreModuleState idcu_core_module_get_state(idcu_CoreModule* module);
-const char* idcu_core_module_get_state_string(idcu_CoreModuleState state);
-
-idcu_ConfigManager* idcu_core_module_get_config(idcu_CoreModule* module);
-idcu_Logger* idcu_core_module_get_logger(idcu_CoreModule* module);
-idcu_HealthCheck* idcu_core_module_get_healthcheck(idcu_CoreModule* module);
-idcu_MetricsRegistry* idcu_core_module_get_metrics(idcu_CoreModule* module);
-
-int  idcu_core_module_add_health_check(idcu_CoreModule* module, const char* name, idcu_HealthCheckFunc func, void* user_data);
-int  idcu_core_module_register_metric(idcu_CoreModule* module, idcu_Metric* metric);
-
-int  idcu_core_module_get_uptime(idcu_CoreModule* module, uint64_t* uptime_ms);
-int  idcu_core_module_get_start_time(idcu_CoreModule* module, uint64_t* timestamp_ms);
-
-int  idcu_core_module_register_signal_handlers(idcu_CoreModule* module);
-int  idcu_core_module_unregister_signal_handlers(idcu_CoreModule* module);
-int  idcu_core_module_send_signal(idcu_CoreModule* module, idcu_CoreModuleSignal signal);
-
-int  idcu_core_module_enable_healthcheck(idcu_CoreModule* module);
-int  idcu_core_module_disable_healthcheck(idcu_CoreModule* module);
-int  idcu_core_module_get_health_status(idcu_CoreModule* module, idcu_HealthStatus* status);
-
-int  idcu_core_module_enable_metrics(idcu_CoreModule* module);
-int  idcu_core_module_disable_metrics(idcu_CoreModule* module);
-int  idcu_core_module_export_metrics(idcu_CoreModule* module, char* buffer, size_t buffer_size);
-
-int  idcu_core_module_set_log_level(idcu_CoreModule* module, idcu_LogLevel level);
-idcu_LogLevel idcu_core_module_get_log_level(idcu_CoreModule* module);
-
-int  idcu_core_module_graceful_shutdown(idcu_CoreModule* module, uint64_t timeout_ms);
-int  idcu_core_module_force_shutdown(idcu_CoreModule* module);
-
-int  idcu_core_module_get_info(idcu_CoreModule* module, char* buffer, size_t buffer_size);
-int  idcu_core_module_get_info_json(idcu_CoreModule* module, char* buffer, size_t buffer_size);
-
-typedef struct
-{
-    idcu_Vector dependencies;
-    idcu_Vector modules;
-    idcu_Mutex lock;
-    int initialized;
-} idcu_ModuleManager;
-
-int  idcu_module_manager_init(idcu_ModuleManager* manager);
-void idcu_module_manager_destroy(idcu_ModuleManager* manager);
-
-int  idcu_module_manager_register(idcu_ModuleManager* manager, idcu_CoreModule* module);
-int  idcu_module_manager_unregister(idcu_ModuleManager* manager, idcu_CoreModuleId id);
-idcu_CoreModule* idcu_module_manager_get(idcu_ModuleManager* manager, idcu_CoreModuleId id);
-idcu_CoreModule* idcu_module_manager_get_by_name(idcu_ModuleManager* manager, const char* name);
-
-int  idcu_module_manager_add_dependency(idcu_ModuleManager* manager, idcu_CoreModuleId module_id, idcu_CoreModuleId dependency_id);
-int  idcu_module_manager_remove_dependency(idcu_ModuleManager* manager, idcu_CoreModuleId module_id, idcu_CoreModuleId dependency_id);
-
-int  idcu_module_manager_start_all(idcu_ModuleManager* manager);
-int  idcu_module_manager_stop_all(idcu_ModuleManager* manager);
-int  idcu_module_manager_restart_all(idcu_ModuleManager* manager);
-
-size_t idcu_module_manager_count(idcu_ModuleManager* manager);
-int  idcu_module_manager_get_all(idcu_ModuleManager* manager, idcu_Vector* modules);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-```
+创建 `modules/core-module/include/idcu/core_module/core_module.h`，包含：
+- 模块状态枚举定义
+- 信号类型枚举定义
+- 核心模块配置结构
+- 核心模块结构
+- 模块管理器结构
+- 所有 API 函数声明
 
 ### 3. 创建 CMakeLists.txt
-
-创建 `modules/core-module/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(core-module VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(core-module STATIC
-    src/idcu/core_module/core_module.c
-    src/idcu/core_module/module_manager.c
-)
-
-target_include_directories(core-module PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(core-module PRIVATE
-    idcu::common
-    idcu::log
-    idcu::config
-    idcu::healthcheck
-    idcu::metrics
-    idcu::utils
-    idcu::json
-)
-
-add_library(idcu::core-module ALIAS core-module)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
+创建 `modules/core-module/CMakeLists.txt`，包含：
+- 源文件列表
+- 依赖库链接
+- 测试配置
 
 ### 4. 创建模块配置文件 (module.yaml)
-
-创建 `modules/core-module/module.yaml`：
-
-```yaml
-name: core-module
-version: 1.0.0
-description: Core base module for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-  - idcu-log
-  - idcu-config
-  - idcu-healthcheck
-  - idcu-metrics
-  - idcu-utils
-  - idcu-json
-
-build:
-  type: cmake
-  targets:
-    - core-module
-
-headers:
-  - idcu/core_module/core_module.h
-
-features:
-  - lifecycle: Module lifecycle management
-  - config: Config loading and management
-  - logging: Logging initialization
-  - dependencies: Module dependency management
-  - healthcheck: Health check integration
-  - metrics: Metrics collection integration
-  - graceful_shutdown: Graceful shutdown
-  - signals: Signal handling
-  - module_manager: Module manager
-
-testing:
-  enabled: true
-  framework: internal
-```
+创建 `modules/core-module/module.yaml`，包含模块元数据
 
 ### 5. 创建 README.md
-
-创建 `modules/core-module/README.md`：
-
-```markdown
-# core-module
-
-IDCU Agent 的核心基础模块。
-
-## 功能特性
-
-- **模块生命周期**: 模块初始化和清理
-- **配置管理**: 配置加载和管理
-- **日志初始化**: 日志初始化
-- **依赖管理**: 模块生命周期管理
-- **依赖管理**: 模块依赖管理
-- **健康检查**: 健康检查集成
-- **指标收集**: 指标收集集成
-- **优雅关闭**: 优雅关闭
-- **信号处理**: 信号处理
-- **模块管理器**: 模块管理器
-
-## 快速开始
-
-### 初始化核心模块
-
-```c
-#include "idcu/core_module/core_module.h"
-
-idcu_CoreModuleConfig config;
-idcu_core_module_config_init(&config);
-
-strncpy(config.name, "my-app", sizeof(config.name));
-strncpy(config.version, "1.0.0", sizeof(config.version));
-strncpy(config.config_path, "./config.yaml", sizeof(config.config_path));
-strncpy(config.log_path, "./logs/app.log", sizeof(config.log_path));
-config.log_level = IDCU_LOG_LEVEL_INFO;
-config.enable_healthcheck = 1;
-config.enable_metrics = 1;
-config.enable_signals = 1;
-config.graceful_shutdown_timeout_ms = 5000;
-
-idcu_CoreModule module;
-idcu_core_module_init(&module, &config);
-```
-
-### 设置生命周期函数
-
-```c
-int my_init(void* user_data)
-{
-    printf("Initializing...\n");
-    return 0;
-}
-
-int my_start(void* user_data)
-{
-    printf("Starting...\n");
-    return 0;
-}
-
-int my_stop(void* user_data)
-{
-    printf("Stopping...\n");
-    return 0;
-}
-
-int my_cleanup(void* user_data)
-{
-    printf("Cleaning up...\n");
-    return 0;
-}
-
-idcu_core_module_set_init_func(&module, my_init, NULL);
-idcu_core_module_set_start_func(&module, my_start, NULL);
-idcu_core_module_set_stop_func(&module, my_stop, NULL);
-idcu_core_module_set_cleanup_func(&module, my_cleanup, NULL);
-```
-
-### 设置信号处理器
-
-```c
-void signal_handler(idcu_CoreModuleSignal signal, void* user_data)
-{
-    switch (signal) {
-        case IDCU_CORE_MODULE_SIGNAL_TERM:
-        case IDCU_CORE_MODULE_SIGNAL_INT:
-            printf("Received shutdown signal\n");
-            break;
-        case IDCU_CORE_MODULE_SIGNAL_HUP:
-            printf("Received reload signal\n");
-            break;
-        default:
-            break;
-    }
-}
-
-idcu_core_module_set_signal_handler(&module, signal_handler, NULL);
-```
-
-### 加载配置
-
-```c
-idcu_core_module_load_config(&module, "./config.yaml");
-```
-
-### 启动模块
-
-```c
-idcu_core_module_start(&module);
-```
-
-### 访问配置
-
-```c
-idcu_ConfigManager* config = idcu_core_module_get_config(&module);
-
-char value[256];
-idcu_config_get(config, "app.name", value, sizeof(value));
-printf("App name: %s\n", value);
-```
-
-### 使用日志
-
-```c
-idcu_Logger* logger = idcu_core_module_get_logger(&module);
-
-idcu_log_info(logger, "Application started");
-idcu_log_warn(logger, "Warning message");
-idcu_log_error(logger, "Error message");
-```
-
-### 添加健康检查
-
-```c
-int db_check(void* user_data)
-{
-    // Check database connection
-    return 0;
-}
-
-idcu_core_module_add_health_check(&module, "database", db_check, NULL);
-```
-
-### 注册指标
-
-```c
-idcu_Counter requests_counter;
-idcu_counter_init(&requests_counter, "http_requests_total", "Total HTTP requests");
-
-idcu_core_module_register_metric(&module, &requests_counter.base);
-
-idcu_counter_inc(&requests_counter);
-```
-
-### 获取模块状态
-
-```c
-idcu_CoreModuleState state = idcu_core_module_get_state(&module);
-printf("State: %s\n", idcu_core_module_get_state_string(state));
-```
-
-### 获取运行时间
-
-```c
-uint64_t uptime;
-idcu_core_module_get_uptime(&module, &uptime);
-printf("Uptime: %" PRIu64 " ms\n", uptime);
-```
-
-### 获取健康状态
-
-```c
-idcu_HealthStatus status;
-idcu_core_module_get_health_status(&module, &status);
-printf("Health: %s\n", idcu_health_status_to_string(status));
-```
-
-### 导出指标
-
-```c
-char metrics_buffer[4096];
-idcu_core_module_export_metrics(&module, metrics_buffer, sizeof(metrics_buffer));
-printf("%s\n", metrics_buffer);
-```
-
-### 重新加载配置
-
-```c
-idcu_core_module_reload_config(&module);
-```
-
-### 保存配置
-
-```c
-idcu_core_module_save_config(&module);
-```
-
-### 设置日志级别
-
-```c
-idcu_core_module_set_log_level(&module, IDCU_LOG_LEVEL_DEBUG);
-```
-
-### 停止模块
-
-```c
-idcu_core_module_graceful_shutdown(&module, 5000);
-```
-
-### 强制停止
-
-```c
-idcu_core_module_force_shutdown(&module);
-```
-
-### 清理
-
-```c
-idcu_core_module_destroy(&module);
-```
-
-### 使用模块管理器
-
-```c
-idcu_ModuleManager manager;
-idcu_module_manager_init(&manager);
-
-idcu_module_manager_register(&manager, &module);
-
-idcu_module_manager_add_dependency(&manager, module.id, other_module.id);
-
-idcu_module_manager_start_all(&manager);
-
-idcu_module_manager_stop_all(&manager);
-
-idcu_module_manager_destroy(&manager);
-```
-
-### 获取模块信息
-
-```c
-char info_buffer[2048];
-idcu_core_module_get_info(&module, info_buffer, sizeof(info_buffer));
-printf("%s\n", info_buffer);
-
-char json_buffer[4096];
-idcu_core_module_get_info_json(&module, json_buffer, sizeof(json_buffer));
-printf("%s\n", json_buffer);
-```
-
-## 模块状态
-
-| 状态 | 说明 |
-|-----|------|
-| UNINITIALIZED | 未初始化 |
-| INITIALIZING | 初始化中 |
-| INITIALIZED | 已初始化 |
-| STARTING | 启动中 |
-| RUNNING | 运行中 |
-| STOPPING | 停止中 |
-| STOPPED | 已停止 |
-| ERROR | 错误 |
-
-## 信号类型
-
-| 信号 | 说明 |
-|-----|------|
-| TERM | 终止信号 |
-| INT | 中断信号 |
-| HUP | 挂起信号 |
-| USR1 | 用户信号 1 |
-| USR2 | 用户信号 2 |
-
-## API 文档
-
-详见 [include/idcu/core_module/core_module.h](include/idcu/core_module/core_module.h)
-```
-
-## 验证检查清单
+创建 `modules/core-module/README.md`，包含使用示例
+
+### 6. 实现核心模块功能
+实现以下核心功能：
+- 模块配置初始化
+- 模块初始化和销毁
+- 模块启动和停止
+- 配置加载和管理
+- 日志初始化
+- 健康检查集成
+- 指标收集集成
+- 信号处理
+- 优雅关闭
+- 模块管理器功能
+
+---
+
+## 8. 验证检查清单
 
 - [ ] 核心模块头文件已创建
 - [ ] 核心模块实现文件已创建
@@ -578,8 +230,11 @@ printf("%s\n", json_buffer);
 - [ ] 模块可以正常初始化和启动
 - [ ] 配置加载正常工作
 - [ ] 日志正常工作
+- [ ] 单元测试通过
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/core-module/
@@ -599,7 +254,9 @@ git commit -m "feat: add core-module module
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

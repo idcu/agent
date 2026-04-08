@@ -1,10 +1,145 @@
 # 任务 1.5: 添加代码质量工具
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-配置代码格式化和静态分析工具，从第一天就保证代码质量。
+---
 
-## 详细步骤
+## 1. 任务边界
+
+### 1.1 核心目标
+配置代码格式化和静态分析工具，从第一天就保证代码质量。创建 clang-format 和 clang-tidy 配置文件，以及跨平台的格式化脚本。
+
+### 1.2 不做什么
+- 不集成其他代码质量工具（如 cppcheck、valgrind）
+- 不配置 CI/CD 流程（仅配置本地工具）
+- 不创建代码审查流程
+
+### 1.3 输入
+- 项目源代码
+- LLVM/Clang 工具链（含 clang-format、clang-tidy）
+
+### 1.4 输出
+- `.clang-format` 配置文件
+- `.clang-tidy` 配置文件
+- 格式化脚本（Windows/Linux）
+- 格式检查脚本（Windows/Linux）
+- 格式化后的代码
+
+### 1.5 前置依赖
+- 任务 1.4 已完成（项目可以正常编译）
+- LLVM/Clang 工具链已安装（含 clang-format、clang-tidy）
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 代码格式化：clang-format
+- 静态分析：clang-tidy
+- 基础风格：Google Style
+
+### 2.2 核心逻辑
+```
+1. 创建 .clang-format 配置
+   ├─ 基于 Google Style
+   ├─ 调整缩进（4 空格）
+   ├─ 配置列宽（100 字符）
+   └─ 配置指针对齐方式
+2. 创建 .clang-tidy 配置
+   ├─ 启用 clang-analyzer、performance、modernize、readability 检查
+   ├─ 禁用不适用的检查
+   └─ 配置命名规则
+3. 创建格式化脚本（Windows/Linux）
+4. 创建格式检查脚本（Windows/Linux）
+5. 运行格式化脚本，格式化现有代码
+```
+
+### 2.3 数据结构/接口
+- `.clang-format`：YAML 格式的配置文件
+- `.clang-tidy`：YAML 格式的配置文件
+- 脚本文件：`.bat`（Windows）、`.sh`（Linux）
+
+### 2.4 跨平台适配
+- Windows：使用 `.bat` 批处理脚本，使用 `for /r` 遍历文件
+- Linux：使用 `.sh` Shell 脚本，使用 `find` 遍历文件
+- 脚本编码：Windows 使用 GBK 或 UTF-8 with BOM，Linux 使用 UTF-8
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] `.clang-format` 已创建
+- [ ] `.clang-tidy` 已创建
+- [ ] Windows 格式化脚本已创建
+- [ ] Linux 格式化脚本已创建
+- [ ] Windows 格式检查脚本已创建
+- [ ] Linux 格式检查脚本已创建
+- [ ] 格式化脚本可以正常运行
+- [ ] 格式检查脚本可以正常运行
+- [ ] 现有代码已格式化
+
+### 3.2 性能验收
+- 格式化所有代码时间 ≤ 30 秒
+- 格式检查所有代码时间 ≤ 30 秒
+
+### 3.3 异常验收
+- [ ] clang-format 未安装时给出明确提示
+- [ ] 脚本权限不足时给出明确提示
+- [ ] 格式检查失败时返回非零退出码
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+1.5 小时/人
+
+### 4.2 里程碑
+- D5-00: 创建 .clang-format 配置
+- D5-20: 创建 .clang-tidy 配置
+- D5-40: 创建格式化脚本
+- D5-60: 创建格式检查脚本
+- D5-90: 运行格式化并提交
+
+### 4.3 人力
+1 人（技能要求：了解 clang-format/clang-tidy）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 脚本文件使用清晰的注释
+- 脚本提供友好的输出信息
+
+### 5.2 测试要求
+- 在 Windows 上测试脚本（如果可用）
+- 在 Linux 上测试脚本（如果可用）
+- 验证格式化后代码可以正常编译
+- 验证格式检查脚本可以检测未格式化的代码
+
+### 5.3 部署指引
+- 无（工具为本地开发工具）
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：clang-format/clang-tidy 未安装  
+应对：在脚本中检查工具是否存在，给出明确的安装指引
+
+### 6.2 风险2
+描述：clang-format 版本差异导致格式化结果不一致  
+应对：在文档中说明推荐的版本，团队统一使用相同版本
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 创建 .clang-format（更详细的配置）
 
@@ -85,7 +220,7 @@ CheckOptions:
 
 ### 3. 创建格式化脚本
 
-#### Windows (scripts/windows/format.bat)
+#### Windows (scripts/format.bat)
 
 ```batch
 @echo off
@@ -100,7 +235,7 @@ for /r %%f in (*.c *.h) do (
 echo Formatting complete!
 ```
 
-#### Linux (scripts/linux/format.sh)
+#### Linux (scripts/format.sh)
 
 ```bash
 #!/bin/bash
@@ -118,7 +253,7 @@ echo "Formatting complete!"
 
 ### 4. 创建格式检查脚本
 
-#### Windows (scripts/windows/check_format.bat)
+#### Windows (scripts/check_format.bat)
 
 ```batch
 @echo off
@@ -143,7 +278,7 @@ if %HAS_ERRORS% equ 0 (
 )
 ```
 
-#### Linux (scripts/linux/check_format.sh)
+#### Linux (scripts/check_format.sh)
 
 ```bash
 #!/bin/bash
@@ -171,21 +306,23 @@ fi
 ### 5. 给脚本添加执行权限（Linux）
 
 ```bash
-chmod +x scripts/linux/format.sh
-chmod +x scripts/linux/check_format.sh
+chmod +x scripts/format.sh
+chmod +x scripts/check_format.sh
 ```
 
 ### 6. 运行格式化
 
 ```bash
 # Windows
-scripts/windows/format.bat
+scripts/format.bat
 
 # Linux
-scripts/linux/format.sh
+scripts/format.sh
 ```
 
-## 验证检查清单
+---
+
+## 8. 验证检查清单
 
 - [ ] .clang-format 已创建
 - [ ] .clang-tidy 已创建
@@ -194,8 +331,12 @@ scripts/linux/format.sh
 - [ ] 可以运行格式化脚本
 - [ ] 可以运行检查脚本
 - [ ] 现有代码已格式化
+- [ ] 格式化后代码可以正常编译
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add .clang-format
@@ -209,22 +350,17 @@ git commit -m "chore: add code quality tools
 - Add check-format scripts for Windows and Linux"
 
 # 格式化现有代码并提交
-scripts/windows/format.bat  # 或 scripts/linux/format.sh
+scripts/format.bat  # 或 scripts/format.sh
 git add -u
 git commit -m "style: format existing code with clang-format"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
 | clang-format 未找到 | 未安装 clang-format | 安装 LLVM 或 Clang 工具链 |
 | 脚本无法运行 | 脚本没有执行权限 | chmod +x (Linux) |
 | 格式化结果不一致 | clang-format 版本不同 | 统一团队使用的 clang-format 版本 |
-
-## 经验提示
-
-- 从第一天就启用代码质量工具
-- 使用 Google 风格作为基础，根据项目需求调整
-- 在提交前运行格式化脚本
-- 将格式检查集成到 CI/CD 流程中

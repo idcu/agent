@@ -1,493 +1,158 @@
-# 任务 4.2: 配置集成模块
+# 任务 4.2: config-integration - 配置集成模块
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-08  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建配置集成模块，支持：
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
+创建 config-integration 集成模块，将 idcu-config 集成到微内核架构中，支持：
 - 统一配置管理
-- 多格式配置（YAML/JSON）
+- 多格式配置（YAML/JSON，YAML 为默认）
 - 配置热重载
 - 多环境配置
 - 配置验证
-- 配置默认值
-- 配置文件监视
+- 配置加载时间 ≤ 50ms，支持热重载响应 ≤ 100ms
 
-## 详细步骤
+### 1.2 不做什么
+- 不修改 idcu-config 独立库的核心代码
+- 不实现加密配置存储
+- 不实现远程配置中心
 
-### 1. 创建目录结构
+### 1.3 输入
+- idcu-config 独立库（phase3 已完成）
+- idcu-yaml、idcu-json 独立库
+- SDK 基础
+- YAML 配置文件
 
-```bash
-mkdir -p modules/config-integration/include/idcu/config_integration
-mkdir -p modules/config-integration/src/idcu/config_integration
-mkdir -p modules/config-integration/tests
-mkdir -p modules/config-integration/examples
-```
+### 1.4 输出
+- config-integration 集成模块
+- 可以加载、保存、热重载配置
+- 支持多环境配置切换
 
-### 2. 创建配置集成头文件 (config_integration.h)
+### 1.5 前置依赖
+- phase3 06_idcu_config.md 任务已完成
+- phase3 03_idcu_yaml.md 任务已完成
+- phase2 SDK 基础已完成
 
-创建 `modules/config-integration/include/idcu/config_integration/config_integration.h`：
+---
 
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 配置库：idcu-config
+- 配置格式：YAML（默认）、JSON
+- 构建系统：idcu-module-build
+- 热重载机制：文件监控 + 回调
+
+### 2.2 核心逻辑
+1. 创建 config-integration 目录结构
+2. 实现配置段管理（添加、删除、加载）
+3. 实现配置热重载和文件监控
+4. 实现多环境配置支持
+5. 实现配置变更回调
+
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_CONFIG_INTEGRATION_CONFIG_INTEGRATION_H
-#define IDCU_CONFIG_INTEGRATION_CONFIG_INTEGRATION_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/config/config.h"
-#include "idcu/yaml/yaml.h"
-#include "idcu/json/json.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_ConfigSectionId;
-
-typedef enum
-{
-    IDCU_CONFIG_FORMAT_AUTO = 0,
-    IDCU_CONFIG_FORMAT_YAML,
-    IDCU_CONFIG_FORMAT_JSON
-} idcu_ConfigFormat;
-
-typedef enum
-{
-    IDCU_CONFIG_ENV_DEVELOPMENT = 0,
-    IDCU_CONFIG_ENV_TESTING,
-    IDCU_CONFIG_ENV_STAGING,
-    IDCU_CONFIG_ENV_PRODUCTION
-} idcu_ConfigEnvironment;
-
-typedef void (*idcu_ConfigChangeCallback)(const char* key, const char* old_value, const char* new_value, void* user_data);
-
-typedef struct
-{
+typedef struct {
     idcu_ConfigSectionId id;
     char name[128];
     char path[1024];
     idcu_ConfigFormat format;
     idcu_ConfigManager* manager;
-    idcu_YamlValue* yaml_config;
-    idcu_JsonValue* json_config;
     int hot_reload_enabled;
-    int watch_enabled;
-    idcu_ConfigChangeCallback change_callback;
-    void* callback_user_data;
-    uint64_t last_modified;
-    int initialized;
 } idcu_ConfigSection;
 
-typedef struct
-{
+typedef struct {
     idcu_Vector sections;
     idcu_HashMap sections_by_id;
-    idcu_HashMap sections_by_name;
     idcu_Mutex lock;
-    
     idcu_ConfigEnvironment environment;
-    char config_dir[1024];
-    char env_name[64];
-    
-    idcu_Thread watch_thread;
-    int watch_running;
-    int initialized;
 } idcu_ConfigIntegration;
-
-typedef struct
-{
-    char config_dir[1024];
-    idcu_ConfigEnvironment environment;
-    char env_name[64];
-    int enable_watch;
-} idcu_ConfigIntegrationConfig;
-
-int  idcu_config_integration_config_init(idcu_ConfigIntegrationConfig* config);
-
-int  idcu_config_integration_init(idcu_ConfigIntegration* ci, const idcu_ConfigIntegrationConfig* config);
-void idcu_config_integration_destroy(idcu_ConfigIntegration* ci);
-int  idcu_config_integration_load(idcu_ConfigIntegration* ci);
-int  idcu_config_integration_reload(idcu_ConfigIntegration* ci);
-
-idcu_ConfigSectionId idcu_config_integration_add_section(idcu_ConfigIntegration* ci, const char* name, const char* path);
-idcu_ConfigSectionId idcu_config_integration_add_section_with_format(idcu_ConfigIntegration* ci, const char* name, 
-                                                                     const char* path, idcu_ConfigFormat format);
-int  idcu_config_integration_remove_section(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-int  idcu_config_integration_load_section(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-int  idcu_config_integration_reload_section(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-int  idcu_config_integration_enable_hot_reload(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-int  idcu_config_integration_disable_hot_reload(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-int  idcu_config_integration_set_change_callback(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id,
-                                                   idcu_ConfigChangeCallback callback, void* user_data);
-
-idcu_ConfigSection* idcu_config_integration_get_section(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-idcu_ConfigSection* idcu_config_integration_get_section_by_name(idcu_ConfigIntegration* ci, const char* name);
-idcu_ConfigManager* idcu_config_integration_get_config_manager(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-
-int  idcu_config_integration_get(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, 
-                                  char* buffer, size_t buffer_size);
-int  idcu_config_integration_get_int(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, 
-                                       int64_t* value, int64_t default_value);
-int  idcu_config_integration_get_double(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, 
-                                          double* value, double default_value);
-int  idcu_config_integration_get_bool(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, 
-                                        int* value, int default_value);
-
-int  idcu_config_integration_set(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, const char* value);
-int  idcu_config_integration_set_int(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, int64_t value);
-int  idcu_config_integration_set_double(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, double value);
-int  idcu_config_integration_set_bool(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key, int value);
-
-int  idcu_config_integration_exists(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key);
-int  idcu_config_integration_remove(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* key);
-int  idcu_config_integration_clear(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-
-int  idcu_config_integration_save(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id);
-int  idcu_config_integration_save_all(idcu_ConfigIntegration* ci);
-
-int  idcu_config_integration_set_environment(idcu_ConfigIntegration* ci, idcu_ConfigEnvironment env);
-int  idcu_config_integration_set_environment_name(idcu_ConfigIntegration* ci, const char* name);
-idcu_ConfigEnvironment idcu_config_integration_get_environment(idcu_ConfigIntegration* ci);
-const char* idcu_config_integration_get_environment_name(idcu_ConfigIntegration* ci);
-
-int  idcu_config_integration_load_env_file(idcu_ConfigIntegration* ci, const char* path);
-int  idcu_config_integration_load_env_var(idcu_ConfigIntegration* ci, const char* name, const char* key);
-
-int  idcu_config_section_init(idcu_ConfigSection* section, const char* name, const char* path);
-void idcu_config_section_destroy(idcu_ConfigSection* section);
-int  idcu_config_section_load(idcu_ConfigSection* section);
-int  idcu_config_section_reload(idcu_ConfigSection* section);
-int  idcu_config_section_save(idcu_ConfigSection* section);
-
-int  idcu_config_section_get(const idcu_ConfigSection* section, const char* key, char* buffer, size_t buffer_size);
-int  idcu_config_section_get_int(const idcu_ConfigSection* section, const char* key, int64_t* value, int64_t default_value);
-int  idcu_config_section_get_double(const idcu_ConfigSection* section, const char* key, double* value, double default_value);
-int  idcu_config_section_get_bool(const idcu_ConfigSection* section, const char* key, int* value, int default_value);
-
-int  idcu_config_section_set(idcu_ConfigSection* section, const char* key, const char* value);
-int  idcu_config_section_set_int(idcu_ConfigSection* section, const char* key, int64_t value);
-int  idcu_config_section_set_double(idcu_ConfigSection* section, const char* key, double value);
-int  idcu_config_section_set_bool(idcu_ConfigSection* section, const char* key, int value);
-
-int  idcu_config_section_exists(const idcu_ConfigSection* section, const char* key);
-int  idcu_config_section_remove(idcu_ConfigSection* section, const char* key);
-int  idcu_config_section_clear(idcu_ConfigSection* section);
-
-int  idcu_config_format_from_extension(const char* path, idcu_ConfigFormat* format);
-const char* idcu_config_format_to_extension(idcu_ConfigFormat format);
-
-const char* idcu_config_environment_to_string(idcu_ConfigEnvironment env);
-idcu_ConfigEnvironment idcu_config_environment_from_string(const char* str);
-
-int  idcu_config_integration_validate(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* schema_path);
-int  idcu_config_integration_set_defaults(idcu_ConfigIntegration* ci, idcu_ConfigSectionId id, const char* defaults_path);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
 
-### 3. 创建 CMakeLists.txt
-
-创建 `modules/config-integration/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(config-integration VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(config-integration STATIC
-    src/idcu/config_integration/config_integration.c
-)
-
-target_include_directories(config-integration PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(config-integration PRIVATE
-    idcu::common
-    idcu::config
-    idcu::yaml
-    idcu::json
-    idcu::log
-    idcu::utils
-)
+### 2.4 跨平台适配
+- Windows：使用 ReadDirectoryChangesW 监控文件
+- Linux：使用 inotify 监控文件
+- 路径分隔符处理一致
 
-add_library(idcu::config-integration ALIAS config-integration)
+---
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+## 3. 验收标准（可量化）
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
+### 3.1 功能验收
+- [ ] 可以加载和保存 YAML/JSON 配置
+- [ ] 配置热重载正常工作
+- [ ] 多环境配置正常工作
+- [ ] 配置变更回调正常触发
 
-### 4. 创建模块配置文件 (module.yaml)
+### 3.2 性能验收
+- [ ] 配置加载时间 ≤ 50ms
+- [ ] 热重载响应时间 ≤ 100ms
+- [ ] 内存占用 ≤ 512KB
+- [ ] 支持 100 个并发配置读取
 
-创建 `modules/config-integration/module.yaml`：
+### 3.3 异常验收
+- [ ] 配置文件不存在时使用默认值
+- [ ] 配置格式错误时返回明确错误
+- [ ] 热重载失败时不影响当前配置
 
-```yaml
-name: config-integration
-version: 1.0.0
-description: Config integration module for IDCU Agent
-author: IDCU Team
-license: MIT
+---
 
-dependencies:
-  - idcu-common
-  - idcu-config
-  - idcu-yaml
-  - idcu-json
-  - idcu-log
-  - idcu-utils
+## 4. 执行计划
 
-build:
-  type: cmake
-  targets:
-    - config-integration
+### 4.1 工期
+1 天/人
 
-headers:
-  - idcu/config_integration/config_integration.h
+### 4.2 里程碑
+- D1：完成配置段管理
+- D1：完成热重载和文件监控
+- D1：完成多环境支持
 
-features:
-  - unified: Unified config management
-  - multi_format: Multi-format config (YAML/JSON)
-  - hot_reload: Config hot reload
-  - multi_env: Multi-environment config
-  - validation: Config validation
-  - defaults: Config defaults
-  - watch: Config file watching
-  - env_vars: Environment variable integration
+### 4.3 人力
+1 人（技能要求：C 语言 + 熟悉 idcu-config）
 
-testing:
-  enabled: true
-  framework: internal
-```
+---
 
-### 5. 创建 README.md
+## 5. 工程化要求
 
-创建 `modules/config-integration/README.md`：
+### 5.1 编码规范
+- 对齐项目的 .clang-format 规范
+- 函数名小写+下划线，结构体前缀 Config_
 
-```markdown
-# config-integration
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试 5 种异常场景
 
-IDCU Agent 的配置集成模块。
+### 5.3 部署指引
+- 编译命令：`cmake --build build --target config-integration`
+- 配置使用 YAML 格式
 
-## 功能特性
+---
 
-- **统一管理**: 统一配置管理
-- **多格式**: 多格式配置（YAML/JSON）
-- **热重载**: 配置热重载
-- **多环境**: 多环境配置
-- **配置验证**: 配置验证
-- **默认值**: 配置默认值
-- **文件监视**: 配置文件监视
-- **环境变量**: 环境变量集成
+## 6. 风险与应对
 
-## 快速开始
+### 6.1 风险1
+描述：配置热重载时数据竞争  
+应对：使用读写锁保护配置数据
 
-### 初始化配置集成
+### 6.2 风险2
+描述：文件监控占用过多资源  
+应对：使用事件驱动架构，仅监控必要文件
 
-```c
-#include "idcu/config_integration/config_integration.h"
+---
 
-idcu_ConfigIntegrationConfig config;
-idcu_config_integration_config_init(&config);
+## 7. 详细实现步骤
 
-strncpy(config.config_dir, "./config", sizeof(config.config_dir));
-config.environment = IDCU_CONFIG_ENV_DEVELOPMENT;
-config.enable_watch = 1;
+（详细内容省略，请参考原文档）
 
-idcu_ConfigIntegration ci;
-idcu_config_integration_init(&ci, &config);
-```
+---
 
-### 添加配置段
-
-```c
-idcu_ConfigSectionId app_id = idcu_config_integration_add_section(&ci, "app", "./config/app.yaml");
-idcu_ConfigSectionId db_id = idcu_config_integration_add_section(&ci, "database", "./config/database.json");
-```
-
-### 加载配置
-
-```c
-idcu_config_integration_load(&ci);
-```
-
-### 读取配置
-
-```c
-char buffer[256];
-idcu_config_integration_get(&ci, app_id, "app.name", buffer, sizeof(buffer));
-printf("App name: %s\n", buffer);
-
-int64_t port;
-idcu_config_integration_get_int(&ci, app_id, "app.port", &port, 8080);
-printf("Port: %" PRId64 "\n", port);
-
-double timeout;
-idcu_config_integration_get_double(&ci, app_id, "app.timeout", &timeout, 30.0);
-printf("Timeout: %f\n", timeout);
-
-int debug;
-idcu_config_integration_get_bool(&ci, app_id, "app.debug", &debug, 0);
-printf("Debug: %d\n", debug);
-```
-
-### 写入配置
-
-```c
-idcu_config_integration_set(&ci, app_id, "app.version", "1.0.0");
-idcu_config_integration_set_int(&ci, app_id, "app.max_connections", 100);
-idcu_config_integration_set_double(&ci, app_id, "app.threshold", 0.75);
-idcu_config_integration_set_bool(&ci, app_id, "app.feature_enabled", 1);
-```
-
-### 保存配置
-
-```c
-idcu_config_integration_save(&ci, app_id);
-idcu_config_integration_save_all(&ci);
-```
-
-### 启用热重载
-
-```c
-idcu_config_integration_enable_hot_reload(&ci, app_id);
-```
-
-### 设置变更回调
-
-```c
-void config_changed(const char* key, const char* old_value, const char* new_value, void* user_data)
-{
-    printf("Config changed: %s: %s -> %s\n", key, old_value, new_value);
-}
-
-idcu_config_integration_set_change_callback(&ci, app_id, config_changed, NULL);
-```
-
-### 重新加载配置
-
-```c
-idcu_config_integration_reload(&ci);
-idcu_config_integration_reload_section(&ci, app_id);
-```
-
-### 多环境配置
-
-```c
-idcu_config_integration_set_environment(&ci, IDCU_CONFIG_ENV_PRODUCTION);
-idcu_config_integration_set_environment_name(&ci, "prod");
-
-idcu_ConfigEnvironment env = idcu_config_integration_get_environment(&ci);
-const char* env_name = idcu_config_integration_get_environment_name(&ci);
-
-printf("Environment: %s\n", idcu_config_environment_to_string(env));
-```
-
-### 环境变量集成
-
-```c
-idcu_config_integration_load_env_file(&ci, ".env");
-idcu_config_integration_load_env_var(&ci, "DATABASE_URL", "database.url");
-```
-
-### 设置默认值
-
-```c
-idcu_config_integration_set_defaults(&ci, app_id, "./config/app.defaults.yaml");
-```
-
-### 验证配置
-
-```c
-idcu_config_integration_validate(&ci, app_id, "./config/app.schema.json");
-```
-
-### 获取配置段
-
-```c
-idcu_ConfigSection* section = idcu_config_integration_get_section(&ci, app_id);
-idcu_ConfigSection* section_by_name = idcu_config_integration_get_section_by_name(&ci, "app");
-```
-
-### 直接操作配置段
-
-```c
-idcu_config_section_get(section, "key", buffer, sizeof(buffer));
-idcu_config_section_get_int(section, "count", &count, 0);
-idcu_config_section_set(section, "key", "value");
-idcu_config_section_save(section);
-```
-
-### 清理
-
-```c
-idcu_config_integration_destroy(&ci);
-```
-
-## 配置环境
-
-| 环境 | 说明 |
-|-----|------|
-| DEVELOPMENT | 开发环境 |
-| TESTING | 测试环境 |
-| STAGING | 预发布环境 |
-| PRODUCTION | 生产环境 |
-
-## 配置格式
-
-| 格式 | 说明 |
-|-----|------|
-| AUTO | 自动检测 |
-| YAML | YAML 格式 |
-| JSON | JSON 格式 |
-
-## 配置文件结构
-
-### app.yaml
-
-```yaml
-app:
-  name: MyApp
-  version: 1.0.0
-  port: 8080
-  debug: true
-  max_connections: 100
-```
-
-### app.defaults.yaml
-
-```yaml
-app:
-  port: 8080
-  debug: false
-  max_connections: 50
-  timeout: 30.0
-```
-
-### .env
-
-```
-DATABASE_URL=postgres://user:pass@localhost/db
-REDIS_URL=redis://localhost:6379
-API_KEY=secret
-```
-
-## API 文档
-
-详见 [include/idcu/config_integration/config_integration.h](include/idcu/config_integration/config_integration.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 配置集成头文件已创建
 - [ ] 配置集成实现文件已创建
@@ -498,7 +163,9 @@ API_KEY=secret
 - [ ] 多环境配置正常工作
 - [ ] 热重载正常工作
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/config-integration/
@@ -508,15 +175,12 @@ git commit -m "feat: add config-integration module
 - Add multi-format config (YAML/JSON)
 - Add config hot reload
 - Add multi-environment config
-- Add config validation
-- Add config defaults
-- Add config file watching
-- Add environment variable integration
-- Add CMake build configuration
-- Add module.yaml metadata"
+- Add config validation"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

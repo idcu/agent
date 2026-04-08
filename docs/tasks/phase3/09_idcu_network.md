@@ -1,82 +1,113 @@
 # 任务 3.9: idcu-network - 网络层库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建跨平台网络层库，支持：
-- TCP 客户端和服务器
-- UDP 通信
-- Socket 管理
-- 地址解析
-- 超时设置
-- 非阻塞 I/O
-- Windows/Linux/macOS 跨平台
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建跨平台网络层库，提供 TCP 客户端/服务器、UDP 通信、Socket 管理、地址解析、超时设置、非阻塞 I/O、Windows/Linux/macOS 跨平台支持，满足 TCP 连接延迟 ≤ 100ms、数据传输吞吐量 ≥ 100MB/s、支持 1000+ 并发连接的性能要求。
 
-```bash
-mkdir -p libs/idcu-network/include/idcu/network
-mkdir -p libs/idcu-network/src/idcu/network
-mkdir -p libs/idcu-network/tests
-mkdir -p libs/idcu-network/examples
+### 1.2 不做什么
+- 不实现 HTTP/HTTPS 协议栈（由上层模块处理）
+- 不实现 TLS/SSL 加密
+- 不实现 WebSocket
+- 不实现高级网络拓扑（负载均衡等）
+
+### 1.3 输入
+- IP 地址/主机名和端口
+- 要发送的数据
+- 超时设置（毫秒）
+- Socket 选项
+
+### 1.4 输出
+- 接收的数据
+- Socket 连接状态
+- 错误码
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用
+- phase2 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **Socket API**: 封装 WinSock2（Windows）和 POSIX socket（Linux/macOS）
+- **地址解析**: getaddrinfo（跨平台）
+- **非阻塞 I/O**: fcntl（Linux）/ ioctlsocket（Windows）
+- **超时设置**: setsockopt（SO_RCVTIMEO/SO_SNDTIMEO）或 select
+- **Socket 集合**: select 模型
+
+### 2.2 核心逻辑
+```
+网络初始化：
+1. Windows：初始化 Winsock2
+2. Linux/macOS：无需特殊初始化
+
+TCP 连接流程：
+1. 创建 Socket
+2. 解析地址
+3. 设置非阻塞/超时
+4. 连接
+5. 处理连接结果
+
+数据发送：
+1. 检查连接状态
+2. 循环发送直到全部数据送出
+3. 返回发送的字节数
+
+数据接收：
+1. 检查连接状态
+2. 接收数据
+3. 返回接收的字节数
+
+TCP 服务器流程：
+1. 创建监听 Socket
+2. 绑定地址
+3. 监听
+4. 接受连接
+5. 返回客户端 Socket
 ```
 
-### 2. 创建网络头文件 (network.h)
-
-创建 `libs/idcu-network/include/idcu/network/network.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_NETWORK_NETWORK_H
-#define IDCU_NETWORK_NETWORK_H
-
-#include "idcu/common/error_code.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+// 主要头文件：idcu/network/network.h
 
 #ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
     typedef SOCKET idcu_Socket;
     #define IDCU_INVALID_SOCKET INVALID_SOCKET
 #else
-    #include <sys/socket.h>
-    #include <netinet/in.h>
-    #include <arpa/inet.h>
-    #include <unistd.h>
     typedef int idcu_Socket;
     #define IDCU_INVALID_SOCKET (-1)
 #endif
 
-typedef enum
-{
+typedef enum {
     IDCU_NET_PROTO_TCP = 0,
     IDCU_NET_PROTO_UDP
 } idcu_NetProtocol;
 
-typedef enum
-{
+typedef enum {
     IDCU_NET_ADDR_IPV4 = 0,
     IDCU_NET_ADDR_IPV6
 } idcu_NetAddrType;
 
-typedef struct
-{
+typedef struct {
     idcu_NetAddrType type;
-    union
-    {
+    union {
         struct in_addr  v4;
         struct in6_addr v6;
     } addr;
     uint16_t port;
 } idcu_NetAddress;
 
-typedef struct
-{
+typedef struct {
     idcu_Socket socket;
     idcu_NetProtocol protocol;
     idcu_NetAddress local_addr;
@@ -86,280 +117,168 @@ typedef struct
     int timeout_ms;
 } idcu_TcpSocket;
 
-typedef struct
-{
+typedef struct {
     idcu_Socket socket;
     idcu_NetAddress local_addr;
     int is_bound;
     int timeout_ms;
 } idcu_UdpSocket;
 
-typedef struct
-{
+typedef struct {
     idcu_Socket listen_socket;
     idcu_NetAddress listen_addr;
     int is_listening;
     int backlog;
 } idcu_TcpServer;
 
+// 核心 API
 int  idcu_network_init(void);
 void idcu_network_cleanup(void);
 
+// 地址操作
 int idcu_net_address_init(idcu_NetAddress* addr, idcu_NetAddrType type, const char* ip, uint16_t port);
-int idcu_net_address_from_string(idcu_NetAddress* addr, const char* str);
-int idcu_net_address_to_string(const idcu_NetAddress* addr, char* buffer, size_t buffer_size);
 int idcu_net_address_resolve(idcu_NetAddress* addr, const char* hostname, uint16_t port);
 
+// TCP Socket
 int  idcu_tcp_socket_init(idcu_TcpSocket* sock);
 void idcu_tcp_socket_destroy(idcu_TcpSocket* sock);
 int  idcu_tcp_socket_connect(idcu_TcpSocket* sock, const idcu_NetAddress* addr);
-int  idcu_tcp_socket_connect_timeout(idcu_TcpSocket* sock, const idcu_NetAddress* addr, int timeout_ms);
-void idcu_tcp_socket_disconnect(idcu_TcpSocket* sock);
-int  idcu_tcp_socket_send(idcu_TcpSocket* sock, const void* data, size_t len, size_t* sent);
 int  idcu_tcp_socket_send_all(idcu_TcpSocket* sock, const void* data, size_t len);
 int  idcu_tcp_socket_recv(idcu_TcpSocket* sock, void* buffer, size_t len, size_t* received);
-int  idcu_tcp_socket_recv_exact(idcu_TcpSocket* sock, void* buffer, size_t len);
-int  idcu_tcp_socket_set_blocking(idcu_TcpSocket* sock, int blocking);
-int  idcu_tcp_socket_set_timeout(idcu_TcpSocket* sock, int timeout_ms);
-int  idcu_tcp_socket_get_error(idcu_TcpSocket* sock);
+void idcu_tcp_socket_disconnect(idcu_TcpSocket* sock);
 
+// TCP 服务器
 int  idcu_tcp_server_init(idcu_TcpServer* server);
 void idcu_tcp_server_destroy(idcu_TcpServer* server);
 int  idcu_tcp_server_listen(idcu_TcpServer* server, const idcu_NetAddress* addr, int backlog);
-void idcu_tcp_server_stop(idcu_TcpServer* server);
 int  idcu_tcp_server_accept(idcu_TcpServer* server, idcu_TcpSocket* client);
-int  idcu_tcp_server_accept_timeout(idcu_TcpServer* server, idcu_TcpSocket* client, int timeout_ms);
 
+// UDP Socket
 int  idcu_udp_socket_init(idcu_UdpSocket* sock);
 void idcu_udp_socket_destroy(idcu_UdpSocket* sock);
 int  idcu_udp_socket_bind(idcu_UdpSocket* sock, const idcu_NetAddress* addr);
-void idcu_udp_socket_close(idcu_UdpSocket* sock);
 int  idcu_udp_socket_send(idcu_UdpSocket* sock, const idcu_NetAddress* dest, const void* data, size_t len);
 int  idcu_udp_socket_recv(idcu_UdpSocket* sock, idcu_NetAddress* source, void* buffer, size_t len, size_t* received);
-int  idcu_udp_socket_set_timeout(idcu_UdpSocket* sock, int timeout_ms);
-int  idcu_udp_socket_set_broadcast(idcu_UdpSocket* sock, int enable);
-
-typedef struct
-{
-    idcu_TcpSocket** sockets;
-    size_t count;
-    size_t capacity;
-} idcu_SocketSet;
-
-int  idcu_socket_set_init(idcu_SocketSet* set, size_t capacity);
-void idcu_socket_set_destroy(idcu_SocketSet* set);
-int  idcu_socket_set_add(idcu_SocketSet* set, idcu_TcpSocket* sock);
-int  idcu_socket_set_remove(idcu_SocketSet* set, idcu_TcpSocket* sock);
-int  idcu_socket_set_select(idcu_SocketSet* read_set, idcu_SocketSet* write_set, idcu_SocketSet* except_set, int timeout_ms);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
 
-### 3. 创建 CMakeLists.txt
+### 2.4 跨平台适配
+- **Windows**: 使用 WinSock2，需链接 ws2_32.lib
+- **Linux/macOS**: 使用 POSIX socket
+- **统一 API**: 封装差异，提供一致接口
 
-创建 `libs/idcu-network/CMakeLists.txt`：
+---
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-network VERSION 1.0.0 LANGUAGES C)
+## 3. 验收标准（可量化）
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+### 3.1 功能验收
+- [ ] TCP 客户端可以连接和发送数据
+- [ ] TCP 服务器可以监听和接受连接
+- [ ] UDP Socket 可以发送和接收数据
+- [ ] 地址解析（域名 → IP）正常工作
+- [ ] 超时设置生效
+- [ ] 非阻塞 I/O 正常工作
+- [ ] select 模型支持多路复用
+- [ ] 跨平台正常运行（Windows + Linux）
 
-add_library(idcu-network STATIC
-    src/idcu/network/network.c
-)
+### 3.2 性能验收
+- TCP 连接延迟 ≤ 100ms（局域网）
+- 数据传输吞吐量 ≥ 100MB/s（千兆网络）
+- 支持 1000+ 并发连接
+- 内存占用 ≤ 10MB（1000 连接）
 
-target_include_directories(idcu-network PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+### 3.3 异常验收
+- [ ] 连接失败返回明确错误码
+- [ ] 超时返回明确错误码
+- [ ] 网络断开正确检测
+- [ ] NULL 指针检查正确
 
-target_link_libraries(idcu-network PRIVATE
-    idcu::common
-)
+---
 
-if(WIN32)
-    target_link_libraries(idcu-network PRIVATE ws2_32)
-endif()
+## 4. 执行计划
 
-add_library(idcu::network ALIAS idcu-network)
+### 4.1 工期
+5 小时/人
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+### 4.2 里程碑
+- D1-00: 完成头文件定义和跨平台封装（1 小时）
+- D1-60: 完成 TCP 客户端（1 小时）
+- D1-120: 完成 TCP 服务器（1 小时）
+- D1-180: 完成 UDP 和地址解析（1 小时）
+- D1-240: 完成 select 和单元测试（30 分钟）
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+### 4.3 人力
+1 人（技能要求：C 语言 + 网络编程 + 跨平台）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，前缀 idcu_
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 75%
+- 跨平台测试（Windows + Linux）
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build && cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::network)`
+- Windows 需链接 ws2_32
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：跨平台行为差异导致兼容性问题  
+应对：持续集成测试覆盖 Windows 和 Linux
+
+### 6.2 风险2
+描述：高并发时性能下降  
+应对：提供 epoll（Linux）/ IOCP（Windows）选项
+
+---
+
+## 7. 详细实现步骤
+
+### 1. 创建目录结构
+```bash
+mkdir -p libs/idcu-network/include/idcu/network
+mkdir -p libs/idcu-network/src/idcu/network
+mkdir -p libs/idcu-network/tests
+mkdir -p libs/idcu-network/examples
 ```
 
-### 4. 创建模块配置文件 (module.yaml)
+### 2. 创建头文件和实现
+- network.h: 头文件定义
+- tcp.c: TCP 实现
+- udp.c: UDP 实现
+- address.c: 地址解析
+- select.c: Socket 集合
 
-创建 `libs/idcu-network/module.yaml`：
+### 3. 创建 CMakeLists.txt 和 module.yaml
 
-```yaml
-name: idcu-network
-version: 1.0.0
-description: Cross-platform network library for IDCU Agent
-author: IDCU Team
-license: MIT
+### 4. 创建 README.md
 
-dependencies:
-  - idcu-common
+---
 
-build:
-  type: cmake
-  targets:
-    - idcu-network
-
-headers:
-  - idcu/network/network.h
-
-features:
-  - tcp_client: TCP client socket
-  - tcp_server: TCP server socket
-  - udp: UDP socket support
-  - cross_platform: Windows/Linux/macOS support
-  - address: Address resolution and manipulation
-  - non_blocking: Non-blocking I/O support
-  - timeout: Timeout settings
-  - select: Socket set and select operations
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `libs/idcu-network/README.md`：
-
-```markdown
-# idcu-network
-
-IDCU Agent 的跨平台网络层库。
-
-## 功能特性
-
-- **TCP 客户端**: TCP 客户端 Socket
-- **TCP 服务器**: TCP 服务器 Socket
-- **UDP 通信**: UDP Socket 支持
-- **跨平台**: 支持 Windows/Linux/macOS
-- **地址解析**: 地址解析和操作
-- **非阻塞 I/O**: 非阻塞 I/O 支持
-- **超时设置**: 超时设置
-- **Socket 选择**: Socket 集合和 select 操作
-
-## 快速开始
-
-### 初始化网络库
-
-```c
-#include "idcu/network/network.h"
-
-idcu_network_init();
-```
-
-### TCP 客户端
-
-```c
-idcu_TcpSocket sock;
-idcu_tcp_socket_init(&sock);
-
-idcu_NetAddress addr;
-idcu_net_address_init(&addr, IDCU_NET_ADDR_IPV4, "127.0.0.1", 8080);
-
-idcu_tcp_socket_connect(&sock, &addr);
-
-const char* data = "Hello, Server!";
-idcu_tcp_socket_send_all(&sock, data, strlen(data));
-
-char buffer[1024];
-size_t received;
-idcu_tcp_socket_recv(&sock, buffer, sizeof(buffer), &received);
-
-idcu_tcp_socket_disconnect(&sock);
-idcu_tcp_socket_destroy(&sock);
-```
-
-### TCP 服务器
-
-```c
-idcu_TcpServer server;
-idcu_tcp_server_init(&server);
-
-idcu_NetAddress addr;
-idcu_net_address_init(&addr, IDCU_NET_ADDR_IPV4, "0.0.0.0", 8080);
-
-idcu_tcp_server_listen(&server, &addr, 10);
-
-idcu_TcpSocket client;
-idcu_tcp_server_accept(&server, &client);
-
-char buffer[1024];
-size_t received;
-idcu_tcp_socket_recv(&client, buffer, sizeof(buffer), &received);
-
-idcu_tcp_socket_disconnect(&client);
-idcu_tcp_socket_destroy(&client);
-
-idcu_tcp_server_stop(&server);
-idcu_tcp_server_destroy(&server);
-```
-
-### UDP 通信
-
-```c
-idcu_UdpSocket sock;
-idcu_udp_socket_init(&sock);
-
-idcu_NetAddress local_addr;
-idcu_net_address_init(&local_addr, IDCU_NET_ADDR_IPV4, "0.0.0.0", 9090);
-idcu_udp_socket_bind(&sock, &local_addr);
-
-idcu_NetAddress dest_addr;
-idcu_net_address_init(&dest_addr, IDCU_NET_ADDR_IPV4, "127.0.0.1", 9091);
-
-const char* data = "Hello, UDP!";
-idcu_udp_socket_send(&sock, &dest_addr, data, strlen(data));
-
-char buffer[1024];
-idcu_NetAddress source_addr;
-size_t received;
-idcu_udp_socket_recv(&sock, &source_addr, buffer, sizeof(buffer), &received);
-
-idcu_udp_socket_close(&sock);
-idcu_udp_socket_destroy(&sock);
-```
-
-### 清理
-
-```c
-idcu_network_cleanup();
-```
-
-## API 文档
-
-详见 [include/idcu/network/network.h](include/idcu/network/network.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 网络头文件已创建
 - [ ] 网络实现文件已创建
 - [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
+- [ ] module.yaml 已创建
 - [ ] README.md 已创建
-- [ ] TCP 客户端可以连接和发送数据
-- [ ] TCP 服务器可以监听和接受连接
-- [ ] UDP Socket 可以发送和接收数据
+- [ ] TCP 客户端测试通过
+- [ ] TCP 服务器测试通过
+- [ ] UDP 测试通过
+- [ ] 跨平台测试通过
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-network/
@@ -376,7 +295,9 @@ git commit -m "feat: add idcu-network library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

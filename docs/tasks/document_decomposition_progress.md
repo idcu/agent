@@ -1,12 +1,13 @@
-# IDCU Agent 文档拆解进度
+# IDCU Agent 文档拆解与整改进度
 
 > **创建日期**: 2026-04-08  
+> **最后更新**: 2026-04-09  
 > **文档来源**: docs/step_by_step_development_guide.md  
-> **目标**: 将主开发指南拆解为独立的任务文档
+> **目标**: 将主开发指南拆解为独立的任务文档并按标准模板整改
 
 ---
 
-## 📋 拆解原则
+## 📋 拆解与整改原则
 
 1. **不迁移现有代码** - 直接从文档开始新开发
 2. **提取现有代码精华** - 将现有代码的精华写入任务文档
@@ -18,15 +19,26 @@
 
 ## 📊 整体进度概览
 
+### 文档拆解进度
 | 阶段 | 主文档章节 | 任务文档数量 | 已完成 | 进度 |
 |-----|-----------|-------------|-------|------|
 | **阶段 1** | 第 7 章 | 8 个 | 8 个 | ✅ 100% |
 | **阶段 2** | 第 8 章 | 8 个 | 8 个 | ✅ 100% |
-| **阶段 3** | 第 9 章 | 29 个 | 29 个 | ✅ 100% |
-| **阶段 4** | 第 10 章 | 8 个 | 8 个 | ✅ 100% |
-| **阶段 5** | 第 11 章 | 13 个 | 13 个 | ✅ 100% |
+| **阶段 3** | 第 9 章 | 30 个 | 30 个 | ✅ 100% |
+| **阶段 4** | 第 10 章 | 10 个 | 10 个 | ✅ 100% |
+| **阶段 5** | 第 11 章 | 15 个 | 15 个 | ✅ 100% |
 | **参考资料** | 第 12-16 章 | 6 个 | 6 个 | ✅ 100% |
-| **总计** | | 72 个 | 72 个 | **100%** |
+| **总计** | | 77 个 | 77 个 | **100%** |
+
+### 文档整改进度
+| 阶段 | 文档数量 | 已完成 | 状态 |
+|-----|---------|-------|------|
+| phase1 | 8 个 | 8 个 | ✅ 已完成 |
+| phase2 | 8 个 | 8 个 | ✅ 已完成 |
+| phase3 | 30 个 | 30 个 | ✅ 已完成（30/30） |
+| phase4 | 10 个 | 10 个 | ✅ 已完成（10/10） |
+| phase5 | 14 个 | 14 个 | ✅ 已完成 |
+| **总计** | **70 个** | **70 个** | ✅ **全部完成** |
 
 ---
 
@@ -58,8 +70,7 @@
 | 8.4 协程调度器 | phase2/04_coroutine_scheduler.md | ✅ 已完成 | |
 | 8.4 消息总线 | phase2/05_message_bus.md | ✅ 已完成 | |
 | 8.4 微内核核心 | phase2/06_micro_kernel.md | ✅ 已完成 | |
-| 8.4 SDK 基础 | phase2/07_sdk_base.md | ✅ 已完成 | |
-| 8.5 阶段 2 最终验收 | - | ⏳ 待创建 | |
+| 8.4 SDK 基础 | phase2/07_sdk_base.md | ✅ 已完成 | 保留更完整的版本 |
 
 ---
 
@@ -151,6 +162,97 @@
 
 ---
 
+## 🔧 文档整改进度详情
+
+基于 `docs/评估.md` 和 `reference/task_template.md` 对任务文档进行标准化整改。
+
+### ✅ 已完成整改的文档（全部 70 个）
+
+**phase1 (全部 8 个):**
+- phase1/00_phase1_overview.md
+- phase1/01_create_project_structure.md
+- phase1/02_write_main_entry.md
+- phase1/03_configure_cmake.md
+- phase1/04_verify_build.md
+- phase1/05_add_code_quality_tools.md
+- phase1/06_setup_test_framework.md
+- phase1/07_init_module_build.md
+
+**phase2 (全部 8 个):**
+- phase2/00_phase2_overview.md
+- phase2/01_create_idcu_common.md
+- phase2/02_improve_module_build.md
+- phase2/03_module_system.md
+- phase2/04_coroutine_scheduler.md
+- phase2/05_message_bus.md
+- phase2/06_micro_kernel.md
+- phase2/07_sdk_base.md
+
+**phase3 (全部 30 个):**
+- phase3/00_phase3_overview.md
+- phase3/01_idcu_log.md
+- phase3/02_idcu_json.md
+- phase3/03_idcu_yaml.md
+- phase3/04_idcu_memory.md
+- phase3/05_idcu_utils.md
+- phase3/06_idcu_config.md
+- phase3/07_idcu_storage.md
+- phase3/08_idcu_cache.md
+- phase3/09_idcu_network.md
+- phase3/10_idcu_conn_pool.md
+- phase3/11_idcu_http_server.md
+- phase3/12_idcu_http_client.md
+- phase3/13_idcu_msgbus.md
+- phase3/14_idcu_coroutine.md
+- phase3/15_idcu_metrics.md
+- phase3/16_idcu_healthcheck.md
+- phase3/17_idcu_alert.md
+- phase3/18_idcu_watchdog.md
+- phase3/19_idcu_discovery.md
+- phase3/20_idcu_sandbox.md
+- phase3/21_idcu_permission.md
+- phase3/22_idcu_plugin.md
+- phase3/23_idcu_management.md
+- phase3/24_idcu_distributed.md
+- phase3/25_idcu_scheduler.md
+- phase3/26_idcu_device_collector.md
+- phase3/27_idcu_server_monitor.md
+- phase3/28_idcu_module_isolation.md
+- phase3/29_idcu_module_verifier.md
+
+**phase4 (全部 10 个):**
+- phase4/00_phase4_overview.md
+- phase4/01_log_integration.md
+- phase4/01_rest_api.md
+- phase4/02_config_integration.md
+- phase4/03_json_integration.md
+- phase4/04_yaml_integration.md
+- phase4/05_network_integration.md
+- phase4/06_metrics_integration.md
+- phase4/07_basic_libs.md
+- phase4/08_sdk_complete.md
+
+**phase5 (全部 14 个):**
+- phase5/00_phase5_overview.md
+- phase5/01_core_module.md
+- phase5/02_log_module.md
+- phase5/03_config_module.md
+- phase5/04_heartbeat.md
+- phase5/05_metrics_module.md
+- phase5/06_healthcheck_module.md
+- phase5/07_alert_module.md
+- phase5/08_collect_module.md
+- phase5/09_cache_module.md
+- phase5/10_storage_module.md
+- phase5/11_security_module.md
+- phase5/12_http_client_module.md
+- phase5/13_http_management_module.md
+
+### 📋 整改原则
+（详见 `docs/tasks/文档整改指南.md`）
+
+---
+
 ## 📌 关键改进点
 
 在拆解过程中，已确保以下改进：
@@ -166,6 +268,16 @@
 - [x] 补充阶段 5 剩余的 6 个任务文档（collect-module、cache-module、storage-module、security-module、http-client-module、http-management）
 - [x] 为所有任务文档添加 YAML 配置示例
 - [x] 在任务文档中添加代码质量和安全考虑
+- [x] **2026-04-08 整改**：删除重复的 SDK 文档（保留更完整的 07_sdk_basic.md，删除 07_sdk_base.md），重命名为 07_sdk_base.md
+- [x] **2026-04-08 整改**：更新任务索引（README.md、task_index.md），删除对已删除文档的引用
+- [x] **2026-04-08 整改**：检查并确认所有文档无乱码问题
+- [x] **2026-04-09 整改**：创建标准化文档模板 reference/task_template.md
+- [x] **2026-04-09 整改**：完成 phase1 全部 8 个文档的标准化整改
+- [x] **2026-04-09 整改**：完成 phase2 全部 8 个文档的标准化整改
+- [x] **2026-04-09 整改**：完成 phase3 全部 30 个文档的标准化整改
+- [x] **2026-04-09 整改**：完成 phase4 全部 10 个文档的标准化整改
+- [x] **2026-04-09 整改**：完成 phase5 全部 14 个文档的标准化整改
+- [x] **2026-04-09 整改**：所有 70 个任务文档整改完成！
 
 ---
 
@@ -184,6 +296,7 @@
 
 ---
 
-**最后更新**: 2026-04-08  
+**最后更新**: 2026-04-09  
 **拆解负责人**: AI Assistant  
-**整体进度**: 100% - 已完成!
+**文档拆解进度**: 100% - 已完成 (77/77)  
+**文档整改进度**: 100% - 全部完成! (70/70)

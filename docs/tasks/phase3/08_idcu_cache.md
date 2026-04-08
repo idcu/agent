@@ -1,55 +1,86 @@
 # 任务 3.8: idcu-cache - 内存缓存库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建内存缓存库，支持：
-- LRU 缓存策略
-- 缓存过期
-- 最大容量限制
-- 命中率统计
-- 线程安全
-- 多种缓存淘汰策略
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建内存缓存库，提供 LRU/LFU/FIFO/随机 4 种淘汰策略、TTL 过期支持、最大容量和内存限制、命中率统计、线程安全操作，满足缓存读写延迟 ≤ 100ns、支持 100000+ 缓存项、命中率 ≥ 80% 的性能要求。
 
-```bash
-mkdir -p libs/idcu-cache/include/idcu/cache
-mkdir -p libs/idcu-cache/src/idcu/cache
-mkdir -p libs/idcu-cache/tests
-mkdir -p libs/idcu-cache/examples
+### 1.2 不做什么
+- 不实现持久化缓存（由 storage 模块处理）
+- 不实现分布式缓存
+- 不实现缓存预热
+- 不实现压缩存储
+
+### 1.3 输入
+- 缓存配置（策略、容量、TTL）
+- 缓存键值对
+- TTL 时间（毫秒）
+- 淘汰策略
+
+### 1.4 输出
+- 缓存读取结果
+- 统计信息（命中/未命中/淘汰计数、命中率）
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用
+- phase2 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **淘汰策略**: LRU（默认）、LFU、FIFO、随机
+- **数据结构**: 双向链表 + 哈希表（LRU）
+- **过期管理**: 按 TTL 时间戳 + 惰性过期检查
+- **线程安全**: 互斥锁保护
+- **统计**: 原子计数器
+
+### 2.2 核心逻辑
+```
+缓存初始化：
+1. 根据配置初始化数据结构
+2. 初始化互斥锁
+3. 清零统计计数器
+4. 设置默认淘汰策略
+
+缓存写入：
+1. 获取锁
+2. 检查键是否已存在（更新）
+3. 容量满时按策略淘汰
+4. 插入或更新缓存项
+5. 更新访问时间/计数
+6. 释放锁
+
+缓存读取：
+1. 获取锁
+2. 查找键
+3. 检查是否过期
+4. 更新访问时间/计数
+5. 更新统计（命中/未命中）
+6. 释放锁
 ```
 
-### 2. 创建缓存头文件 (cache.h)
-
-创建 `libs/idcu-cache/include/idcu/cache/cache.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_CACHE_CACHE_H
-#define IDCU_CACHE_CACHE_H
+// 主要头文件：idcu/cache/cache.h
 
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/common/hash_map.h"
-#include "idcu/common/lock.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum
-{
+typedef enum {
     IDCU_CACHE_POLICY_LRU = 0,
     IDCU_CACHE_POLICY_LFU,
     IDCU_CACHE_POLICY_FIFO,
     IDCU_CACHE_POLICY_RANDOM
 } idcu_CachePolicy;
 
-typedef struct idcu_CacheEntry
-{
+typedef struct idcu_CacheEntry {
     char* key;
     void* value;
     size_t value_size;
@@ -61,8 +92,7 @@ typedef struct idcu_CacheEntry
     struct idcu_CacheEntry* next;
 } idcu_CacheEntry;
 
-typedef struct
-{
+typedef struct {
     idcu_HashMap entries;
     idcu_CacheEntry* head;
     idcu_CacheEntry* tail;
@@ -76,310 +106,141 @@ typedef struct
     uint64_t hit_count;
     uint64_t miss_count;
     uint64_t evict_count;
-    int initialized;
 } idcu_Cache;
-
-typedef struct
-{
-    idcu_CachePolicy policy;
-    size_t max_entries;
-    size_t max_memory;
-    uint64_t default_ttl_ms;
-} idcu_CacheConfig;
-
-int  idcu_cache_config_init(idcu_CacheConfig* config);
 
 int  idcu_cache_init(idcu_Cache* cache, const idcu_CacheConfig* config);
 void idcu_cache_destroy(idcu_Cache* cache);
-
 int  idcu_cache_put(idcu_Cache* cache, const char* key, const void* value, size_t value_size);
-int  idcu_cache_put_with_ttl(idcu_Cache* cache, const char* key, const void* value, size_t value_size, uint64_t ttl_ms);
-int  idcu_cache_put_string(idcu_Cache* cache, const char* key, const char* value);
-int  idcu_cache_put_int(idcu_Cache* cache, const char* key, int64_t value);
-int  idcu_cache_put_double(idcu_Cache* cache, const char* key, double value);
-
 int  idcu_cache_get(idcu_Cache* cache, const char* key, void* buffer, size_t buffer_size, size_t* value_size);
-int  idcu_cache_get_string(idcu_Cache* cache, const char* key, char* buffer, size_t buffer_size);
-int  idcu_cache_get_int(idcu_Cache* cache, const char* key, int64_t* value);
-int  idcu_cache_get_double(idcu_Cache* cache, const char* key, double* value);
-
 int  idcu_cache_remove(idcu_Cache* cache, const char* key);
 int  idcu_cache_clear(idcu_Cache* cache);
-int  idcu_cache_exists(idcu_Cache* cache, const char* key);
-size_t idcu_cache_size(idcu_Cache* cache);
-size_t idcu_cache_memory_usage(idcu_Cache* cache);
-
-uint64_t idcu_cache_get_hit_count(const idcu_Cache* cache);
-uint64_t idcu_cache_get_miss_count(const idcu_Cache* cache);
-uint64_t idcu_cache_get_evict_count(const idcu_Cache* cache);
 double idcu_cache_get_hit_rate(const idcu_Cache* cache);
-void idcu_cache_reset_stats(idcu_Cache* cache);
-
-typedef struct
-{
-    size_t current_entries;
-    size_t max_entries;
-    size_t current_memory;
-    size_t max_memory;
-    uint64_t hit_count;
-    uint64_t miss_count;
-    uint64_t evict_count;
-    double hit_rate;
-} idcu_CacheStats;
-
-void idcu_cache_get_stats(const idcu_Cache* cache, idcu_CacheStats* stats);
-
-int idcu_cache_set_policy(idcu_Cache* cache, idcu_CachePolicy policy);
-int idcu_cache_set_max_entries(idcu_Cache* cache, size_t max_entries);
-int idcu_cache_set_max_memory(idcu_Cache* cache, size_t max_memory);
-int idcu_cache_set_default_ttl(idcu_Cache* cache, uint64_t ttl_ms);
-
-int idcu_cache_cleanup_expired(idcu_Cache* cache);
-
-typedef struct
-{
-    char* key;
-    void* value;
-    size_t value_size;
-    uint64_t age_ms;
-} idcu_CacheEntryInfo;
-
-int  idcu_cache_get_all_keys(idcu_Cache* cache, idcu_Vector* keys);
-int  idcu_cache_get_all_entries(idcu_Cache* cache, idcu_Vector* entries);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
 
-### 3. 创建 CMakeLists.txt
+### 2.4 跨平台适配
+- 使用 idcu-common 中的跨平台互斥锁和哈希表
+- 时间获取使用跨平台 API
 
-创建 `libs/idcu-cache/CMakeLists.txt`：
+---
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-cache VERSION 1.0.0 LANGUAGES C)
+## 3. 验收标准（可量化）
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+### 3.1 功能验收
+- [ ] LRU/LFU/FIFO/随机策略全部正常工作
+- [ ] TTL 过期正确执行
+- [ ] 容量和内存限制正确生效
+- [ ] 命中率统计准确
+- [ ] 多线程并发安全
 
-add_library(idcu-cache STATIC
-    src/idcu/cache/cache.c
-)
+### 3.2 性能验收
+- 缓存读写延迟 ≤ 100ns（平均）
+- 支持 100000+ 缓存项
+- 命中率 ≥ 80%（正常工作负载）
+- 内存占用可控
 
-target_include_directories(idcu-cache PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+### 3.3 异常验收
+- [ ] 传入 NULL 指针返回明确错误码
+- [ ] 容量满时正确淘汰
 
-target_link_libraries(idcu-cache PRIVATE
-    idcu::common
-)
+---
 
-add_library(idcu::cache ALIAS idcu-cache)
+## 4. 执行计划
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+### 4.1 工期
+4 小时/人
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+### 4.2 里程碑
+- D1-00: 完成头文件定义（30 分钟）
+- D1-30: 完成核心数据结构和 LRU（1 小时）
+- D1-90: 完成其他策略和 TTL（1 小时）
+- D1-150: 完成统计和线程安全（45 分钟）
+- D1-195: 完成单元测试（45 分钟）
+
+### 4.3 人力
+1 人（技能要求：C 语言 + 数据结构）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，前缀 idcu_
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试覆盖所有 4 种策略
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build && cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::cache)`
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：锁争用导致多线程性能下降  
+应对：考虑分段锁或无锁数据结构
+
+### 6.2 风险2
+描述：内存碎片  
+应对：使用内存池或固定大小分配
+
+---
+
+## 7. 详细实现步骤
+
+### 1. 创建目录结构
+```bash
+mkdir -p libs/idcu-cache/include/idcu/cache
+mkdir -p libs/idcu-cache/src/idcu/cache
+mkdir -p libs/idcu-cache/tests
+mkdir -p libs/idcu-cache/examples
 ```
 
-### 4. 创建模块配置文件 (module.yaml)
+### 2. 创建头文件和实现
+- cache.h: 头文件定义
+- cache.c: 核心实现
 
-创建 `libs/idcu-cache/module.yaml`：
+### 3. 创建 CMakeLists.txt 和 module.yaml
 
-```yaml
-name: idcu-cache
-version: 1.0.0
-description: In-memory cache library for IDCU Agent
-author: IDCU Team
-license: MIT
+### 4. 创建 README.md
 
-dependencies:
-  - idcu-common
+---
 
-build:
-  type: cmake
-  targets:
-    - idcu-cache
-
-headers:
-  - idcu/cache/cache.h
-
-features:
-  - lru: LRU cache policy
-  - lfu: LFU cache policy
-  - fifo: FIFO cache policy
-  - random: Random cache policy
-  - ttl: TTL (time-to-live) support
-  - capacity: Max capacity and memory limits
-  - stats: Hit/miss statistics
-  - thread_safe: Thread-safe operations
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `libs/idcu-cache/README.md`：
-
-```markdown
-# idcu-cache
-
-IDCU Agent 的内存缓存库。
-
-## 功能特性
-
-- **LRU 策略**: LRU（最近最少使用）缓存策略
-- **LFU 策略**: LFU（最不经常使用）缓存策略
-- **FIFO 策略**: FIFO（先进先出）缓存策略
-- **随机策略**: 随机淘汰策略
-- **TTL 支持**: TTL（过期时间）支持
-- **容量限制**: 最大容量和内存限制
-- **统计信息**: 命中率统计
-- **线程安全**: 线程安全操作
-
-## 快速开始
-
-### 初始化缓存
-
-```c
-#include "idcu/cache/cache.h"
-
-idcu_CacheConfig config;
-idcu_cache_config_init(&config);
-
-config.policy = IDCU_CACHE_POLICY_LRU;
-config.max_entries = 1000;
-config.max_memory = 10 * 1024 * 1024;
-config.default_ttl_ms = 3600000;
-
-idcu_Cache cache;
-idcu_cache_init(&cache, &config);
-```
-
-### 添加缓存项
-
-```c
-idcu_cache_put_string(&cache, "user:1", "John Doe");
-idcu_cache_put_int(&cache, "count", 42);
-idcu_cache_put_double(&cache, "score", 95.5);
-
-const char* data = "cached data";
-idcu_cache_put(&cache, "data", data, strlen(data));
-
-idcu_cache_put_with_ttl(&cache, "temp", "temporary", 10, 60000);
-```
-
-### 获取缓存项
-
-```c
-char name[256];
-idcu_cache_get_string(&cache, "user:1", name, sizeof(name));
-
-int64_t count;
-idcu_cache_get_int(&cache, "count", &count);
-
-double score;
-idcu_cache_get_double(&cache, "score", &score);
-
-char buffer[1024];
-size_t size;
-idcu_cache_get(&cache, "data", buffer, sizeof(buffer), &size);
-```
-
-### 删除缓存项
-
-```c
-idcu_cache_remove(&cache, "user:1");
-idcu_cache_clear(&cache);
-```
-
-### 检查是否存在
-
-```c
-if (idcu_cache_exists(&cache, "user:1")) {
-    printf("Cache hit!\n");
-} else {
-    printf("Cache miss!\n");
-}
-```
-
-### 获取统计信息
-
-```c
-idcu_CacheStats stats;
-idcu_cache_get_stats(&cache, &stats);
-
-printf("Hits: %" PRIu64 "\n", stats.hit_count);
-printf("Misses: %" PRIu64 "\n", stats.miss_count);
-printf("Hit rate: %.2f%%\n", stats.hit_rate * 100);
-printf("Evictions: %" PRIu64 "\n", stats.evict_count);
-```
-
-### 清理过期项
-
-```c
-idcu_cache_cleanup_expired(&cache);
-```
-
-### 销毁缓存
-
-```c
-idcu_cache_destroy(&cache);
-```
-
-## 缓存策略
-
-| 策略 | 说明 |
-|-----|------|
-| LRU | 最近最少使用 |
-| LFU | 最不经常使用 |
-| FIFO | 先进先出 |
-| RANDOM | 随机淘汰 |
-
-## API 文档
-
-详见 [include/idcu/cache/cache.h](include/idcu/cache/cache.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 缓存头文件已创建
 - [ ] 缓存实现文件已创建
 - [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
+- [ ] module.yaml 已创建
 - [ ] README.md 已创建
-- [ ] 缓存可以正常读写
-- [ ] LRU 淘汰策略正常工作
-- [ ] 统计功能正常工作
+- [ ] 所有策略测试通过
+- [ ] TTL 功能正常
+- [ ] 统计功能正常
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-cache/
 git commit -m "feat: add idcu-cache library
 
-- Add LRU cache policy
-- Add LFU cache policy
-- Add FIFO cache policy
-- Add Random cache policy
+- Add LRU/LFU/FIFO/Random cache policies
 - Add TTL (time-to-live) support
 - Add max capacity and memory limits
-- Add hit/miss statistics
+- Add hit/miss/evict statistics
 - Add thread-safe operations
 - Add CMake build configuration
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

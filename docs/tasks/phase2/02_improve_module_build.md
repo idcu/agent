@@ -1,15 +1,185 @@
 # 任务 2.2: 完善 idcu-module-build
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-完善模块构建系统，使其能够支持：
-- 自动发现和构建模块
-- 统一的模块元数据配置（使用 YAML）
-- 跨平台构建支持
-- 测试和示例的集成
-- 与现有项目的实现对齐
+---
 
-## 详细步骤
+## 1. 任务边界
+
+### 1.1 核心目标
+完善模块构建系统，使其能够支持自动发现和构建模块、统一的模块元数据配置（使用 YAML）、跨平台构建支持、测试和示例的集成，并与现有项目的实现对齐。
+
+### 1.2 不做什么
+- 不实现完整的包管理器功能
+- 不实现远程模块下载
+- 不实现增量编译优化
+- 不实现模块依赖的自动下载
+
+### 1.3 输入
+- 第一阶段创建的基础模块构建系统
+- idcu-common 库（任务 2.1 完成后）
+- CMake 3.15+ 构建工具
+
+### 1.4 输出
+- 完善的 idcu-module-build 构建系统
+- CMake 辅助函数库
+- 模块自动发现脚本
+- YAML 配置支持
+- Python 构建脚本
+
+### 1.5 前置依赖
+- 任务 2.1 已完成
+- 项目 CMake 配置已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **构建系统**: CMake 3.15+
+- **配置格式**: YAML
+- **脚本语言**: Python 3
+- **模块格式**: 静态库/动态库
+
+### 2.2 核心逻辑
+```
+1. 配置系统
+   ├── default.yaml - 默认构建配置
+   └── auto-adapter.yaml - 自动适配配置
+
+2. CMake 辅助函数
+   ├── idcu_add_module - 添加模块
+   ├── idcu_add_module_test - 添加模块测试
+   └── 模块元数据解析
+
+3. 自动发现
+   ├── 扫描 module.yaml 文件
+   ├── 解析依赖关系
+   └── 构建顺序排序
+
+4. 跨平台支持
+   ├── Windows 构建适配
+   ├── Linux 构建适配
+   └── 路径处理
+
+5. Python 构建脚本
+   ├── 命令行接口
+   ├── 模块发现
+   └── 批量构建
+```
+
+### 2.3 数据结构/接口
+```cmake
+# CMake 函数
+function(idcu_add_module module_name)
+  # 参数: STATIC/SHARED/MODULE, VERSION, DESCRIPTION, SOURCES, INCLUDE_DIRS, LINK_LIBRARIES, DEPENDS
+endfunction()
+
+function(idcu_add_module_test test_name)
+  # 参数: SOURCES, LINK_LIBRARIES
+endfunction()
+```
+
+```yaml
+# module.yaml 格式
+name: module-name
+version: 1.0.0
+description: Module description
+author: IDCU Team
+license: MIT
+dependencies: []
+build:
+  type: cmake
+  targets: []
+headers: []
+features: []
+```
+
+### 2.4 跨平台适配
+- **路径分隔符**: 统一使用正斜杠，CMake 自动处理
+- **库扩展名**: Windows .lib/.dll，Linux .a/.so
+- **脚本执行**: Windows .bat，Linux .sh
+- **Python**: 统一使用 Python 3 脚本
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 默认配置文件已创建（default.yaml）
+- [ ] 自动适配配置已创建（auto-adapter.yaml）
+- [ ] CMakeLists.txt 已创建，包含辅助函数
+- [ ] module.yaml 配置文件已创建
+- [ ] Python 构建脚本已创建
+- [ ] 可以使用 idcu_add_module 函数构建简单模块
+- [ ] 可以使用 Python 脚本发现和构建模块
+- [ ] 支持 Windows 和 Linux 两个平台
+
+### 3.2 性能验收
+- 模块发现时间 ≤ 1 秒（扫描 100 个模块）
+- CMake 配置时间 ≤ 5 秒
+- 单个模块构建时间 ≤ 30 秒（中等复杂度）
+
+### 3.3 异常验收
+- [ ] 缺少 module.yaml 时给出明确错误
+- [ ] YAML 格式错误时给出明确错误
+- [ ] 依赖缺失时给出明确错误
+- [ ] 构建失败时停止并报告错误
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+0.5 天/人
+
+### 4.2 里程碑
+- D3-01: 完成配置文件
+- D3-02: 完成 CMake 辅助函数
+- D3-03: 完成 Python 构建脚本
+- D3-04: 完成测试和验证
+
+### 4.3 人力
+1 人（技能要求：CMake、Python）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- CMake 代码遵循项目 CMake 风格
+- Python 代码遵循 PEP 8
+- YAML 文件使用 2 空格缩进
+
+### 5.2 测试要求
+- 测试 idcu_add_module 函数
+- 测试模块自动发现
+- 测试跨平台构建
+- 测试错误处理
+
+### 5.3 部署指引
+- 集成到项目根 CMakeLists.txt
+- Python 脚本放在 scripts/ 目录
+- 配置文件放在 libs/idcu-module-build/config/
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：CMake 函数在复杂场景下行为不符合预期  
+应对：充分测试，提供详细文档和示例
+
+### 6.2 风险2
+描述：跨平台路径处理问题  
+应对：使用 CMake 和 Python 的跨平台路径处理 API
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 完善目录结构
 
@@ -410,7 +580,9 @@ if(NOT COMMAND idcu_add_module)
 endif()
 ```
 
-## 验证检查清单
+---
+
+## 8. 验证检查清单
 
 - [ ] 默认配置文件已创建
 - [ ] 自动适配配置已创建
@@ -420,8 +592,11 @@ endif()
 - [ ] README.md 已创建
 - [ ] 可以使用 idcu_add_module 函数构建简单模块
 - [ ] 可以使用 Python 脚本发现和构建模块
+- [ ] 跨平台测试通过
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-module-build/
@@ -434,10 +609,13 @@ git commit -m "feat: improve idcu-module-build
 - Add comprehensive README"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
 | CMake 函数未找到 | 未正确包含模块构建 | 确保 find_package(idcu-module-build) 被调用 |
 | 模块未被发现 | module.yaml 位置不对 | 确保 module.yaml 在模块根目录 |
 | YAML 解析错误 | YAML 格式不对 | 检查 module.yaml 的 YAML 语法 |
+

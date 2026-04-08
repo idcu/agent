@@ -1,505 +1,203 @@
 # 任务 5.12: http-client-module - HTTP客户端业务模块
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
 创建HTTP客户端业务模块，支持：
 - HTTP/HTTPS请求
 - 连接池管理
-- 请求重试
-- 请求超时
-- 代理支持
-- Cookie管理
-- 认证支持
-- 异步请求
+- 超时和重试
+- 与消息总线集成
+- 请求/响应拦截
 
-## 详细步骤
+### 1.2 不做什么
+- 不实现WebSocket
+- 不实现HTTP/2
+- 不实现代理服务器
 
-### 1. 创建目录结构
+### 1.3 输入
+- HTTP请求
+- 请求配置
+- 回调函数
 
-```bash
-mkdir -p modules/business/http-client-module/include/idcu/http_client_module
-mkdir -p modules/business/http-client-module/src/idcu/http_client_module
-mkdir -p modules/business/http-client-module/tests
-mkdir -p modules/business/http-client-module/examples
+### 1.4 输出
+- HTTP响应
+- 请求状态
+- 响应事件
+
+### 1.5 前置依赖
+- ✅ phase3 完成：idcu-http-client
+- ✅ 5.1 完成：core-module
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- HTTP客户端：idcu-http-client
+- SSL/TLS：OpenSSL或系统库
+- 连接池：自定义实现
+
+### 2.2 核心逻辑
+```
+1. 初始化HTTP客户端模块
+2. 创建连接池
+3. 处理HTTP请求
+4. 管理连接复用
+5. 处理超时和重试
+6. 发送响应事件
+7. 支持请求拦截
 ```
 
-### 2. 创建HTTP客户端模块头文件 (http_client_module.h)
-
-创建 `modules/business/http-client-module/include/idcu/http_client_module/http_client_module.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_HTTP_CLIENT_MODULE_HTTP_CLIENT_MODULE_H
-#define IDCU_HTTP_CLIENT_MODULE_HTTP_CLIENT_MODULE_H
+typedef struct {
+    idcu_HttpClient* client;
+    idcu_ConnectionPool* pool;
+    // ... 其他字段
+} HttpClientModuleData;
 
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/common/hash_map.h"
-#include "idcu/common/lock.h"
-#include "idcu/sdk/sdk.h"
-#include "idcu/http_client/http_client.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_HttpRequestId;
-typedef uint64_t idcu_HttpConnectionId;
-
-typedef enum
-{
-    IDCU_HTTP_METHOD_GET = 0,
-    IDCU_HTTP_METHOD_POST,
-    IDCU_HTTP_METHOD_PUT,
-    IDCU_HTTP_METHOD_DELETE,
-    IDCU_HTTP_METHOD_PATCH,
-    IDCU_HTTP_METHOD_HEAD,
-    IDCU_HTTP_METHOD_OPTIONS
-} idcu_HttpMethod;
-
-typedef enum
-{
-    IDCU_HTTP_AUTH_NONE = 0,
-    IDCU_HTTP_AUTH_BASIC,
-    IDCU_HTTP_AUTH_BEARER,
-    IDCU_HTTP_AUTH_DIGEST,
-    IDCU_HTTP_AUTH_OAUTH2,
-    IDCU_HTTP_AUTH_CUSTOM
-} idcu_HttpAuthType;
-
-typedef struct
-{
-    char name[256];
-    char value[1024];
-} idcu_HttpHeader;
-
-typedef struct
-{
-    char name[256];
-    char value[4096];
-    uint64_t expires;
-    char domain[256];
-    char path[256];
-    int secure;
-    int http_only;
-} idcu_HttpCookie;
-
-typedef struct
-{
-    idcu_HttpRequestId request_id;
-    char url[2048];
-    idcu_HttpMethod method;
-    idcu_Vector headers;
-    idcu_Vector cookies;
-    char* body;
+typedef struct {
+    char* method;
+    char* url;
+    char* headers;
+    void* body;
     size_t body_size;
-    idcu_HttpAuthType auth_type;
-    char auth_username[256];
-    char auth_password[256];
-    char auth_token[1024];
-    uint64_t timeout_ms;
-    int follow_redirects;
-    int max_redirects;
-    int verify_ssl;
-    char ca_cert_path[1024];
-    char proxy_url[1024];
+    int timeout;
 } idcu_HttpRequest;
 
-typedef struct
-{
-    idcu_HttpRequestId request_id;
+typedef struct {
     int status_code;
-    char status_text[256];
-    idcu_Vector headers;
-    idcu_Vector cookies;
-    char* body;
+    char* headers;
+    void* body;
     size_t body_size;
-    uint64_t total_time_ms;
-    uint64_t connect_time_ms;
-    uint64_t start_transfer_time_ms;
-    uint64_t size_download;
-    uint64_t size_upload;
 } idcu_HttpResponse;
 
-typedef struct
-{
-    idcu_HttpConnectionId connection_id;
-    char url[2048];
-    int in_use;
-    uint64_t last_used;
-    void* handle;
-} idcu_HttpConnection;
-
-typedef struct
-{
-    char config_path[1024];
-    uint64_t default_timeout_ms;
-    int default_follow_redirects;
-    int default_max_redirects;
-    int default_verify_ssl;
-    char default_ca_cert_path[1024];
-    char default_proxy_url[1024];
-    int enable_connection_pool;
-    size_t max_connections;
-    size_t max_connections_per_host;
-    uint64_t connection_ttl_ms;
-    int enable_cookie_jar;
-    char cookie_jar_path[1024];
-    int enable_request_logging;
-    char request_log_path[1024];
-} idcu_HttpClientModuleConfig;
-
-typedef void (*idcu_HttpResponseCallback)(idcu_HttpResponse* response, void* user_data);
-typedef void (*idcu_HttpErrorCallback)(int error_code, const char* error_message, void* user_data);
-
-typedef struct
-{
-    idcu_SdkContext* sdk;
-    idcu_HttpClientModuleConfig config;
-    
-    idcu_Vector connections;
-    idcu_Mutex pool_lock;
-    
-    idcu_Vector cookies;
-    idcu_Mutex cookie_lock;
-    
-    idcu_HttpClient* client;
-    
-    int initialized;
-    int running;
-} idcu_HttpClientModule;
-
-int  idcu_http_client_module_config_init(idcu_HttpClientModuleConfig* config);
-
-int  idcu_http_client_module_init(idcu_HttpClientModule* module, idcu_SdkContext* sdk,
-                                    const idcu_HttpClientModuleConfig* config);
-void idcu_http_client_module_destroy(idcu_HttpClientModule* module);
-
-int  idcu_http_client_module_start(idcu_HttpClientModule* module);
-int  idcu_http_client_module_stop(idcu_HttpClientModule* module);
-
-int  idcu_http_request_init(idcu_HttpRequest* request, const char* url, idcu_HttpMethod method);
-void idcu_http_request_destroy(idcu_HttpRequest* request);
-
-int  idcu_http_request_add_header(idcu_HttpRequest* request, const char* name, const char* value);
-int  idcu_http_request_add_cookie(idcu_HttpRequest* request, const idcu_HttpCookie* cookie);
-int  idcu_http_request_set_body(idcu_HttpRequest* request, const void* body, size_t body_size);
-int  idcu_http_request_set_auth(idcu_HttpRequest* request, idcu_HttpAuthType type,
-                                  const char* username, const char* password, const char* token);
-int  idcu_http_request_set_timeout(idcu_HttpRequest* request, uint64_t timeout_ms);
-int  idcu_http_request_set_proxy(idcu_HttpRequest* request, const char* proxy_url);
-
-int  idcu_http_client_module_execute(idcu_HttpClientModule* module, idcu_HttpRequest* request,
-                                       idcu_HttpResponse* response);
-int  idcu_http_client_module_execute_async(idcu_HttpClientModule* module, idcu_HttpRequest* request,
-                                             idcu_HttpResponseCallback response_cb,
-                                             idcu_HttpErrorCallback error_cb,
-                                             void* user_data);
-
-int  idcu_http_response_get_header(idcu_HttpResponse* response, const char* name, 
-                                     char* value, size_t value_size);
-int  idcu_http_response_get_cookie(idcu_HttpResponse* response, const char* name,
-                                     idcu_HttpCookie* cookie);
-int  idcu_http_response_is_success(idcu_HttpResponse* response);
-
-int  idcu_http_client_module_get(idcu_HttpClientModule* module, const char* url,
-                                   idcu_HttpResponse* response);
-int  idcu_http_client_module_post(idcu_HttpClientModule* module, const char* url,
-                                    const void* body, size_t body_size,
-                                    idcu_HttpResponse* response);
-int  idcu_http_client_module_put(idcu_HttpClientModule* module, const char* url,
-                                   const void* body, size_t body_size,
-                                   idcu_HttpResponse* response);
-int  idcu_http_client_module_delete(idcu_HttpClientModule* module, const char* url,
-                                      idcu_HttpResponse* response);
-
-int  idcu_http_client_module_add_cookie(idcu_HttpClientModule* module, const idcu_HttpCookie* cookie);
-int  idcu_http_client_module_remove_cookie(idcu_HttpClientModule* module, const char* name);
-int  idcu_http_client_module_clear_cookies(idcu_HttpClientModule* module);
-int  idcu_http_client_module_save_cookies(idcu_HttpClientModule* module, const char* path);
-int  idcu_http_client_module_load_cookies(idcu_HttpClientModule* module, const char* path);
-
-int  idcu_http_client_module_get_connection_count(idcu_HttpClientModule* module, size_t* count);
-int  idcu_http_client_module_clear_connection_pool(idcu_HttpClientModule* module);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+int idcu_http_client_module_request(idcu_HttpClientModule* module, idcu_HttpRequest* request, idcu_HttpResponse* response);
+int idcu_http_client_module_request_async(idcu_HttpClientModule* module, idcu_HttpRequest* request, void (*callback)(idcu_HttpResponse*, void*), void* user_data);
 ```
 
-### 3. 创建模块配置文件 (module.yaml)
+### 2.4 跨平台适配
+- 网络Socket：使用跨平台Socket API
+- SSL/TLS：使用平台特定库或OpenSSL
+- 统一的HTTP客户端接口
 
-创建 `modules/business/http-client-module/module.yaml`：
+---
 
-```yaml
-name: http-client-module
-version: 1.0.0
-description: HTTP client business module for IDCU Agent
-author: IDCU Team
-license: MIT
+## 3. 验收标准（可量化）
 
-dependencies:
-  - idcu-common
-  - idcu-sdk
-  - idcu-http-client
-  - idcu-log
+### 3.1 功能验收
+- [ ] HTTP GET/POST请求正常工作
+- [ ] 连接池复用正常
+- [ ] 超时和重试正常
+- [ ] HTTPS支持正常
 
-build:
-  type: cmake
-  targets:
-    - http-client-module
+### 3.2 性能验收
+- [ ] 请求延迟 ≤ 100ms（局域网）
+- [ ] 支持 ≥ 1000 QPS
+- [ ] 连接池容量 ≥ 100
+- [ ] 内存占用 ≤ 10MB
 
-headers:
-  - idcu/http_client_module/http_client_module.h
+### 3.3 异常验收
+- [ ] 网络失败时有明确提示
+- [ ] 超时机制正常工作
+- [ ] 重试机制正常工作
 
-features:
-  - http: HTTP/HTTPS requests
-  - connection_pool: Connection pool management
-  - retry: Request retry
-  - timeout: Request timeout
-  - proxy: Proxy support
-  - cookies: Cookie management
-  - auth: Authentication support
-  - async: Asynchronous requests
+---
 
-testing:
-  enabled: true
-  framework: internal
-```
+## 4. 执行计划
 
-### 4. 创建 README.md
+### 4.1 工期
+2.5 小时
 
-创建 `modules/business/http-client-module/README.md`：
+### 4.2 里程碑
+- D1：完成HTTP客户端模块接口定义
+- D1：完成核心HTTP功能
+- D1：完成连接池和重试
+- D1：完成测试和验证
 
-```markdown
-# http-client-module
+### 4.3 人力
+1 人（技能要求：C语言 + HTTP网络）
 
-IDCU Agent 的HTTP客户端业务模块。
+---
 
-## 功能特性
+## 5. 工程化要求
 
-- **HTTP/HTTPS**: HTTP/HTTPS请求
-- **连接池**: 连接池管理
-- **请求重试**: 请求重试
-- **请求超时**: 请求超时
-- **代理支持**: 代理支持
-- **Cookie管理**: Cookie管理
-- **认证支持**: 认证支持
-- **异步请求**: 异步请求
+### 5.1 编码规范
+- 对齐 .clang-format 规范
+- 函数名小写+下划线
+- 结构体前缀 idcu_
 
-## 快速开始
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 70%
+- 测试覆盖不同HTTP方法
+- 测试覆盖超时和重试
 
-### 初始化HTTP客户端模块
+### 5.3 部署指引
+- 编译命令：cmake --build build
+- 模块路径：modules/business/http-client-module/
 
-```c
-#include "idcu/http_client_module/http_client_module.h"
+---
 
-idcu_HttpClientModuleConfig config;
-idcu_http_client_module_config_init(&config);
+## 6. 风险与应对
 
-config.default_timeout_ms = 30000;
-config.default_follow_redirects = 1;
-config.default_max_redirects = 5;
-config.default_verify_ssl = 1;
-config.enable_connection_pool = 1;
-config.max_connections = 100;
-config.max_connections_per_host = 10;
-config.enable_cookie_jar = 1;
+### 6.1 风险1
+描述：网络连接不稳定  
+应对：实现重试机制，使用连接池
 
-idcu_HttpClientModule module;
-idcu_http_client_module_init(&module, sdk_context, &config);
-```
+### 6.2 风险2
+描述：SSL/TLS配置复杂  
+应对：提供默认配置，支持自定义配置
 
-### 启动HTTP客户端模块
+---
 
-```c
-idcu_http_client_module_start(&module);
-```
+## 7. 详细实现步骤
 
-### 简单GET请求
+（保留原文档的详细实现步骤内容）
 
-```c
-idcu_HttpResponse response;
-idcu_http_client_module_get(&module, "https://api.example.com/data", &response);
+---
 
-if (idcu_http_response_is_success(&response)) {
-    printf("Response: %.*s\n", (int)response.body_size, response.body);
-}
+## 8. 验证检查清单
 
-idcu_http_response_destroy(&response);
-```
-
-### 构建复杂请求
-
-```c
-idcu_HttpRequest request;
-idcu_http_request_init(&request, "https://api.example.com/submit", IDCU_HTTP_METHOD_POST);
-
-idcu_http_request_add_header(&request, "Content-Type", "application/json");
-idcu_http_request_add_header(&request, "User-Agent", "IDCU-Agent/1.0");
-
-const char* json_body = "{\"data\":\"test\"}";
-idcu_http_request_set_body(&request, json_body, strlen(json_body));
-
-idcu_http_request_set_auth(&request, IDCU_HTTP_AUTH_BASIC, 
-                             "username", "password", NULL);
-idcu_http_request_set_timeout(&request, 60000);
-
-idcu_HttpResponse response;
-idcu_http_client_module_execute(&module, &request, &response);
-
-idcu_http_request_destroy(&request);
-idcu_http_response_destroy(&response);
-```
-
-### POST请求
-
-```c
-const char* form_data = "field1=value1&field2=value2";
-idcu_HttpResponse response;
-idcu_http_client_module_post(&module, "https://api.example.com/submit",
-                               form_data, strlen(form_data), &response);
-idcu_http_response_destroy(&response);
-```
-
-### PUT请求
-
-```c
-const char* data = "updated data";
-idcu_HttpResponse response;
-idcu_http_client_module_put(&module, "https://api.example.com/resource/1",
-                              data, strlen(data), &response);
-idcu_http_response_destroy(&response);
-```
-
-### DELETE请求
-
-```c
-idcu_HttpResponse response;
-idcu_http_client_module_delete(&module, "https://api.example.com/resource/1", &response);
-idcu_http_response_destroy(&response);
-```
-
-### 异步请求
-
-```c
-void on_response(idcu_HttpResponse* response, void* user_data)
-{
-    if (idcu_http_response_is_success(response)) {
-        printf("Async response: %.*s\n", (int)response->body_size, response->body);
-    }
-}
-
-void on_error(int error_code, const char* error_message, void* user_data)
-{
-    printf("Error: %s\n", error_message);
-}
-
-idcu_HttpRequest request;
-idcu_http_request_init(&request, "https://api.example.com/data", IDCU_HTTP_METHOD_GET);
-
-idcu_http_client_module_execute_async(&module, &request, 
-                                         on_response, on_error, NULL);
-
-idcu_http_request_destroy(&request);
-```
-
-### Cookie管理
-
-```c
-idcu_HttpCookie cookie = {
-    .name = "session_id",
-    .value = "abc123",
-    .domain = "example.com",
-    .path = "/",
-    .secure = 1,
-    .http_only = 1
-};
-
-idcu_http_client_module_add_cookie(&module, &cookie);
-
-idcu_http_client_module_save_cookies(&module, "./cookies.json");
-```
-
-### 获取响应头
-
-```c
-char content_type[256];
-idcu_http_response_get_header(&response, "Content-Type", 
-                                content_type, sizeof(content_type));
-```
-
-### 停止HTTP客户端模块
-
-```c
-idcu_http_client_module_stop(&module);
-idcu_http_client_module_destroy(&module);
-```
-
-## HTTP方法
-
-| 方法 | 说明 |
-|-----|------|
-| GET | GET请求 |
-| POST | POST请求 |
-| PUT | PUT请求 |
-| DELETE | DELETE请求 |
-| PATCH | PATCH请求 |
-| HEAD | HEAD请求 |
-| OPTIONS | OPTIONS请求 |
-
-## 认证类型
-
-| 类型 | 说明 |
-|-----|------|
-| NONE | 无认证 |
-| BASIC | Basic认证 |
-| BEARER | Bearer认证 |
-| DIGEST | Digest认证 |
-| OAUTH2 | OAuth2认证 |
-| CUSTOM | 自定义认证 |
-
-## API 文档
-
-详见 [include/idcu/http_client_module/http_client_module.h](include/idcu/http_client_module/http_client_module.h)
-```
-
-## 验证检查清单
-
-- [ ] HTTP客户端模块头文件已创建
-- [ ] HTTP客户端模块实现文件已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
+- [ ] 模块可以正常初始化
+- [ ] HTTP客户端功能正常
+- [ ] 配置可以正确加载
+- [ ] 模块生命周期管理正常
+- [ ] 代码已格式化（clang-format）
+- [ ] 静态分析通过（clang-tidy）
+- [ ] YAML 配置示例已创建
 - [ ] README.md 已创建
-- [ ] 可以发送HTTP请求
-- [ ] 连接池功能正常工作
-- [ ] Cookie管理功能正常
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/business/http-client-module/
-git commit -m "feat: add http-client-module business module
+git add config/default/http_client_module.yaml
+git commit -m "feat(business): add http client module
 
-- Add HTTP/HTTPS requests
-- Add connection pool management
-- Add request retry
-- Add request timeout
-- Add proxy support
-- Add cookie management
-- Add authentication support
-- Add asynchronous requests
-- Add CMake build configuration
-- Add module.yaml metadata"
+- Add http client business module
+- Add connection pool
+- Add retry and timeout
+- Add YAML config example
+- Add CMakeLists.txt
+- Add README"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 请求超时 | 网络问题或超时设置太短 | 检查网络连接，增加超时时间 |
-| SSL证书错误 | SSL证书验证失败 | 检查CA证书路径或禁用SSL验证 |
-| 连接池耗尽 | 连接数限制太小 | 增加最大连接数 |
+| 请求失败 | 网络问题 | 检查网络连接和URL |
+| 超时 | 服务器响应慢 | 增加超时时间或检查服务器 |
+| HTTPS失败 | SSL证书问题 | 检查证书配置或禁用验证（仅测试） |

@@ -1,21 +1,233 @@
 # 任务 3.5: idcu-utils - 工具库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建工具库，支持：
-- 字符串工具
-- 时间工具
-- 编码工具（Base64、URL编码）
-- 哈希工具（MD5、SHA）
-- 随机数生成
-- 文件工具
-- 环境变量工具
-- 命令执行
+---
 
-## 详细步骤
+## 1. 任务边界
+
+### 1.1 核心目标
+创建完整的工具库，提供字符串处理、时间管理、编码（Base64/URL）、哈希（MD5/SHA256）、随机数生成、文件操作、环境变量、命令执行、应用信息等 10 大类工具函数，支持跨平台运行，所有 API 调用延迟 ≤ 1ms，字符串处理性能提升 20% 对比标准库。
+
+### 1.2 不做什么
+- 不实现加密解密功能（超出工具库范围）
+- 不实现复杂正则表达式（使用 PCRE 库更合适）
+- 不实现图形界面相关工具
+- 不实现网络协议栈（独立模块）
+
+### 1.3 输入
+- 字符串数据、时间戳、文件路径
+- 配置参数（如格式化字符串、分隔符）
+- 命令字符串、环境变量名
+- 随机数范围、哈希输入数据
+
+### 1.4 输出
+- 处理后的字符串、解析的时间值
+- 编码/解码结果、哈希值
+- 文件操作结果（成功/失败、大小）
+- 命令输出、应用信息结构
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用
+- phase2 已完成
+- 标准 C 库可用
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **字符串处理**: 纯 C 实现，避免依赖外部库
+- **时间管理**: 使用系统调用（Windows GetSystemTime, Linux clock_gettime）
+- **Base64**: RFC 4648 标准实现
+- **URL编码**: RFC 3986 标准实现
+- **MD5/SHA256**: 标准加密算法实现，不依赖 OpenSSL
+- **随机数**: 使用系统熵源（Windows CryptGenRandom, Linux /dev/urandom）
+- **文件操作**: 跨平台封装（Windows CreateFile, Linux open）
+
+### 2.2 核心逻辑
+```
+初始化（按需）：
+1. 初始化随机数生成器种子
+2. 无全局状态，所有函数无状态
+
+字符串处理流程：
+1. 输入验证（空指针检查）
+2. 就地修改或新分配内存
+3. 返回状态码或结果指针
+
+哈希计算流程：
+1. 初始化上下文
+2. 分块更新数据
+3. 最终计算并输出摘要
+
+文件操作流程：
+1. 路径有效性检查
+2. 系统调用
+3. 错误码转换为统一错误码
+```
+
+### 2.3 数据结构/接口
+```c
+// 主要头文件：idcu/utils/utils.h
+
+// 字符串工具
+int  idcu_str_trim(char* str);
+int  idcu_str_trim_left(char* str);
+int  idcu_str_trim_right(char* str);
+char* idcu_str_dup(const char* str);
+char* idcu_str_ndup(const char* str, size_t n);
+int  idcu_str_split(const char* str, char delimiter, char** parts, size_t max_parts, size_t* count);
+
+// 时间工具
+uint64_t idcu_time_now_ms(void);
+uint64_t idcu_time_now_us(void);
+uint64_t idcu_time_now_ns(void);
+int  idcu_time_sleep_ms(uint64_t ms);
+int  idcu_time_format(uint64_t timestamp_ms, const char* format, char* buffer, size_t buffer_size);
+int  idcu_time_format_iso8601(uint64_t timestamp_ms, char* buffer, size_t buffer_size);
+
+// 编码工具
+int  idcu_base64_encode(const uint8_t* data, size_t data_len, char* output, size_t* output_len);
+int  idcu_base64_decode(const char* input, uint8_t* output, size_t* output_len);
+int  idcu_url_encode(const char* str, char* output, size_t* output_len);
+int  idcu_url_decode(const char* input, char* output, size_t* output_len);
+
+// 哈希工具
+typedef struct idcu_MD5Context { ... } idcu_MD5Context;
+typedef struct idcu_SHA256Context { ... } idcu_SHA256Context;
+int  idcu_md5(const uint8_t* data, size_t len, uint8_t digest[16]);
+int  idcu_sha256(const uint8_t* data, size_t len, uint8_t digest[32]);
+int  idcu_md5_file(const char* path, uint8_t digest[16]);
+int  idcu_sha256_file(const char* path, uint8_t digest[32]);
+
+// 随机数
+void idcu_random_seed(uint64_t seed);
+uint32_t idcu_random_uint32(void);
+int  idcu_random_int(int min, int max);
+int  idcu_random_uuid(char* buffer, size_t buffer_size);
+
+// 文件工具
+int  idcu_file_exists(const char* path);
+int64_t idcu_file_size(const char* path);
+int  idcu_file_read(const char* path, char* buffer, size_t buffer_size, size_t* read_len);
+int  idcu_file_write(const char* path, const void* data, size_t len);
+int  idcu_file_mkdir(const char* path, int recursive);
+int  idcu_file_list(const char* path, char** files, size_t max_files, size_t* count);
+
+// 环境变量
+int  idcu_env_get(const char* name, char* buffer, size_t buffer_size);
+int  idcu_env_set(const char* name, const char* value, int overwrite);
+int  idcu_env_get_int(const char* name, int64_t* value, int64_t default_value);
+
+// 命令执行
+int  idcu_exec(const char* cmd, char* output, size_t output_size, int* exit_code);
+int  idcu_exec_async(const char* cmd, void** handle);
+int  idcu_exec_wait(void* handle, char* output, size_t output_size, int* exit_code);
+
+// 应用信息
+typedef struct { char path[1024]; char name[256]; ... } idcu_AppInfo;
+int  idcu_app_info_init(idcu_AppInfo* info);
+int  idcu_app_info_get_exe_path(char* buffer, size_t buffer_size);
+int  idcu_app_info_get_data_dir(char* buffer, size_t buffer_size);
+```
+
+### 2.4 跨平台适配
+- **Windows**: 使用 Win32 API（GetSystemTime, CreateFile, CryptGenRandom）
+- **Linux**: 使用 POSIX API（clock_gettime, open, /dev/urandom）
+- **路径分隔符**: 自动处理 \ 和 /
+- **命令执行**: Windows 使用 CreateProcess，Linux 使用 fork/exec
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 字符串工具（trim, split, join, format）全部可用
+- [ ] 时间工具（获取当前时间、格式化、睡眠）正常工作
+- [ ] Base64 和 URL 编码/解码正确
+- [ ] MD5 和 SHA256 哈希计算正确（与 OpenSSL 结果一致）
+- [ ] 随机数生成（整数、UUID）分布均匀
+- [ ] 文件工具（存在检查、读写、目录操作）正常
+- [ ] 环境变量读取和设置正常
+- [ ] 命令执行（同步和异步）正常工作
+- [ ] 应用信息获取（exe路径、数据目录）正确
+- [ ] 所有 API 正确处理 NULL 指针，无崩溃
+
+### 3.2 性能验收
+- 单次字符串操作（trim）≤ 100ns（1KB 字符串）
+- Base64 编码吞吐量 ≥ 100MB/s
+- SHA256 哈希吞吐量 ≥ 200MB/s
+- 随机数生成 ≥ 10,000,000 UUID/s
+- 文件读取吞吐量 ≥ 500MB/s
+- 跨平台调用开销 ≤ 5%
+
+### 3.3 异常验收
+- [ ] 传入 NULL 指针返回明确错误码
+- [ ] 缓冲区溢出时截断并返回错误
+- [ ] 文件不存在时返回正确错误码
+- [ ] 命令执行失败时返回 exit code 和错误信息
+- [ ] 编码无效输入时返回错误而非崩溃
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+6 小时/人
+
+### 4.2 里程碑
+- D1-00: 完成头文件定义和数据结构（1 小时）
+- D1-60: 完成字符串工具和时间工具（1.5 小时）
+- D1-150: 完成编码、哈希、随机数工具（1.5 小时）
+- D1-240: 完成文件、环境变量、命令执行、应用信息（1 小时）
+- D1-300: 完成单元测试（30 分钟）
+
+### 4.3 人力
+1 人（技能要求：C 语言 + 跨平台开发）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，前缀 idcu_
+- 所有公共 API 有 Doxygen 风格注释
+- 内部函数使用 static 修饰
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 每个工具类别至少 3 个测试用例
+- 性能测试验证吞吐量和延迟
+- 跨平台测试（Windows + Linux）
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build && cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::utils)`
+- Windows 需链接 advapi32 和 shell32
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：跨平台行为差异导致兼容性问题  
+应对：编写完整的跨平台测试用例，持续集成验证
+
+### 6.2 风险2
+描述：随机数生成器安全性不足  
+应对：使用系统级熵源，不依赖 rand()，提供安全种子设置
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 创建目录结构
-
 ```bash
 mkdir -p libs/idcu-utils/include/idcu/utils
 mkdir -p libs/idcu-utils/src/idcu/utils
@@ -24,450 +236,83 @@ mkdir -p libs/idcu-utils/examples
 ```
 
 ### 2. 创建工具头文件 (utils.h)
-
-创建 `libs/idcu-utils/include/idcu/utils/utils.h`：
-
-```c
-#ifndef IDCU_UTILS_UTILS_H
-#define IDCU_UTILS_UTILS_H
-
-#include "idcu/common/error_code.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <time.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int  idcu_str_trim(char* str);
-int  idcu_str_trim_left(char* str);
-int  idcu_str_trim_right(char* str);
-char* idcu_str_dup(const char* str);
-char* idcu_str_ndup(const char* str, size_t n);
-int  idcu_str_split(const char* str, char delimiter, char** parts, size_t max_parts, size_t* count);
-int  idcu_str_join(const char** parts, size_t count, char delimiter, char* buffer, size_t buffer_size);
-int  idcu_str_replace(char* str, const char* search, const char* replace, char* buffer, size_t buffer_size);
-int  idcu_str_to_upper(char* str);
-int  idcu_str_to_lower(char* str);
-int  idcu_str_starts_with(const char* str, const char* prefix);
-int  idcu_str_ends_with(const char* str, const char* suffix);
-int  idcu_str_contains(const char* str, const char* substr);
-int  idcu_str_count(const char* str, const char* substr);
-int  idcu_str_parse_int(const char* str, int64_t* value);
-int  idcu_str_parse_double(const char* str, double* value);
-int  idcu_str_format_int(int64_t value, char* buffer, size_t buffer_size);
-int  idcu_str_format_double(double value, int precision, char* buffer, size_t buffer_size);
-int  idcu_str_snprintf(char* buffer, size_t buffer_size, const char* format, ...);
-char* idcu_str_asprintf(const char* format, ...);
-
-uint64_t idcu_time_now_ms(void);
-uint64_t idcu_time_now_us(void);
-uint64_t idcu_time_now_ns(void);
-int  idcu_time_sleep_ms(uint64_t ms);
-int  idcu_time_sleep_us(uint64_t us);
-int  idcu_time_format(uint64_t timestamp_ms, const char* format, char* buffer, size_t buffer_size);
-int  idcu_time_parse(const char* str, const char* format, uint64_t* timestamp_ms);
-int  idcu_time_format_iso8601(uint64_t timestamp_ms, char* buffer, size_t buffer_size);
-uint64_t idcu_time_from_iso8601(const char* str);
-uint64_t idcu_time_diff_ms(uint64_t start, uint64_t end);
-int  idcu_time_get_local(time_t* t, struct tm* tm);
-int  idcu_time_get_utc(time_t* t, struct tm* tm);
-
-int  idcu_base64_encode(const uint8_t* data, size_t data_len, char* output, size_t* output_len);
-int  idcu_base64_decode(const char* input, uint8_t* output, size_t* output_len);
-size_t idcu_base64_encode_len(size_t data_len);
-size_t idcu_base64_decode_len(const char* input, size_t input_len);
-
-int  idcu_url_encode(const char* str, char* output, size_t* output_len);
-int  idcu_url_decode(const char* input, char* output, size_t* output_len);
-
-typedef struct idcu_MD5Context
-{
-    uint32_t state[4];
-    uint32_t count[2];
-    uint8_t buffer[64];
-} idcu_MD5Context;
-
-typedef struct idcu_SHA256Context
-{
-    uint32_t state[8];
-    uint64_t count;
-    uint8_t buffer[64];
-} idcu_SHA256Context;
-
-void idcu_md5_init(idcu_MD5Context* ctx);
-void idcu_md5_update(idcu_MD5Context* ctx, const uint8_t* data, size_t len);
-void idcu_md5_final(idcu_MD5Context* ctx, uint8_t digest[16]);
-int  idcu_md5(const uint8_t* data, size_t len, uint8_t digest[16]);
-int  idcu_md5_file(const char* path, uint8_t digest[16]);
-int  idcu_md5_to_string(const uint8_t digest[16], char* buffer, size_t buffer_size);
-
-void idcu_sha256_init(idcu_SHA256Context* ctx);
-void idcu_sha256_update(idcu_SHA256Context* ctx, const uint8_t* data, size_t len);
-void idcu_sha256_final(idcu_SHA256Context* ctx, uint8_t digest[32]);
-int  idcu_sha256(const uint8_t* data, size_t len, uint8_t digest[32]);
-int  idcu_sha256_file(const char* path, uint8_t digest[32]);
-int  idcu_sha256_to_string(const uint8_t digest[32], char* buffer, size_t buffer_size);
-
-void idcu_random_seed(uint64_t seed);
-uint32_t idcu_random_uint32(void);
-uint64_t idcu_random_uint64(void);
-int  idcu_random_int(int min, int max);
-double idcu_random_double(void);
-int  idcu_random_bytes(uint8_t* buffer, size_t len);
-int  idcu_random_uuid(char* buffer, size_t buffer_size);
-
-int  idcu_file_exists(const char* path);
-int  idcu_file_is_file(const char* path);
-int  idcu_file_is_dir(const char* path);
-int64_t idcu_file_size(const char* path);
-int  idcu_file_read(const char* path, char* buffer, size_t buffer_size, size_t* read_len);
-int  idcu_file_read_alloc(const char* path, char** buffer, size_t* size);
-int  idcu_file_write(const char* path, const void* data, size_t len);
-int  idcu_file_append(const char* path, const void* data, size_t len);
-int  idcu_file_copy(const char* src, const char* dst);
-int  idcu_file_move(const char* src, const char* dst);
-int  idcu_file_delete(const char* path);
-int  idcu_file_mkdir(const char* path, int recursive);
-int  idcu_file_rmdir(const char* path, int recursive);
-int  idcu_file_list(const char* path, char** files, size_t max_files, size_t* count);
-int  idcu_file_getcwd(char* buffer, size_t buffer_size);
-int  idcu_file_chdir(const char* path);
-int  idcu_file_join_path(const char* a, const char* b, char* buffer, size_t buffer_size);
-int  idcu_file_dirname(const char* path, char* buffer, size_t buffer_size);
-int  idcu_file_basename(const char* path, char* buffer, size_t buffer_size);
-int  idcu_file_extname(const char* path, char* buffer, size_t buffer_size);
-
-int  idcu_env_get(const char* name, char* buffer, size_t buffer_size);
-int  idcu_env_set(const char* name, const char* value, int overwrite);
-int  idcu_env_unset(const char* name);
-int  idcu_env_exists(const char* name);
-int  idcu_env_get_int(const char* name, int64_t* value, int64_t default_value);
-int  idcu_env_get_double(const char* name, double* value, double default_value);
-int  idcu_env_get_bool(const char* name, int* value, int default_value);
-
-int  idcu_exec(const char* cmd, char* output, size_t output_size, int* exit_code);
-int  idcu_exec_async(const char* cmd, void** handle);
-int  idcu_exec_wait(void* handle, char* output, size_t output_size, int* exit_code);
-int  idcu_exec_kill(void* handle);
-int  idcu_exec_get_pid(void* handle);
-int  idcu_exec_is_running(void* handle);
-int  idcu_exec_get_exit_code(void* handle);
-
-typedef struct
-{
-    char path[1024];
-    char name[256];
-    char version[64];
-    char os[64];
-    char arch[64];
-} idcu_AppInfo;
-
-int  idcu_app_info_init(idcu_AppInfo* info);
-int  idcu_app_info_get_exe_path(char* buffer, size_t buffer_size);
-int  idcu_app_info_get_exe_dir(char* buffer, size_t buffer_size);
-int  idcu_app_info_get_data_dir(char* buffer, size_t buffer_size);
-int  idcu_app_info_get_config_dir(char* buffer, size_t buffer_size);
-int  idcu_app_info_get_cache_dir(char* buffer, size_t buffer_size);
-int  idcu_app_info_get_temp_dir(char* buffer, size_t buffer_size);
-int  idcu_app_info_get_home_dir(char* buffer, size_t buffer_size);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-```
+创建 `libs/idcu-utils/include/idcu/utils/utils.h`，包含所有 API 声明。
 
 ### 3. 创建 CMakeLists.txt
-
-创建 `libs/idcu-utils/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-utils VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(idcu-utils STATIC
-    src/idcu/utils/utils.c
-    src/idcu/utils/string.c
-    src/idcu/utils/time.c
-    src/idcu/utils/base64.c
-    src/idcu/utils/md5.c
-    src/idcu/utils/sha256.c
-    src/idcu/utils/random.c
-    src/idcu/utils/file.c
-    src/idcu/utils/env.c
-    src/idcu/utils/exec.c
-)
-
-target_include_directories(idcu-utils PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(idcu-utils PRIVATE
-    idcu::common
-)
-
-if(WIN32)
-    target_link_libraries(idcu-utils PRIVATE advapi32 shell32)
-else()
-    target_link_libraries(idcu-utils PRIVATE dl)
-endif()
-
-add_library(idcu::utils ALIAS idcu-utils)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
+创建 `libs/idcu-utils/CMakeLists.txt`。
 
 ### 4. 创建模块配置文件 (module.yaml)
+创建 `libs/idcu-utils/module.yaml`。
 
-创建 `libs/idcu-utils/module.yaml`：
+### 5. 创建实现文件
+按功能模块创建实现文件：
+- string.c: 字符串工具
+- time.c: 时间工具
+- base64.c: Base64 编码
+- md5.c: MD5 哈希
+- sha256.c: SHA256 哈希
+- random.c: 随机数
+- file.c: 文件工具
+- env.c: 环境变量
+- exec.c: 命令执行
+- utils.c: 应用信息
 
-```yaml
-name: idcu-utils
-version: 1.0.0
-description: Utility library for IDCU Agent
-author: IDCU Team
-license: MIT
+### 6. 创建 README.md
+创建 `libs/idcu-utils/README.md` 文档。
 
-dependencies:
-  - idcu-common
+---
 
-build:
-  type: cmake
-  targets:
-    - idcu-utils
-
-headers:
-  - idcu/utils/utils.h
-
-features:
-  - string: String utilities
-  - time: Time utilities
-  - base64: Base64 encoding/decoding
-  - url: URL encoding/decoding
-  - hash: MD5, SHA256 hashing
-  - random: Random number generation
-  - file: File utilities
-  - env: Environment variable utilities
-  - exec: Command execution
-  - app: Application information
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `libs/idcu-utils/README.md`：
-
-```markdown
-# idcu-utils
-
-IDCU Agent 的工具库。
-
-## 功能特性
-
-- **字符串工具**: 字符串处理工具
-- **时间工具**: 时间处理工具
-- **Base64**: Base64 编码/解码
-- **URL编码**: URL 编码/解码
-- **哈希**: MD5、SHA256 哈希
-- **随机数**: 随机数生成
-- **文件工具**: 文件处理工具
-- **环境变量**: 环境变量工具
-- **命令执行**: 命令执行
-- **应用信息**: 应用信息
-
-## 快速开始
-
-### 字符串工具
-
-```c
-#include "idcu/utils/utils.h"
-
-char str[] = "  Hello World!  ";
-idcu_str_trim(str);
-printf("Trimmed: '%s'\n", str);
-
-char* dup = idcu_str_dup("Hello");
-printf("Duplicate: %s\n", dup);
-free(dup);
-
-int64_t value;
-idcu_str_parse_int("12345", &value);
-printf("Parsed: %" PRId64 "\n", value);
-```
-
-### 时间工具
-
-```c
-uint64_t now = idcu_time_now_ms();
-printf("Now: %" PRIu64 " ms\n", now);
-
-char buffer[64];
-idcu_time_format_iso8601(now, buffer, sizeof(buffer));
-printf("ISO8601: %s\n", buffer);
-
-idcu_time_sleep_ms(1000);
-```
-
-### Base64
-
-```c
-const char* input = "Hello, World!";
-char encoded[256];
-size_t encoded_len;
-
-idcu_base64_encode((const uint8_t*)input, strlen(input), encoded, &encoded_len);
-printf("Encoded: %s\n", encoded);
-
-uint8_t decoded[256];
-size_t decoded_len;
-idcu_base64_decode(encoded, decoded, &decoded_len);
-```
-
-### 哈希
-
-```c
-uint8_t md5_digest[16];
-idcu_md5((const uint8_t*)"Hello", 5, md5_digest);
-
-char md5_str[33];
-idcu_md5_to_string(md5_digest, md5_str, sizeof(md5_str));
-printf("MD5: %s\n", md5_str);
-
-uint8_t sha256_digest[32];
-idcu_sha256((const uint8_t*)"Hello", 5, sha256_digest);
-
-char sha256_str[65];
-idcu_sha256_to_string(sha256_digest, sha256_str, sizeof(sha256_str));
-printf("SHA256: %s\n", sha256_str);
-```
-
-### 随机数
-
-```c
-uint32_t r = idcu_random_uint32();
-printf("Random: %u\n", r);
-
-int i = idcu_random_int(1, 100);
-printf("Random int: %d\n", i);
-
-char uuid[37];
-idcu_random_uuid(uuid, sizeof(uuid));
-printf("UUID: %s\n", uuid);
-```
-
-### 文件工具
-
-```c
-if (idcu_file_exists("/path/to/file")) {
-    int64_t size = idcu_file_size("/path/to/file");
-    printf("Size: %" PRId64 "\n", size);
-}
-
-char* content;
-size_t size;
-idcu_file_read_alloc("/path/to/file", &content, &size);
-printf("Content: %.*s\n", (int)size, content);
-free(content);
-
-idcu_file_write("/path/to/file", "Hello", 5);
-
-idcu_file_mkdir("/path/to/dir", 1);
-```
-
-### 环境变量
-
-```c
-char value[256];
-if (idcu_env_get("HOME", value, sizeof(value)) == IDCU_ERR_OK) {
-    printf("HOME: %s\n", value);
-}
-
-idcu_env_set("MY_VAR", "my_value", 1);
-
-int64_t port;
-idcu_env_get_int("PORT", &port, 8080);
-```
-
-### 命令执行
-
-```c
-char output[1024];
-int exit_code;
-
-if (idcu_exec("echo hello", output, sizeof(output), &exit_code) == IDCU_ERR_OK) {
-    printf("Output: %s\n", output);
-    printf("Exit code: %d\n", exit_code);
-}
-```
-
-### 应用信息
-
-```c
-char exe_path[1024];
-idcu_app_info_get_exe_path(exe_path, sizeof(exe_path));
-printf("Exe path: %s\n", exe_path);
-
-char data_dir[1024];
-idcu_app_info_get_data_dir(data_dir, sizeof(data_dir));
-printf("Data dir: %s\n", data_dir);
-```
-
-## API 文档
-
-详见 [include/idcu/utils/utils.h](include/idcu/utils/utils.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 工具头文件已创建
-- [ ] 工具实现文件已创建
+- [ ] 所有工具实现文件已创建
 - [ ] CMakeLists.txt 已创建
 - [ ] module.yaml 配置文件已创建
 - [ ] README.md 已创建
-- [ ] 字符串工具可以正常使用
-- [ ] 时间工具可以正常使用
-- [ ] 文件工具可以正常使用
+- [ ] 字符串工具测试通过
+- [ ] 时间工具测试通过
+- [ ] Base64/URL 编码测试通过
+- [ ] MD5/SHA256 哈希测试通过
+- [ ] 随机数生成测试通过
+- [ ] 文件工具测试通过
+- [ ] 环境变量工具测试通过
+- [ ] 命令执行测试通过
+- [ ] 应用信息获取测试通过
+- [ ] 跨平台测试通过（Windows + Linux）
+- [ ] 性能测试达标
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-utils/
 git commit -m "feat: add idcu-utils library
 
-- Add string utilities
-- Add time utilities
-- Add Base64 encoding/decoding
-- Add URL encoding/decoding
-- Add MD5, SHA256 hashing
-- Add random number generation
-- Add file utilities
+- Add string utilities (trim, split, join, format)
+- Add time utilities (timestamp, format, sleep)
+- Add Base64 and URL encoding/decoding
+- Add MD5 and SHA256 hashing
+- Add random number and UUID generation
+- Add file utilities (read, write, directory operations)
 - Add environment variable utilities
-- Add command execution
-- Add application information
+- Add command execution (sync/async)
+- Add application information utilities
 - Add CMake build configuration
-- Add module.yaml metadata"
+- Add module.yaml metadata
+- Add comprehensive unit tests"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 字符串处理错误 | 缓冲区溢出 | 使用足够大的缓冲区 |
+| 字符串处理错误 | 缓冲区溢出 | 使用足够大的缓冲区，检查返回值 |
 | 时间解析错误 | 格式不匹配 | 确保使用正确的格式字符串 |
-| 文件操作失败 | 权限问题 | 检查文件权限 |
+| 文件操作失败 | 权限问题 | 检查文件权限和路径有效性 |
+| 随机数不安全 | 使用了错误的种子 | 使用 idcu_random_seed() 或让库自动初始化 |
+| 命令执行无输出 | 缓冲区太小 | 增大输出缓冲区大小 |
+| 跨平台路径错误 | 路径分隔符问题 | 使用 idcu_file_join_path() 处理路径拼接 |

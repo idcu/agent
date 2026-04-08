@@ -1,40 +1,60 @@
 # 任务 3.1: idcu-log - 日志系统库
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-08  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建完整的日志系统库，支持：
-- 多级别日志（DEBUG, INFO, WARN, ERROR, FATAL）
-- 多种输出目标（控制台、文件、远程）
-- 日志文件轮转（按大小、按时间）
-- 格式化日志输出
-- 线程安全
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建完整的、高性能的日志系统库，支持多级别日志（DEBUG、INFO、WARN、ERROR、FATAL）、多种输出目标（控制台、文件）、线程安全、自动时间戳和文件行号记录，满足 QPS ≥ 10,000 条日志/秒的性能要求。
 
-```bash
-mkdir -p libs/idcu-log/include/idcu/log
-mkdir -p libs/idcu-log/src/idcu/log
-mkdir -p libs/idcu-log/tests
-mkdir -p libs/idcu-log/examples
+### 1.2 不做什么
+- 不实现远程日志输出（后续可扩展）
+- 不实现日志异步写入（本阶段同步即可）
+- 不实现日志分析和查询功能
+
+### 1.3 输入
+- 配置参数：日志级别、输出目标、文件名
+- 日志消息：格式化字符串 + 参数
+
+### 1.4 输出
+- 控制台输出：带颜色的格式化日志
+- 文件输出：带时间戳的日志文件
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用（提供锁、错误码等）
+- phase2 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **线程安全**: 使用互斥锁（idcu_mutex）
+- **日志级别**: 5 级枚举（DEBUG &lt; INFO &lt; WARN &lt; ERROR &lt; FATAL）
+- **输出目标**: 位掩码组合（CONSOLE | FILE）
+- **时间格式**: ISO 8601 格式（YYYY-MM-DD HH:MM:SS）
+
+### 2.2 核心逻辑
+```
+1. 初始化：配置日志级别、输出目标、打开文件（如需要）
+2. 日志写入：
+   a. 获取当前时间戳
+   b. 格式化日志消息
+   c. 加锁保护
+   d. 输出到控制台和/或文件
+   e. 解锁
+3. 关闭：刷新缓冲区、关闭文件、销毁锁
 ```
 
-### 2. 创建日志头文件 (log.h)
-
-创建 `libs/idcu-log/include/idcu/log/log.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_LOG_LOG_H
-#define IDCU_LOG_LOG_H
-
-#include "idcu/common/config.h"
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-
-typedef enum
-{
+typedef enum {
     IDCU_LOG_DEBUG = 0,
     IDCU_LOG_INFO  = 1,
     IDCU_LOG_WARN  = 2,
@@ -42,273 +62,124 @@ typedef enum
     IDCU_LOG_FATAL = 4
 } idcu_LogLevel;
 
-typedef enum
-{
-    IDCU_LOG_OUTPUT_CONSOLE = 1 << 0,
-    IDCU_LOG_OUTPUT_FILE    = 1 << 1,
-    IDCU_LOG_OUTPUT_REMOTE  = 1 << 2
+typedef enum {
+    IDCU_LOG_OUTPUT_CONSOLE = 1 &lt;&lt; 0,
+    IDCU_LOG_OUTPUT_FILE    = 1 &lt;&lt; 1
 } idcu_LogOutput;
 
-typedef enum
-{
-    IDCU_LOG_ROTATE_NONE = 0,
-    IDCU_LOG_ROTATE_SIZE = 1,
-    IDCU_LOG_ROTATE_TIME = 2,
-    IDCU_LOG_ROTATE_BOTH = 3
-} idcu_LogRotatePolicy;
-
-typedef struct
-{
-    char                 filename[256];
-    idcu_LogLevel        level;
-    idcu_LogOutput       output;
-    idcu_LogRotatePolicy rotate_policy;
-    uint64_t             max_file_size;
-    uint32_t             rotate_interval;
-    uint32_t             max_backup_files;
-    char                 remote_url[256];
+typedef struct {
+    char           filename[256];
+    idcu_LogLevel  level;
+    idcu_LogOutput output;
 } idcu_LogConfig;
 
+// 核心 API
 int idcu_log_init(const char* filename, idcu_LogLevel level);
 int idcu_log_init_with_config(const idcu_LogConfig* config);
-void idcu_log_get_default_config(idcu_LogConfig* config);
 void idcu_log_shutdown(void);
-
 void idcu_log_set_level(idcu_LogLevel level);
-idcu_LogLevel idcu_log_get_level(void);
-
-int idcu_log_set_file(const char* filename);
-void idcu_log_set_output(idcu_LogOutput output);
-
-int idcu_log_set_rotate_policy(idcu_LogRotatePolicy policy, uint64_t max_size, uint32_t interval,
-                               uint32_t max_backups);
-int idcu_log_rotate(void);
-
 void idcu_log_printf(idcu_LogLevel level, const char* file, int line, const char* fmt, ...);
 
-#define IDCU_LOG_DEBUG(fmt, ...)                                                 \
-    do                                                                           \
-    {                                                                            \
-        idcu_log_printf(IDCU_LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__); \
-    } while (0)
-
-#define IDCU_LOG_INFO(fmt, ...)                                                 \
-    do                                                                          \
-    {                                                                           \
-        idcu_log_printf(IDCU_LOG_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__); \
-    } while (0)
-
-#define IDCU_LOG_WARN(fmt, ...)                                                 \
-    do                                                                          \
-    {                                                                           \
-        idcu_log_printf(IDCU_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__); \
-    } while (0)
-
-#define IDCU_LOG_WARNING(fmt, ...) IDCU_LOG_WARN(fmt, ##__VA_ARGS__)
-
-#define IDCU_LOG_ERROR(fmt, ...)                                                 \
-    do                                                                           \
-    {                                                                            \
-        idcu_log_printf(IDCU_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__); \
-    } while (0)
-
-#define IDCU_LOG_FATAL(fmt, ...)                                                 \
-    do                                                                           \
-    {                                                                            \
-        idcu_log_printf(IDCU_LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__); \
-    } while (0)
-
-#endif
+// 便捷宏
+#define IDCU_LOG_DEBUG(fmt, ...) idcu_log_printf(IDCU_LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define IDCU_LOG_INFO(fmt, ...)  idcu_log_printf(IDCU_LOG_INFO, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define IDCU_LOG_WARN(fmt, ...)  idcu_log_printf(IDCU_LOG_WARN, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define IDCU_LOG_ERROR(fmt, ...) idcu_log_printf(IDCU_LOG_ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define IDCU_LOG_FATAL(fmt, ...) idcu_log_printf(IDCU_LOG_FATAL, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 ```
 
-### 3. 创建日志实现文件 (log.c)
+### 2.4 跨平台适配
+- **Windows**: 使用 `fopen`、`localtime_s`
+- **Linux**: 使用 `fopen`、`localtime_r`
+- **控制台颜色**: Windows 使用 `SetConsoleTextAttribute`，Linux 使用 ANSI 转义序列
 
-创建 `libs/idcu-log/src/idcu/log/log.c`：
+---
 
-```c
-#include "idcu/log/log.h"
-#include "idcu/common/lock.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+## 3. 验收标准（可量化）
 
-static idcu_LogConfig g_log_config = {0};
-static FILE* g_log_file = NULL;
-static idcu_Mutex g_log_mutex = {0};
-static int g_initialized = 0;
-static uint64_t g_current_file_size = 0;
-static uint64_t g_last_rotate_time = 0;
+### 3.1 功能验收
+- [ ] 可以输出 5 个级别的日志（DEBUG、INFO、WARN、ERROR、FATAL）
+- [ ] 可以同时输出到控制台和文件
+- [ ] 日志包含时间戳、文件名、行号信息
+- [ ] 可以动态调整日志级别
+- [ ] 多线程环境下日志输出不乱序
 
-void idcu_log_get_default_config(idcu_LogConfig* config)
-{
-    if (!config) return;
+### 3.2 性能验收
+- 单线程日志写入 QPS ≥ 10,000 条/秒
+- 多线程（4 线程）日志写入 QPS ≥ 5,000 条/秒
+- 单条日志内存占用 ≤ 4KB
+- 初始化时间 ≤ 10ms
 
-    memset(config, 0, sizeof(idcu_LogConfig));
-    strncpy(config->filename, "idcu.log", sizeof(config->filename) - 1);
-    config->level = IDCU_LOG_INFO;
-    config->output = IDCU_LOG_OUTPUT_CONSOLE;
-    config->rotate_policy = IDCU_LOG_ROTATE_NONE;
-    config->max_file_size = 100 * 1024 * 1024;
-    config->rotate_interval = 86400;
-    config->max_backup_files = 10;
-}
+### 3.3 异常验收
+- [ ] 初始化失败（文件无法打开）返回明确错误码
+- [ ] 传入 NULL 参数时安全处理
+- [ ] 日志文件过大时能继续写入（不限制文件大小）
+- [ ] 程序退出前未调用 shutdown 不崩溃
 
-int idcu_log_init(const char* filename, idcu_LogLevel level)
-{
-    idcu_LogConfig config;
-    idcu_log_get_default_config(&config);
-    config.level = level;
-    if (filename) {
-        strncpy(config.filename, filename, sizeof(config.filename) - 1);
-        config.output = IDCU_LOG_OUTPUT_CONSOLE | IDCU_LOG_OUTPUT_FILE;
-    }
-    return idcu_log_init_with_config(&config);
-}
+---
 
-int idcu_log_init_with_config(const idcu_LogConfig* config)
-{
-    if (!config || g_initialized) {
-        return IDCU_ERR_INVALID_PARAM;
-    }
+## 4. 执行计划
 
-    memcpy(&g_log_config, config, sizeof(idcu_LogConfig));
-    idcu_mutex_init(&g_log_mutex);
+### 4.1 工期
+2 小时/人
 
-    if (config->output & IDCU_LOG_OUTPUT_FILE) {
-        g_log_file = fopen(config->filename, "a");
-        if (!g_log_file) {
-            idcu_mutex_destroy(&g_log_mutex);
-            return IDCU_ERR_FILE_OPEN;
-        }
-    }
+### 4.2 里程碑
+- D1-00: 完成头文件定义（30 分钟）
+- D1-30: 完成核心实现（1 小时）
+- D1-90: 完成单元测试（30 分钟）
 
-    g_initialized = 1;
-    g_current_file_size = 0;
-    g_last_rotate_time = (uint64_t)time(NULL);
+### 4.3 人力
+1 人（技能要求：C 语言 + 多线程编程）
 
-    return IDCU_ERR_OK;
-}
+---
 
-void idcu_log_shutdown(void)
-{
-    if (!g_initialized) return;
+## 5. 工程化要求
 
-    idcu_mutex_lock(&g_log_mutex);
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，结构体前缀 idcu_
+- 所有公共 API 有 Doxygen 风格注释
 
-    if (g_log_file) {
-        fflush(g_log_file);
-        fclose(g_log_file);
-        g_log_file = NULL;
-    }
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 85%
+- 测试用例覆盖：初始化、各级别日志、多线程、异常场景
+- 性能测试用例验证 QPS 指标
 
-    g_initialized = 0;
+### 5.3 部署指引
+- 编译命令：`cmake -B build &amp;&amp; cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::log)`
 
-    idcu_mutex_unlock(&g_log_mutex);
-    idcu_mutex_destroy(&g_log_mutex);
-}
+---
 
-void idcu_log_set_level(idcu_LogLevel level)
-{
-    if (!g_initialized) return;
-    idcu_mutex_lock(&g_log_mutex);
-    g_log_config.level = level;
-    idcu_mutex_unlock(&g_log_mutex);
-}
+## 6. 风险与应对
 
-idcu_LogLevel idcu_log_get_level(void)
-{
-    if (!g_initialized) return IDCU_LOG_INFO;
-    return g_log_config.level;
-}
+### 6.1 风险1
+描述：多线程环境下锁竞争导致性能下降  
+应对：使用细粒度锁或考虑后续添加异步写入模式
 
-static const char* log_level_to_str(idcu_LogLevel level)
-{
-    switch (level) {
-    case IDCU_LOG_DEBUG: return "DEBUG";
-    case IDCU_LOG_INFO: return "INFO";
-    case IDCU_LOG_WARN: return "WARN";
-    case IDCU_LOG_ERROR: return "ERROR";
-    case IDCU_LOG_FATAL: return "FATAL";
-    default: return "UNKNOWN";
-    }
-}
+### 6.2 风险2
+描述：日志文件过大导致磁盘空间不足  
+应对：添加日志轮转功能（可选扩展），当前阶段至少记录警告
 
-void idcu_log_printf(idcu_LogLevel level, const char* file, int line, const char* fmt, ...)
-{
-    if (!g_initialized || level < g_log_config.level) {
-        return;
-    }
+---
 
-    idcu_mutex_lock(&g_log_mutex);
+## 7. 详细实现步骤
 
-    time_t now = time(NULL);
-    struct tm* tm_info = localtime(&now);
-    char time_buf[64];
-    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
-
-    char message[2048];
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(message, sizeof(message), fmt, args);
-    va_end(args);
-
-    char log_line[4096];
-    snprintf(log_line, sizeof(log_line), "[%s] [%s] [%s:%d] %s\n",
-             time_buf, log_level_to_str(level), file, line, message);
-
-    if (g_log_config.output & IDCU_LOG_OUTPUT_CONSOLE) {
-        fprintf(stdout, "%s", log_line);
-        fflush(stdout);
-    }
-
-    if (g_log_config.output & IDCU_LOG_OUTPUT_FILE && g_log_file) {
-        fprintf(g_log_file, "%s", log_line);
-        fflush(g_log_file);
-        g_current_file_size += strlen(log_line);
-    }
-
-    idcu_mutex_unlock(&g_log_mutex);
-}
-
-int idcu_log_rotate(void)
-{
-    if (!g_initialized || !(g_log_config.output & IDCU_LOG_OUTPUT_FILE)) {
-        return IDCU_ERR_NOT_INITIALIZED;
-    }
-
-    idcu_mutex_lock(&g_log_mutex);
-
-    if (g_log_file) {
-        fflush(g_log_file);
-        fclose(g_log_file);
-    }
-
-    char backup_name[512];
-    time_t now = time(NULL);
-    struct tm* tm_info = localtime(&now);
-    strftime(backup_name, sizeof(backup_name), "%s.%Y%m%d_%H%M%S", g_log_config.filename, tm_info);
-
-    rename(g_log_config.filename, backup_name);
-
-    g_log_file = fopen(g_log_config.filename, "a");
-    if (!g_log_file) {
-        idcu_mutex_unlock(&g_log_mutex);
-        return IDCU_ERR_FILE_OPEN;
-    }
-
-    g_current_file_size = 0;
-    g_last_rotate_time = (uint64_t)now;
-
-    idcu_mutex_unlock(&g_log_mutex);
-    return IDCU_ERR_OK;
-}
+### 步骤 1: 创建目录结构
+```bash
+mkdir -p libs/idcu-log/include/idcu/log
+mkdir -p libs/idcu-log/src/idcu/log
+mkdir -p libs/idcu-log/tests
+mkdir -p libs/idcu-log/examples
 ```
 
-### 4. 创建 CMakeLists.txt
+### 步骤 2: 创建头文件 log.h
+定义日志级别、输出目标、配置结构体、核心 API 和便捷宏。
 
-创建 `libs/idcu-log/CMakeLists.txt`：
+### 步骤 3: 创建实现文件 log.c
+实现初始化、日志写入、级别设置、关闭等功能，使用 idcu-common 中的互斥锁保证线程安全。
 
+### 步骤 4: 创建 CMakeLists.txt
 ```cmake
 cmake_minimum_required(VERSION 3.15)
 project(idcu-log VERSION 1.0.0 LANGUAGES C)
@@ -316,19 +187,12 @@ project(idcu-log VERSION 1.0.0 LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-add_library(idcu-log STATIC
-    src/idcu/log/log.c
-)
-
+add_library(idcu-log STATIC src/idcu/log/log.c)
 target_include_directories(idcu-log PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
+    $&lt;BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include&gt;
+    $&lt;INSTALL_INTERFACE:include&gt;
 )
-
-target_link_libraries(idcu-log PRIVATE
-    idcu::common
-)
-
+target_link_libraries(idcu-log PRIVATE idcu::common)
 add_library(idcu::log ALIAS idcu-log)
 
 if(BUILD_TESTING)
@@ -340,107 +204,39 @@ if(BUILD_EXAMPLES)
 endif()
 ```
 
-### 5. 创建模块配置文件 (module.yaml)
-
-创建 `libs/idcu-log/module.yaml`：
-
-```yaml
-name: idcu-log
-version: 1.0.0
-description: Logging library for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-
-build:
-  type: cmake
-  targets:
-    - idcu-log
-
-headers:
-  - idcu/log/log.h
-
-features:
-  - multi_level: Multiple log levels (DEBUG, INFO, WARN, ERROR, FATAL)
-  - multi_output: Console, file, and remote output
-  - rotation: File rotation by size or time
-  - thread_safe: Thread-safe logging
-  - format: Formatted log output with file and line numbers
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 6. 创建 README.md
-
-创建 `libs/idcu-log/README.md`：
-
-```markdown
-# idcu-log
-
-IDCU Agent 的日志系统库。
-
-## 功能特性
-
-- **多级别日志**: DEBUG, INFO, WARN, ERROR, FATAL
-- **多输出目标**: 控制台、文件、远程
-- **日志轮转**: 按大小或时间自动轮转
-- **线程安全**: 多线程环境下安全使用
-- **格式化输出**: 包含时间、文件、行号信息
-
-## 快速开始
-
-### 基本使用
-
-```c
-#include "idcu/log/log.h"
-
-int main() {
-    idcu_log_init("app.log", IDCU_LOG_INFO);
-
-    IDCU_LOG_INFO("Application started");
-    IDCU_LOG_DEBUG("Debug information");
-    IDCU_LOG_WARN("Warning message");
-    IDCU_LOG_ERROR("Error occurred");
-
-    idcu_log_shutdown();
-    return 0;
+### 步骤 5: 创建 module.json
+```json
+{
+  "name": "idcu-log",
+  "version": "1.0.0",
+  "description": "Logging library for IDCU Agent",
+  "author": "IDCU Team",
+  "license": "MIT",
+  "dependencies": ["idcu-common"]
 }
 ```
 
-### 使用配置
+### 步骤 6: 创建 README.md
+参考 libs/idcu-log/README.md 现有内容。
 
-```c
-idcu_LogConfig config;
-idcu_log_get_default_config(&config);
-config.level = IDCU_LOG_DEBUG;
-config.output = IDCU_LOG_OUTPUT_CONSOLE | IDCU_LOG_OUTPUT_FILE;
-config.rotate_policy = IDCU_LOG_ROTATE_SIZE;
-config.max_file_size = 50 * 1024 * 1024;
+---
 
-idcu_log_init_with_config(&config);
-```
+## 8. 验证检查清单
 
-## API 文档
-
-详见 [include/idcu/log/log.h](include/idcu/log/log.h)
-```
-
-## 验证检查清单
-
-- [ ] 日志头文件已创建
-- [ ] 日志实现文件已创建
+- [ ] 头文件 log.h 已创建
+- [ ] 实现文件 log.c 已创建
 - [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
+- [ ] module.json 已创建
 - [ ] README.md 已创建
-- [ ] 可以输出不同级别的日志
-- [ ] 可以同时输出到控制台和文件
-- [ ] 线程安全验证通过
+- [ ] 可以正常编译通过
+- [ ] 单元测试通过率 100%
+- [ ] 性能测试达标（QPS ≥ 10,000）
+- [ ] 跨平台测试通过（Windows + Linux）
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-log/
@@ -448,16 +244,20 @@ git commit -m "feat: add idcu-log library
 
 - Add multi-level logging (DEBUG, INFO, WARN, ERROR, FATAL)
 - Add console and file output
-- Add file rotation support
-- Add thread-safe logging
+- Add thread-safe logging with mutex
+- Add timestamp, file, and line number information
 - Add CMake build configuration
-- Add module.yaml metadata"
+- Add unit tests with 85%+ coverage"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 日志文件未写入 | 文件路径问题或权限不足 | 检查文件路径和权限 |
-| 日志级别不生效 | 初始化后未正确设置 | 确保在初始化时或之后设置正确的级别 |
-| 性能问题 | 频繁的磁盘写入 | 使用缓冲或异步日志 |
+| 日志文件未写入 | 文件路径权限不足 | 检查文件路径和权限，使用绝对路径 |
+| 日志级别不生效 | 初始化后未设置正确级别 | 确保在初始化时或之后调用 idcu_log_set_level |
+| 多线程日志乱序 | 未正确加锁 | 检查互斥锁的使用，确保 log_printf 中有锁保护 |
+| 控制台颜色不显示 | 平台不支持 ANSI 颜色 | Windows 需要启用虚拟终端处理 |
+| 性能不达标 | 锁竞争严重 | 考虑减少日志量或后续实现异步写入 |

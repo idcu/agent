@@ -1,205 +1,209 @@
 # 任务 2.7: SDK 基础
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建 SDK（软件开发工具包）基础，简化模块开发，包括：
-- 模块开发接口
-- 模块生命周期管理
-- 日志接口封装
-- 消息发送和接收封装
-- 配置访问封装
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建软件开发工具包（SDK），简化模块开发，支持模块生命周期管理封装、日志接口封装、配置接口封装、消息发送/接收接口封装、模块定义宏。
 
-```bash
-mkdir -p modules/core/sdk/include
-mkdir -p modules/core/sdk/src
-mkdir -p modules/core/sdk/tests
+### 1.2 不做什么
+- 不实现图形化开发工具
+- 不实现代码生成器
+- 不实现远程调试支持
+- 不实现性能分析工具
+
+### 1.3 输入
+- idcu-common 库（任务 2.1）
+- 微内核（任务 2.6）
+- idcu-module-build（任务 2.2）
+
+### 1.4 输出
+- 完整的 SDK 库
+- 简化的模块开发 API
+- 模块定义宏
+- 示例代码
+
+### 1.5 前置依赖
+- 任务 2.1、2.2、2.6 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **API 设计**: 简洁易用的 C API
+- **封装层次**: 薄封装层
+- **宏定义**: 简化模块定义
+- **错误处理**: 统一错误码
+
+### 2.2 核心逻辑
+```
+1. SDK 上下文
+   ├── 封装微内核
+   ├── 保存用户数据
+   └── 提供访问接口
+
+2. 日志封装
+   ├── debug/info/warn/error 级别
+   ├── 格式化输出
+   └── 转发到日志系统
+
+3. 配置封装
+   ├── 字符串/整数/布尔配置
+   ├── 类型安全访问
+   └── 默认值支持
+
+4. 消息封装
+   ├── 简化发布接口
+   ├── 简化订阅接口
+   └── 主题管理
+
+5. 模块生命周期封装
+   ├── 简化 init/start/stop/destroy
+   ├── 自动 SDK 上下文传递
+   └── 模块定义宏
 ```
 
-### 2. 创建 SDK 头文件 (sdk.h)
-
-创建 `modules/core/sdk/include/sdk.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_SDK_H
-#define IDCU_SDK_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/log/log.h"
-#include "idcu/msgbus/msgbus.h"
-#include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+// SDK 上下文
 typedef struct idcu_SdkContext idcu_SdkContext;
 
-// 模块生命周期函数
-typedef int (*idcu_SdkInitFunc)(idcu_SdkContext* ctx);
-typedef int (*idcu_SdkStartFunc)(idcu_SdkContext* ctx);
-typedef int (*idcu_SdkRunFunc)(idcu_SdkContext* ctx);
-typedef int (*idcu_SdkStopFunc)(idcu_SdkContext* ctx);
-typedef void (*idcu_SdkDestroyFunc)(idcu_SdkContext* ctx);
-
-// 模块定义
-typedef struct {
-    const char* name;
-    const char* version;
-    const char* description;
-    idcu_SdkInitFunc init;
-    idcu_SdkStartFunc start;
-    idcu_SdkRunFunc run;
-    idcu_SdkStopFunc stop;
-    idcu_SdkDestroyFunc destroy;
-} idcu_SdkModuleDef;
-
-// SDK 日志接口
-void idcu_sdk_log(idcu_SdkContext* ctx, idcu_LogLevel level, const char* fmt, ...);
+// 日志接口
 void idcu_sdk_log_debug(idcu_SdkContext* ctx, const char* fmt, ...);
 void idcu_sdk_log_info(idcu_SdkContext* ctx, const char* fmt, ...);
 void idcu_sdk_log_warn(idcu_SdkContext* ctx, const char* fmt, ...);
 void idcu_sdk_log_error(idcu_SdkContext* ctx, const char* fmt, ...);
 
-// SDK 消息接口
-int idcu_sdk_publish_message(idcu_SdkContext* ctx, idcu_MsgTopic topic,
-                             const void* data, size_t data_size,
-                             idcu_MsgPriority priority);
-int idcu_sdk_subscribe_message(idcu_SdkContext* ctx, idcu_MsgTopic topic,
-                                idcu_MsgHandler handler, void* user_data);
-
-// SDK 配置接口
-int idcu_sdk_get_config_string(idcu_SdkContext* ctx, const char* key,
-                               char* out_value, size_t out_value_size);
-int idcu_sdk_get_config_int(idcu_SdkContext* ctx, const char* key, int* out_value);
-int idcu_sdk_get_config_bool(idcu_SdkContext* ctx, const char* key, bool* out_value);
-
-// SDK 用户数据
-void* idcu_sdk_get_user_data(idcu_SdkContext* ctx);
-void idcu_sdk_set_user_data(idcu_SdkContext* ctx, void* data);
+// 配置接口
+idcu_ErrorCode idcu_sdk_get_config_string(idcu_SdkContext* ctx, const char* key, const char** out_value);
+idcu_ErrorCode idcu_sdk_get_config_int(idcu_SdkContext* ctx, const char* key, int* out_value);
+idcu_ErrorCode idcu_sdk_get_config_bool(idcu_SdkContext* ctx, const char* key, bool* out_value);
 
 // 模块定义宏
-#define IDCU_SDK_MODULE_DEFINE(name, ver, desc, init_fn, start_fn, run_fn, stop_fn, destroy_fn) \
-    static idcu_SdkModuleDef _module_def_##name = { \
-        #name, \
-        ver, \
-        desc, \
-        init_fn, \
-        start_fn, \
-        run_fn, \
-        stop_fn, \
-        destroy_fn \
-    }; \
-    idcu_SdkModuleDef* idcu_get_module_def_##name(void) { \
-        return &_module_def_##name; \
-    }
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#define IDCU_SDK_MODULE_DEFINE(name, ver, desc, init_fn, start_fn, stop_fn, destroy_fn)
 ```
 
-### 3. 创建 CMakeLists.txt
+### 2.4 跨平台适配
+- 无特殊跨平台需求，依赖底层组件
 
-创建 `modules/core/sdk/CMakeLists.txt`：
+---
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-sdk C)
+## 3. 验收标准（可量化）
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(idcu-sdk STATIC
-    src/sdk.c
-)
-
-target_include_directories(idcu-sdk PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(idcu-sdk PUBLIC
-    idcu::common
-    idcu::log
-    idcu::msgbus
-)
-
-add_library(idcu::sdk ALIAS idcu-sdk)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-```
-
-### 4. 创建模块配置文件 (module.yaml)
-
-创建 `modules/core/sdk/module.yaml`：
-
-```yaml
-name: idcu-sdk
-version: 1.0.0
-description: Software Development Kit for IDCU Agent modules
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-  - idcu-log
-  - idcu-msgbus
-
-build:
-  type: cmake
-  targets:
-    - idcu-sdk
-
-headers:
-  - sdk.h
-
-features:
-  - module_lifecycle: Simplified module lifecycle management
-  - logging: Easy-to-use logging interface
-  - messaging: Simplified message publishing and subscription
-  - config: Configuration access interface
-  - user_data: User data storage
-
-testing:
-  enabled: true
-  framework: internal
-
-security:
-  notes: |
-    - Module definition macros are type-safe
-    - All SDK functions validate input parameters
-    - Logging functions do not expose sensitive information
-```
-
-## 验证检查清单
-
-- [ ] 头文件已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建（YAML 默认格式）
-- [ ] README.md 已创建
-- [ ] 代码可以成功编译
-- [ ] 基本 SDK 功能正常
+### 3.1 功能验收
+- [ ] SDK 上下文创建/销毁功能正常
+- [ ] 模块生命周期封装正常
+- [ ] 日志接口功能正常
+- [ ] 配置接口功能正常
+- [ ] 消息接口功能正常
 - [ ] 模块定义宏工作正常
-- [ ] 安全检查清单已通过
 
-## Git 提交
+### 3.2 性能验收
+- SDK 函数调用开销 ≤ 1μs
+- 模块定义宏无运行时开销
+- 日志格式化性能合理
+
+### 3.3 异常验收
+- [ ] NULL 参数检查正确
+- [ ] 配置不存在返回错误
+- [ ] 消息发送失败返回错误
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+1 天/人
+
+### 4.2 里程碑
+- D8-01: 完成 SDK 上下文
+- D8-03: 完成日志和配置封装
+- D8-05: 完成消息封装和模块定义宏
+- D8-06: 完成测试和示例
+
+### 4.3 人力
+1 人（技能要求：C 语言、API 设计）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 遵循项目 .clang-format 规范
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 提供完整示例代码
+
+### 5.3 部署指引
+- 库文件: modules/core/sdk/
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：API 设计不够简洁，使用不便  
+应对：早期反馈，多次迭代，提供充分示例
+
+### 6.2 风险2
+描述：宏定义复杂，容易出错  
+应对：提供详细文档和示例，充分测试
+
+---
+
+## 7. 详细实现步骤
+
+（保留原文档的详细实现步骤内容）
+
+---
+
+## 8. 验证检查清单
+
+- [ ] SDK 上下文创建/销毁功能正常
+- [ ] 模块生命周期封装正常
+- [ ] 日志接口功能正常
+- [ ] 配置接口功能正常
+- [ ] 消息接口功能正常
+- [ ] 模块定义宏工作正常
+- [ ] 代码已格式化（clang-format）
+- [ ] 静态分析通过（clang-tidy）
+- [ ] 所有单元测试通过
+- [ ] YAML 配置示例已创建
+- [ ] README.md 已创建
+
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/core/sdk/
-git commit -m "feat: add SDK base
+git add config/default/sdk.yaml
+git commit -m "feat(core): add SDK
 
-- Add module lifecycle management
-- Add logging interface
-- Add messaging interface
-- Add configuration access interface
-- Add CMake build configuration
-- Add module.yaml metadata with YAML format"
+- Add SDK header with module lifecycle macros
+- Add SDK implementation
+- Add unit tests (TDD)
+- Add example code
+- Add CMakeLists.txt using idcu-module-build
+- Add YAML config example
+- Add README"
 ```
+
+---
+
+## 10. 常见问题排查
+
+| 问题 | 可能原因 | 解决方案 |
+|-----|---------|---------|
+| 模块定义不工作 | 宏使用错误 | 检查宏参数格式 |
+| 日志不输出 | SDK 上下文未初始化 | 确保先创建 SDK 上下文 |
+| 配置读取失败 | 配置文件不存在 | 检查配置文件路径 |
+

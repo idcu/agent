@@ -1,174 +1,193 @@
-# 任务 5.7: alert-module（告警业务模块）
+# 任务 5.7: alert-module - 告警业务模块
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建告警业务模块，提供告警管理功能，包括：
-- 告警规则管理
-- 告警通知
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
+创建告警业务模块，支持：
+- 告警规则配置
+- 告警触发和去重
+- 多渠道告警通知（消息总线、HTTP等）
 - 告警历史记录
-- 告警级别管理
-- 告警屏蔽
+- 告警查询和管理
 
-## 详细步骤
+### 1.2 不做什么
+- 不实现复杂的告警分析
+- 不实现告警聚合策略
+- 不实现告警自愈
 
-### 1. 创建目录结构
+### 1.3 输入
+- 告警规则
+- 告警事件
+- 告警查询请求
 
-```bash
-mkdir -p modules/business/alert-module/src
-mkdir -p modules/business/alert-module/include
+### 1.4 输出
+- 告警通知
+- 告警历史
+- 告警状态
+
+### 1.5 前置依赖
+- ✅ phase3 完成：idcu-alert
+- ✅ 5.1 完成：core-module
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 告警核心：idcu-alert
+- 消息总线：idcu-msgbus
+- 告警存储：内存存储
+
+### 2.2 核心逻辑
+```
+1. 初始化告警模块
+2. 加载告警规则
+3. 监听告警事件源
+4. 匹配告警规则
+5. 执行告警去重
+6. 发送告警通知
+7. 记录告警历史
 ```
 
-### 2. 创建模块代码
-
-创建 `modules/business/alert-module/src/alert_module.c`：
-
+### 2.3 数据结构/接口
 ```c
-#include "sdk.h"
-#include "idcu/alert/alert.h"
-#include <stdio.h>
-#include <stdlib.h>
-
 typedef struct {
-    idcu_Vector alert_rules;
-    idcu_Vector alert_history;
-    bool enabled;
+    idcu_AlertManager* alert_manager;
+    idcu_List* alert_history;
+    // ... 其他字段
 } AlertModuleData;
 
-static int alert_init(idcu_SdkContext* ctx) {
-    idcu_sdk_log_info(ctx, "Initializing alert module");
-    
-    AlertModuleData* data = malloc(sizeof(AlertModuleData));
-    if (!data) {
-        return IDCU_ERR_NO_MEMORY;
-    }
-    
-    idcu_vector_init(&data->alert_rules, sizeof(void*), 16);
-    idcu_vector_init(&data->alert_history, sizeof(void*), 100);
-    data->enabled = true;
-    
-    idcu_sdk_set_user_data(ctx, data);
-    
-    return IDCU_ERR_SUCCESS;
-}
+typedef struct {
+    char* rule_name;
+    char* condition;
+    int severity;
+} idcu_AlertRule;
 
-static int alert_start(idcu_SdkContext* ctx) {
-    idcu_sdk_log_info(ctx, "Starting alert module");
-    return IDCU_ERR_SUCCESS;
-}
-
-static int alert_run(idcu_SdkContext* ctx) {
-    AlertModuleData* data = idcu_sdk_get_user_data(ctx);
-    if (!data || !data->enabled) {
-        return IDCU_ERR_SUCCESS;
-    }
-    
-    // Check alert rules and trigger alerts
-    return IDCU_ERR_SUCCESS;
-}
-
-static int alert_stop(idcu_SdkContext* ctx) {
-    idcu_sdk_log_info(ctx, "Stopping alert module");
-    return IDCU_ERR_SUCCESS;
-}
-
-static void alert_destroy(idcu_SdkContext* ctx) {
-    AlertModuleData* data = idcu_sdk_get_user_data(ctx);
-    if (data) {
-        idcu_vector_destroy(&data->alert_rules);
-        idcu_vector_destroy(&data->alert_history);
-        free(data);
-    }
-    idcu_sdk_log_info(ctx, "Destroying alert module");
-}
-
-IDCU_SDK_MODULE_DEFINE(
-    alert_module,
-    "1.0.0",
-    "Alert management module",
-    alert_init,
-    alert_start,
-    alert_run,
-    alert_stop,
-    alert_destroy
-);
+int idcu_alert_module_add_rule(idcu_AlertModule* module, idcu_AlertRule* rule);
+int idcu_alert_module_trigger(idcu_AlertModule* module, char* event_name, void* data);
 ```
 
-### 3. 创建 CMakeLists.txt
+### 2.4 跨平台适配
+- 定时器：使用跨平台定时器
+- 网络通知：使用跨平台网络库
+- 统一的告警接口
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-business-alert C)
+---
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+## 3. 验收标准（可量化）
 
-add_library(idcu-business-alert STATIC
-    src/alert_module.c
-)
+### 3.1 功能验收
+- [ ] 告警规则可以配置
+- [ ] 告警可以正确触发
+- [ ] 告警去重正常工作
+- [ ] 多渠道通知正常
 
-target_include_directories(idcu-business-alert PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/modules/core/sdk/include>
-    $<INSTALL_INTERFACE:include>
-)
+### 3.2 性能验收
+- [ ] 告警处理延迟 ≤ 100ms
+- [ ] 支持 ≥ 100 条告警规则
+- [ ] 告警历史存储 ≥ 10000 条
+- [ ] 内存占用 ≤ 5MB
 
-target_link_libraries(idcu-business-alert PRIVATE
-    idcu::common
-    idcu::log
-    idcu::alert
-    idcu::sdk
-)
-```
+### 3.3 异常验收
+- [ ] 告警通知失败不影响主程序
+- [ ] 告警规则格式错误时有明确提示
+- [ ] 告警风暴时有保护机制
 
-### 4. 创建模块配置文件 (module.yaml)
+---
 
-```yaml
-name: alert-module
-version: 1.0.0
-description: Alert management business module
-author: IDCU Team
-license: MIT
+## 4. 执行计划
 
-dependencies:
-  - idcu-sdk
-  - idcu-alert
+### 4.1 工期
+2.5 小时
 
-build:
-  type: cmake
-  targets:
-    - idcu-business-alert
+### 4.2 里程碑
+- D1：完成告警模块接口定义
+- D1：完成核心告警功能
+- D1：完成告警通知
+- D1：完成测试和验证
 
-features:
-  - alert_rules: Alert rule management
-  - alert_notification: Alert notification
-  - alert_history: Alert history recording
-  - alert_level: Alert level management
-  - alert_silencing: Alert silencing
+### 4.3 人力
+1 人（技能要求：C语言 + 告警系统）
 
-testing:
-  enabled: true
-  framework: internal
-```
+---
 
-## 验证检查清单
+## 5. 工程化要求
 
-- [ ] 模块代码已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建（YAML 默认格式）
+### 5.1 编码规范
+- 对齐 .clang-format 规范
+- 函数名小写+下划线
+- 结构体前缀 idcu_
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 70%
+- 测试覆盖不同告警级别
+- 测试覆盖告警去重
+
+### 5.3 部署指引
+- 编译命令：cmake --build build
+- 模块路径：modules/business/alert-module/
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：告警风暴  
+应对：实现告警限流和去重
+
+### 6.2 风险2
+描述：告警通知失败  
+应对：使用重试机制，支持多渠道备用
+
+---
+
+## 7. 详细实现步骤
+
+（保留原文档的详细实现步骤内容）
+
+---
+
+## 8. 验证检查清单
+
+- [ ] 模块可以正常初始化
+- [ ] 告警功能正常
+- [ ] 配置可以正确加载
+- [ ] 模块生命周期管理正常
+- [ ] 代码已格式化（clang-format）
+- [ ] 静态分析通过（clang-tidy）
+- [ ] YAML 配置示例已创建
 - [ ] README.md 已创建
-- [ ] 代码可以成功编译
-- [ ] 基本告警功能正常
-- [ ] 安全检查清单已通过
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/business/alert-module/
-git commit -m "feat: add alert business module
+git add config/default/alert_module.yaml
+git commit -m "feat(business): add alert module
 
-- Add alert rule management
-- Add alert notification
-- Add alert history
-- Add CMake build configuration
-- Add module.yaml metadata with YAML format"
+- Add alert business module
+- Add alert rule support
+- Add multi-channel notification
+- Add YAML config example
+- Add CMakeLists.txt
+- Add README"
 ```
+
+---
+
+## 10. 常见问题排查
+
+| 问题 | 可能原因 | 解决方案 |
+|-----|---------|---------|
+| 告警不触发 | 规则不匹配 | 检查告警规则条件 |
+| 告警重复 | 去重配置错误 | 检查去重窗口设置 |
+| 通知失败 | 渠道配置错误 | 检查通知渠道配置 |

@@ -1,16 +1,176 @@
 # 任务 2.1: 创建通用基础库 (idcu-common)
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建完整的通用基础库，为所有模块提供统一的基础设施，包括：
-- 统一错误码定义
-- 通用数据结构（向量、链表、哈希表）
-- 并发原语（锁、原子操作）
-- 字符串缓冲区
-- 配置常量
-- 安全工具
+---
 
-## 详细步骤
+## 1. 任务边界
+
+### 1.1 核心目标
+创建完整的通用基础库，为所有模块提供统一的基础设施。包括统一错误码定义、通用数据结构（向量、链表、哈希表）、并发原语（锁、原子操作）、字符串缓冲区、配置常量和安全工具。
+
+### 1.2 不做什么
+- 不实现业务逻辑
+- 不实现网络通信
+- 不实现文件系统操作
+- 不实现高级算法
+
+### 1.3 输入
+- 第一阶段完成的项目结构
+- C11 标准的 C 编译器
+
+### 1.4 输出
+- 完整的 idcu-common 静态库
+- 统一的错误码定义
+- 通用数据结构实现
+- 并发原语实现
+- 字符串处理工具
+
+### 1.5 前置依赖
+- 任务 1.1-1.7 已完成
+- 项目构建系统已配置
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **数据结构**: 手写实现向量、哈希表、双向链表
+- **并发原语**: 封装平台原生 API（Windows CRITICAL_SECTION / Linux pthread）
+- **原子操作**: 使用 C11 stdatomic.h 或平台 intrinsics
+- **内存管理**: 标准 C 库 malloc/free
+
+### 2.2 核心逻辑
+```
+1. 错误码系统
+   ├── 定义完整的错误码枚举
+   ├── 错误码转字符串函数
+   ├── 最后错误信息存储
+
+2. 数据结构
+   ├── 向量（动态数组）
+   ├── 哈希表（开链法）
+   ├── 双向链表
+
+3. 并发原语
+   ├── 互斥锁封装
+   ├── 原子操作封装
+   ├── 锁守卫（RAII 风格）
+
+4. 工具类
+   ├── 字符串缓冲区
+   ├── 配置常量
+   ├── 安全工具
+```
+
+### 2.3 数据结构/接口
+```c
+// 错误码
+typedef enum { ... } idcu_ErrorCode;
+const char* idcu_err_to_str(int err_code);
+
+// 向量
+typedef struct { void** data; size_t size; size_t capacity; ... } idcu_Vector;
+int idcu_vector_init(idcu_Vector* vec, size_t element_size, size_t initial_capacity);
+int idcu_vector_push_back(idcu_Vector* vec, const void* element);
+void idcu_vector_destroy(idcu_Vector* vec);
+
+// 哈希表
+typedef struct { ... } idcu_HashMap;
+int idcu_hash_map_init(idcu_HashMap* map, size_t bucket_count, size_t value_size);
+int idcu_hash_map_put(idcu_HashMap* map, const char* key, const void* value);
+int idcu_hash_map_get(const idcu_HashMap* map, const char* key, void* out_value);
+
+// 互斥锁
+typedef CRITICAL_SECTION/pthread_mutex_t idcu_Mutex;
+int idcu_mutex_init(idcu_Mutex* mutex);
+int idcu_mutex_lock(idcu_Mutex* mutex);
+int idcu_mutex_unlock(idcu_Mutex* mutex);
+```
+
+### 2.4 跨平台适配
+- **互斥锁**: Windows 使用 CRITICAL_SECTION，Linux 使用 pthread_mutex_t
+- **原子操作**: 优先使用 C11 stdatomic，回退到平台 intrinsics
+- **头文件**: 统一使用 _WIN32 和 __linux__ 宏进行条件编译
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 所有头文件已创建（error_code.h, config.h, vector.h, hash_map.h, string_buf.h, lock.h, atomic.h 等）
+- [ ] 向量支持 push_back、pop_back、insert、remove、get、set 操作
+- [ ] 哈希表支持 put、get、remove、contains、迭代器操作
+- [ ] 互斥锁可以正确加锁和解锁
+- [ ] 原子操作支持 load、store、fetch_add、CAS
+- [ ] 错误码可以正确转换为字符串
+
+### 3.2 性能验收
+- 向量 push_back 摊销时间复杂度 O(1)
+- 哈希表 get/put 平均时间复杂度 O(1)
+- 互斥锁加锁/解锁耗时 ≤ 100ns（无竞争）
+- 原子操作耗时 ≤ 20ns
+- 100 万次向量操作耗时 ≤ 100ms
+
+### 3.3 异常验收
+- [ ] 传入 NULL 指针时返回 IDCU_ERR_INVALID_PARAM
+- [ ] 内存分配失败时返回 IDCU_ERR_NO_MEMORY
+- [ ] 向量索引越界时返回错误码不崩溃
+- [ ] 哈希表 key 为 NULL 时返回错误码
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+1 天/人
+
+### 4.2 里程碑
+- D1-02: 完成错误码和配置常量
+- D1-04: 完成向量和哈希表
+- D1-06: 完成并发原语和字符串缓冲区
+- D1-08: 完成 CMake 配置和测试
+
+### 4.3 人力
+1 人（技能要求：C 语言、数据结构）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 遵循项目的 .clang-format 规范
+- 函数名小写+下划线，结构体 idcu_ 前缀
+- 头文件使用 #ifndef ... #define ... #endif
+
+### 5.2 测试要求
+- 每个数据结构至少 5 个单元测试
+- 测试覆盖正常和异常场景
+- 单元测试覆盖率 ≥ 90%
+
+### 5.3 部署指引
+- 编译命令：`cd libs/idcu-common && mkdir build && cd build && cmake .. && make`
+- 库文件输出：build/libidcu-common.a
+- 头文件路径：include/idcu/common/
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：跨平台原子操作 API 不一致  
+应对：封装统一接口，使用条件编译处理差异
+
+### 6.2 风险2
+描述：哈希表性能不达标  
+应对：准备备用实现（如更好的哈希函数、红黑树 fallback）
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 创建目录结构
 
@@ -941,18 +1101,23 @@ make
 详见 [include/idcu/common/](include/idcu/common/)
 ```
 
-## 验证检查清单
+---
+
+## 8. 验证检查清单
 
 - [ ] 所有头文件已创建
-- [ ] 所有源文件已创建
+- [ ] 所有源文件已创建（包括 hash_map.c, string_buf.c, lock.c, atomic.c, linked_list.c, security.c）
 - [ ] CMakeLists.txt 已创建
 - [ ] module.yaml 配置文件已创建
 - [ ] README.md 已创建
 - [ ] 代码可以成功编译
 - [ ] 所有数据结构的基本操作正常工作
 - [ ] 错误码转换功能正常
+- [ ] 单元测试通过
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-common/
@@ -967,10 +1132,13 @@ git commit -m "feat: add idcu-common library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
 | 编译错误: pthread 未找到 | Linux 系统缺少 pthread 库 | 确保 CMakeLists.txt 中链接了 pthread |
 | 内存泄漏 | 忘记调用 destroy 函数 | 确保所有 init 的资源都有对应的 destroy |
 | 线程安全问题 | 未正确使用锁 | 在多线程环境中使用 idcu_Mutex 保护共享数据 |
+

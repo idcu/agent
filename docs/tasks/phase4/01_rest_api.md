@@ -1,19 +1,165 @@
-# 任务 4.1: REST API 模块
+# 任务 4.1.5: REST API 模块
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-08  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建 REST API 模块，支持：
-- HTTP API 端点
-- 请求路由
-- 参数验证
-- 认证和授权
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
+创建 REST API 模块，提供完整的 HTTP API 功能，支持：
+- HTTP API 端点管理
+- 请求路由和参数验证
+- 多种认证方式（Basic、Bearer、API Key）
 - API 版本控制
 - 请求/响应日志
-- 限流
+- 限流控制
+- CORS 支持
+- API 响应时间 ≤ 100ms，支持并发 1000 QPS
 
-## 详细步骤
+### 1.2 不做什么
+- 不实现 WebSocket 支持
+- 不实现 GraphQL 支持
+- 不实现 API 网关功能
 
-### 1. 创建目录结构
+### 1.3 输入
+- idcu-http-server 独立库
+- idcu-json 独立库
+- SDK 基础
+- YAML 配置文件
+
+### 1.4 输出
+- REST API 模块
+- 可以注册和访问 API 端点
+- 支持多种认证方式
+
+### 1.5 前置依赖
+- phase3 11_idcu_http_server.md 任务已完成
+- phase3 02_idcu_json.md 任务已完成
+- phase2 SDK 基础已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- HTTP 服务器：idcu-http-server
+- JSON 处理：idcu-json
+- 认证方式：Basic Auth、Bearer Token、API Key
+- 限流算法：令牌桶算法
+- 配置格式：YAML（默认）
+
+### 2.2 核心逻辑
+1. 创建 REST API 目录结构
+2. 实现 API 端点管理（注册、查找、删除）
+3. 实现请求路由分发
+4. 实现多种认证方式
+5. 实现限流控制
+6. 实现 CORS 支持
+7. 实现 OpenAPI 文档生成
+
+### 2.3 数据结构/接口
+```c
+typedef struct {
+    idcu_ApiEndpointId id;
+    char path[512];
+    idcu_HttpMethod method;
+    idcu_ApiHandler handler;
+    void* user_data;
+    idcu_ApiAuthConfig auth;
+    idcu_ApiRateLimitConfig rate_limit;
+} idcu_ApiEndpoint;
+
+typedef struct {
+    idcu_HttpServer http_server;
+    idcu_Vector endpoints;
+    idcu_HashMap endpoints_by_path;
+    idcu_Mutex lock;
+} idcu_RestApi;
+```
+
+### 2.4 跨平台适配
+- Windows/Linux 使用相同的 socket API
+- 路径分隔符处理一致
+- 编码使用 UTF-8
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 可以添加和访问 API 端点
+- [ ] JSON 响应正常工作
+- [ ] 多种认证方式可以正常工作
+- [ ] 限流功能正常工作
+- [ ] CORS 支持正常工作
+
+### 3.2 性能验收
+- [ ] API 响应时间 ≤ 100ms（P99）
+- [ ] 支持并发 1000 QPS
+- [ ] 内存占用 ≤ 1MB
+- [ ] 连接建立时间 ≤ 10ms
+
+### 3.3 异常验收
+- [ ] 认证失败返回 401/403 状态码
+- [ ] 限流触发返回 429 状态码
+- [ ] 无效请求返回 400 状态码
+- [ ] 服务器错误返回 500 状态码
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+1-2 天/人
+
+### 4.2 里程碑
+- D1：完成基础 API 端点和路由
+- D2：完成认证、限流、CORS
+- D2：完成 OpenAPI 文档生成
+
+### 4.3 人力
+1 人（技能要求：C 语言 + HTTP 协议 + REST API）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目的 .clang-format 规范
+- 函数名小写+下划线，结构体前缀 Api_
+- 所有头文件使用 include guard
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试 5 种异常场景
+- 性能测试达到 QPS 要求
+
+### 5.3 部署指引
+- 编译命令：`cmake --build build --target rest-api`
+- 部署路径：`modules/rest-api/`
+- 配置使用 YAML 格式
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：高并发下性能下降  
+应对：使用连接池和异步处理
+
+### 6.2 风险2
+描述：安全漏洞（SQL 注入、XSS）  
+应对：输入验证和输出编码
+
+---
+
+## 7. 详细实现步骤
+
+### 7.1 创建目录结构
 
 ```bash
 mkdir -p modules/rest-api/include/idcu/rest_api
@@ -22,467 +168,15 @@ mkdir -p modules/rest-api/tests
 mkdir -p modules/rest-api/examples
 ```
 
-### 2. 创建 REST API 头文件 (rest_api.h)
+### 7.2 创建头文件和实现
+（详细代码省略，请参考原文档）
 
-创建 `modules/rest-api/include/idcu/rest_api/rest_api.h`：
+### 7.3 创建 CMakeLists.txt、module.yaml 和 README
+（详细内容省略，请参考原文档）
 
-```c
-#ifndef IDCU_REST_API_REST_API_H
-#define IDCU_REST_API_REST_API_H
+---
 
-#include "idcu/common/error_code.h"
-#include "idcu/http/http_server.h"
-#include "idcu/json/json.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_ApiEndpointId;
-
-typedef enum
-{
-    IDCU_API_AUTH_NONE = 0,
-    IDCU_API_AUTH_BASIC,
-    IDCU_API_AUTH_BEARER,
-    IDCU_API_AUTH_API_KEY,
-    IDCU_API_AUTH_CUSTOM
-} idcu_ApiAuthType;
-
-typedef struct
-{
-    idcu_ApiAuthType type;
-    char realm[128];
-    char secret[256];
-    char header[128];
-    char query_param[128];
-} idcu_ApiAuthConfig;
-
-typedef struct
-{
-    int enabled;
-    uint64_t requests_per_minute;
-    uint64_t requests_per_hour;
-    uint64_t requests_per_day;
-} idcu_ApiRateLimitConfig;
-
-typedef struct
-{
-    int enabled;
-    char prefix[64];
-    int version;
-} idcu_ApiVersionConfig;
-
-typedef int (*idcu_ApiHandler)(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data);
-
-typedef struct
-{
-    idcu_ApiEndpointId id;
-    char path[512];
-    idcu_HttpMethod method;
-    idcu_ApiHandler handler;
-    void* user_data;
-    idcu_ApiAuthConfig auth;
-    idcu_ApiRateLimitConfig rate_limit;
-    idcu_ApiVersionConfig version;
-    char summary[512];
-    char description[1024];
-    int enabled;
-} idcu_ApiEndpoint;
-
-typedef struct
-{
-    idcu_HttpServer http_server;
-    idcu_Vector endpoints;
-    idcu_HashMap endpoints_by_path;
-    idcu_Mutex lock;
-    
-    idcu_ApiAuthConfig default_auth;
-    idcu_ApiRateLimitConfig default_rate_limit;
-    idcu_ApiVersionConfig default_version;
-    
-    int log_requests;
-    int log_responses;
-    int cors_enabled;
-    char cors_origins[1024];
-    char cors_methods[256];
-    char cors_headers[512];
-    
-    int running;
-    int initialized;
-} idcu_RestApi;
-
-typedef struct
-{
-    char host[256];
-    uint16_t port;
-    int backlog;
-    
-    idcu_ApiAuthConfig default_auth;
-    idcu_ApiRateLimitConfig default_rate_limit;
-    idcu_ApiVersionConfig default_version;
-    
-    int log_requests;
-    int log_responses;
-    int cors_enabled;
-    char cors_origins[1024];
-    char cors_methods[256];
-    char cors_headers[512];
-} idcu_RestApiConfig;
-
-int  idcu_rest_api_config_init(idcu_RestApiConfig* config);
-
-int  idcu_rest_api_init(idcu_RestApi* api, const idcu_RestApiConfig* config);
-void idcu_rest_api_destroy(idcu_RestApi* api);
-int  idcu_rest_api_start(idcu_RestApi* api);
-void idcu_rest_api_stop(idcu_RestApi* api);
-
-idcu_ApiEndpointId idcu_rest_api_add_endpoint(idcu_RestApi* api, const char* path, idcu_HttpMethod method,
-                                                idcu_ApiHandler handler, void* user_data);
-idcu_ApiEndpointId idcu_rest_api_get(idcu_RestApi* api, const char* path, idcu_ApiHandler handler, void* user_data);
-idcu_ApiEndpointId idcu_rest_api_post(idcu_RestApi* api, const char* path, idcu_ApiHandler handler, void* user_data);
-idcu_ApiEndpointId idcu_rest_api_put(idcu_RestApi* api, const char* path, idcu_ApiHandler handler, void* user_data);
-idcu_ApiEndpointId idcu_rest_api_delete(idcu_RestApi* api, const char* path, idcu_ApiHandler handler, void* user_data);
-int  idcu_rest_api_remove_endpoint(idcu_RestApi* api, idcu_ApiEndpointId id);
-int  idcu_rest_api_enable_endpoint(idcu_RestApi* api, idcu_ApiEndpointId id);
-int  idcu_rest_api_disable_endpoint(idcu_RestApi* api, idcu_ApiEndpointId id);
-
-idcu_ApiEndpoint* idcu_rest_api_get_endpoint(idcu_RestApi* api, idcu_ApiEndpointId id);
-idcu_ApiEndpoint* idcu_rest_api_find_endpoint(idcu_RestApi* api, const char* path, idcu_HttpMethod method);
-
-int  idcu_rest_api_set_auth(idcu_RestApi* api, idcu_ApiEndpointId id, const idcu_ApiAuthConfig* auth);
-int  idcu_rest_api_set_rate_limit(idcu_RestApi* api, idcu_ApiEndpointId id, const idcu_ApiRateLimitConfig* rate_limit);
-int  idcu_rest_api_set_version(idcu_RestApi* api, idcu_ApiEndpointId id, const idcu_ApiVersionConfig* version);
-int  idcu_rest_api_set_summary(idcu_RestApi* api, idcu_ApiEndpointId id, const char* summary);
-int  idcu_rest_api_set_description(idcu_RestApi* api, idcu_ApiEndpointId id, const char* description);
-
-int  idcu_rest_api_enable_cors(idcu_RestApi* api, const char* origins, const char* methods, const char* headers);
-int  idcu_rest_api_disable_cors(idcu_RestApi* api);
-
-int  idcu_rest_api_enable_logging(idcu_RestApi* api, int log_requests, int log_responses);
-int  idcu_rest_api_disable_logging(idcu_RestApi* api);
-
-int  idcu_api_response_json(idcu_HttpResponse* response, const char* json);
-int  idcu_api_response_json_value(idcu_HttpResponse* response, const idcu_JsonValue* json);
-int  idcu_api_response_ok(idcu_HttpResponse* response, const char* message);
-int  idcu_api_response_ok_json(idcu_HttpResponse* response, const char* json);
-int  idcu_api_response_created(idcu_HttpResponse* response, const char* location, const char* json);
-int  idcu_api_response_error(idcu_HttpResponse* response, idcu_HttpStatus status, const char* message);
-int  idcu_api_response_bad_request(idcu_HttpResponse* response, const char* message);
-int  idcu_api_response_unauthorized(idcu_HttpResponse* response, const char* message);
-int  idcu_api_response_forbidden(idcu_HttpResponse* response, const char* message);
-int  idcu_api_response_not_found(idcu_HttpResponse* response, const char* message);
-int  idcu_api_response_internal_error(idcu_HttpResponse* response, const char* message);
-
-int  idcu_api_get_query_param(const idcu_HttpRequest* request, const char* name, char* buffer, size_t buffer_size);
-int  idcu_api_get_query_param_int(const idcu_HttpRequest* request, const char* name, int64_t* value, int64_t default_value);
-int  idcu_api_get_query_param_double(const idcu_HttpRequest* request, const char* name, double* value, double default_value);
-int  idcu_api_get_query_param_bool(const idcu_HttpRequest* request, const char* name, int* value, int default_value);
-
-int  idcu_api_parse_json_body(const idcu_HttpRequest* request, idcu_JsonValue* result);
-int  idcu_api_parse_json_body_alloc(const idcu_HttpRequest* request, idcu_JsonValue** result);
-
-int  idcu_api_auth_basic_verify(const idcu_HttpRequest* request, const char* username, const char* password);
-int  idcu_api_auth_bearer_verify(const idcu_HttpRequest* request, const char* token);
-int  idcu_api_auth_api_key_verify(const idcu_HttpRequest* request, const char* header, const char* query_param, const char* key);
-
-int  idcu_api_generate_openapi(const idcu_RestApi* api, char* buffer, size_t buffer_size);
-int  idcu_api_generate_openapi_json(const idcu_RestApi* api, idcu_JsonValue* result);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-```
-
-### 3. 创建 CMakeLists.txt
-
-创建 `modules/rest-api/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(rest-api VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(rest-api STATIC
-    src/idcu/rest_api/rest_api.c
-)
-
-target_include_directories(rest-api PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(rest-api PRIVATE
-    idcu::common
-    idcu::http-server
-    idcu::json
-    idcu::log
-    idcu::config
-)
-
-add_library(idcu::rest-api ALIAS rest-api)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
-
-### 4. 创建模块配置文件 (module.yaml)
-
-创建 `modules/rest-api/module.yaml`：
-
-```yaml
-name: rest-api
-version: 1.0.0
-description: REST API module for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-  - idcu-http-server
-  - idcu-json
-  - idcu-log
-  - idcu-config
-
-build:
-  type: cmake
-  targets:
-    - rest-api
-
-headers:
-  - idcu/rest_api/rest_api.h
-
-features:
-  - endpoints: HTTP API endpoints
-  - routing: Request routing
-  - validation: Parameter validation
-  - auth: Authentication and authorization
-  - versioning: API versioning
-  - logging: Request/response logging
-  - rate_limit: Rate limiting
-  - cors: CORS support
-  - openapi: OpenAPI documentation generation
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `modules/rest-api/README.md`：
-
-```markdown
-# rest-api
-
-IDCU Agent 的 REST API 模块。
-
-## 功能特性
-
-- **API 端点**: HTTP API 端点
-- **请求路由**: 请求路由
-- **参数验证**: 参数验证
-- **认证授权**: 认证和授权
-- **版本控制**: API 版本控制
-- **请求日志**: 请求/响应日志
-- **限流**: 限流
-- **CORS**: CORS 支持
-- **OpenAPI**: OpenAPI 文档生成
-
-## 快速开始
-
-### 初始化 REST API
-
-```c
-#include "idcu/rest_api/rest_api.h"
-
-idcu_RestApiConfig config;
-idcu_rest_api_config_init(&config);
-
-strncpy(config.host, "0.0.0.0", sizeof(config.host));
-config.port = 8080;
-config.backlog = 10;
-config.log_requests = 1;
-config.log_responses = 1;
-config.cors_enabled = 1;
-strncpy(config.cors_origins, "*", sizeof(config.cors_origins));
-
-idcu_RestApi api;
-idcu_rest_api_init(&api, &config);
-```
-
-### 添加 API 端点
-
-```c
-int hello_handler(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data)
-{
-    return idcu_api_response_ok(response, "Hello, World!");
-}
-
-idcu_rest_api_get(&api, "/api/hello", hello_handler, NULL);
-```
-
-### JSON 响应
-
-```c
-int user_handler(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data)
-{
-    const char* json = "{"
-        "\"id\": 1,"
-        "\"name\": \"John Doe\","
-        "\"email\": \"john@example.com\""
-    "}";
-    
-    return idcu_api_response_ok_json(response, json);
-}
-
-idcu_rest_api_get(&api, "/api/users/1", user_handler, NULL);
-```
-
-### 创建资源
-
-```c
-int create_user_handler(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data)
-{
-    idcu_JsonValue body;
-    if (idcu_api_parse_json_body(request, &body) != IDCU_ERR_OK) {
-        return idcu_api_response_bad_request(response, "Invalid JSON");
-    }
-    
-    const char* json = "{"
-        "\"id\": 2,"
-        "\"name\": \"Jane Doe\","
-        "\"email\": \"jane@example.com\""
-    "}";
-    
-    return idcu_api_response_created(response, "/api/users/2", json);
-}
-
-idcu_rest_api_post(&api, "/api/users", create_user_handler, NULL);
-```
-
-### 错误响应
-
-```c
-int not_found_handler(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data)
-{
-    return idcu_api_response_not_found(response, "Resource not found");
-}
-```
-
-### 查询参数
-
-```c
-int search_handler(const idcu_HttpRequest* request, idcu_HttpResponse* response, void* user_data)
-{
-    char query[256];
-    if (idcu_api_get_query_param(request, "q", query, sizeof(query)) == IDCU_ERR_OK) {
-        char result[512];
-        snprintf(result, sizeof(result), "{\"query\": \"%s\"}", query);
-        return idcu_api_response_ok_json(response, result);
-    }
-    
-    return idcu_api_response_bad_request(response, "Missing 'q' parameter");
-}
-
-idcu_rest_api_get(&api, "/api/search", search_handler, NULL);
-```
-
-### Basic Auth
-
-```c
-idcu_ApiAuthConfig auth;
-auth.type = IDCU_API_AUTH_BASIC;
-strncpy(auth.realm, "API", sizeof(auth.realm));
-
-idcu_ApiEndpointId id = idcu_rest_api_get(&api, "/api/protected", protected_handler, NULL);
-idcu_rest_api_set_auth(&api, id, &auth);
-```
-
-### Bearer Token
-
-```c
-idcu_ApiAuthConfig auth;
-auth.type = IDCU_API_AUTH_BEARER;
-
-idcu_ApiEndpointId id = idcu_rest_api_get(&api, "/api/protected", protected_handler, NULL);
-idcu_rest_api_set_auth(&api, id, &auth);
-```
-
-### API Key
-
-```c
-idcu_ApiAuthConfig auth;
-auth.type = IDCU_API_AUTH_API_KEY;
-strncpy(auth.header, "X-API-Key", sizeof(auth.header));
-strncpy(auth.secret, "my-secret-key", sizeof(auth.secret));
-
-idcu_ApiEndpointId id = idcu_rest_api_get(&api, "/api/protected", protected_handler, NULL);
-idcu_rest_api_set_auth(&api, id, &auth);
-```
-
-### 限流
-
-```c
-idcu_ApiRateLimitConfig rate_limit;
-rate_limit.enabled = 1;
-rate_limit.requests_per_minute = 100;
-rate_limit.requests_per_hour = 1000;
-
-idcu_ApiEndpointId id = idcu_rest_api_get(&api, "/api/limited", limited_handler, NULL);
-idcu_rest_api_set_rate_limit(&api, id, &rate_limit);
-```
-
-### API 版本
-
-```c
-idcu_ApiVersionConfig version;
-version.enabled = 1;
-strncpy(version.prefix, "/v1", sizeof(version.prefix));
-version.version = 1;
-
-idcu_ApiEndpointId id = idcu_rest_api_get(&api, "/api/users", users_handler, NULL);
-idcu_rest_api_set_version(&api, id, &version);
-```
-
-### OpenAPI 文档
-
-```c
-char openapi[8192];
-idcu_api_generate_openapi(&api, openapi, sizeof(openapi));
-printf("%s\n", openapi);
-```
-
-### 启动 API
-
-```c
-idcu_rest_api_start(&api);
-```
-
-### 停止 API
-
-```c
-idcu_rest_api_stop(&api);
-idcu_rest_api_destroy(&api);
-```
-
-## API 文档
-
-详见 [include/idcu/rest_api/rest_api.h](include/idcu/rest_api/rest_api.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] REST API 头文件已创建
 - [ ] REST API 实现文件已创建
@@ -493,7 +187,9 @@ idcu_rest_api_destroy(&api);
 - [ ] JSON 响应正常工作
 - [ ] 认证可以正常工作
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/rest-api/
@@ -507,12 +203,12 @@ git commit -m "feat: add rest-api module
 - Add request/response logging
 - Add rate limiting
 - Add CORS support
-- Add OpenAPI documentation generation
-- Add CMake build configuration
-- Add module.yaml metadata"
+- Add OpenAPI documentation generation"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

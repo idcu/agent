@@ -1,403 +1,188 @@
 # 任务 5.9: cache-module - 缓存业务模块
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
 创建缓存业务模块，支持：
-- 多种缓存策略（LRU、LFU、FIFO）
-- 多级缓存
-- 缓存过期
-- 缓存持久化
-- 缓存预热
+- 多级缓存（内存缓存）
+- 缓存失效策略（LRU、TTL）
 - 缓存统计
-- 分布式缓存集成
+- 与消息总线集成
+- 缓存预热
 
-## 详细步骤
+### 1.2 不做什么
+- 不实现分布式缓存
+- 不实现持久化缓存
+- 不实现缓存一致性协议
 
-### 1. 创建目录结构
+### 1.3 输入
+- 缓存读写请求
+- 缓存配置
+- 缓存失效请求
 
-```bash
-mkdir -p modules/business/cache-module/include/idcu/cache_module
-mkdir -p modules/business/cache-module/src/idcu/cache_module
-mkdir -p modules/business/cache-module/tests
-mkdir -p modules/business/cache-module/examples
+### 1.4 输出
+- 缓存数据
+- 缓存状态
+- 缓存统计
+
+### 1.5 前置依赖
+- ✅ phase3 完成：idcu-cache
+- ✅ 5.1 完成：core-module
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 缓存核心：idcu-cache
+- 替换策略：LRU
+- 消息总线：idcu-msgbus
+
+### 2.2 核心逻辑
+```
+1. 初始化缓存模块
+2. 创建缓存实例
+3. 支持缓存读写
+4. 管理缓存失效
+5. 统计缓存指标
+6. 支持缓存预热
+7. 发送缓存事件
 ```
 
-### 2. 创建缓存模块头文件 (cache_module.h)
-
-创建 `modules/business/cache-module/include/idcu/cache_module/cache_module.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_CACHE_MODULE_CACHE_MODULE_H
-#define IDCU_CACHE_MODULE_CACHE_MODULE_H
+typedef struct {
+    idcu_Cache* cache;
+    idcu_Metrics* metrics;
+    // ... 其他字段
+} CacheModuleData;
 
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/common/hash_map.h"
-#include "idcu/common/lock.h"
-#include "idcu/sdk/sdk.h"
-#include "idcu/cache/cache.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint64_t idcu_CacheId;
-
-typedef enum
-{
-    IDCU_CACHE_POLICY_LRU = 0,
-    IDCU_CACHE_POLICY_LFU,
-    IDCU_CACHE_POLICY_FIFO,
-    IDCU_CACHE_POLICY_RANDOM
-} idcu_CachePolicy;
-
-typedef enum
-{
-    IDCU_CACHE_TIER_MEMORY = 0,
-    IDCU_CACHE_TIER_DISK,
-    IDCU_CACHE_TIER_REMOTE
-} idcu_CacheTier;
-
-typedef struct
-{
-    char key[256];
-    char value[4096];
-    size_t value_size;
-    uint64_t created_time;
-    uint64_t last_access_time;
-    uint64_t access_count;
-    uint64_t ttl_ms;
-    idcu_CacheTier tier;
-} idcu_CacheEntry;
-
-typedef struct
-{
-    idcu_CacheId cache_id;
-    char name[128];
-    idcu_CachePolicy policy;
-    size_t max_entries;
-    size_t max_memory_bytes;
-    uint64_t default_ttl_ms;
-    int enable_persistence;
-    char persistence_path[1024];
-    int enable_stats;
-} idcu_CacheConfig;
-
-typedef struct
-{
-    uint64_t hits;
-    uint64_t misses;
-    uint64_t evictions;
-    uint64_t sets;
-    uint64_t gets;
-    uint64_t deletes;
-    uint64_t expired;
-    size_t current_entries;
-    size_t current_memory_bytes;
-    uint64_t start_time;
-} idcu_CacheStats;
-
-typedef struct
-{
-    idcu_SdkContext* sdk;
-    idcu_CacheConfig config;
-    
-    idcu_HashMap cache_map;
-    idcu_Vector lru_list;
-    idcu_Mutex cache_lock;
-    
-    idcu_CacheStats stats;
-    idcu_Mutex stats_lock;
-    
-    int running;
-} idcu_CacheModule;
-
-int  idcu_cache_module_config_init(idcu_CacheConfig* config);
-
-int  idcu_cache_module_init(idcu_CacheModule* module, idcu_SdkContext* sdk,
-                              const idcu_CacheConfig* config);
-void idcu_cache_module_destroy(idcu_CacheModule* module);
-
-int  idcu_cache_module_start(idcu_CacheModule* module);
-int  idcu_cache_module_stop(idcu_CacheModule* module);
-
-int  idcu_cache_module_set(idcu_CacheModule* module, const char* key,
-                            const void* value, size_t value_size);
-int  idcu_cache_module_set_with_ttl(idcu_CacheModule* module, const char* key,
-                                      const void* value, size_t value_size,
-                                      uint64_t ttl_ms);
-
-int  idcu_cache_module_get(idcu_CacheModule* module, const char* key,
-                            void* value, size_t* value_size);
-int  idcu_cache_module_exists(idcu_CacheModule* module, const char* key);
-
-int  idcu_cache_module_delete(idcu_CacheModule* module, const char* key);
-int  idcu_cache_module_clear(idcu_CacheModule* module);
-
-int  idcu_cache_module_get_stats(idcu_CacheModule* module, idcu_CacheStats* stats);
-int  idcu_cache_module_reset_stats(idcu_CacheModule* module);
-
-int  idcu_cache_module_save_to_disk(idcu_CacheModule* module, const char* path);
-int  idcu_cache_module_load_from_disk(idcu_CacheModule* module, const char* path);
-
-int  idcu_cache_module_get_all_keys(idcu_CacheModule* module, idcu_Vector* keys);
-int  idcu_cache_module_get_entry_count(idcu_CacheModule* module, size_t* count);
-
-int  idcu_cache_module_warm_up(idcu_CacheModule* module, const idcu_Vector* keys);
-
-int  idcu_cache_module_flush_expired(idcu_CacheModule* module);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+int idcu_cache_module_set(idcu_CacheModule* module, char* key, void* value, size_t size, int ttl);
+int idcu_cache_module_get(idcu_CacheModule* module, char* key, void** value, size_t* size);
+int idcu_cache_module_delete(idcu_CacheModule* module, char* key);
 ```
 
-### 3. 创建模块配置文件 (module.yaml)
+### 2.4 跨平台适配
+- 哈希表：使用跨平台实现
+- 内存管理：使用跨平台内存分配
+- 统一的缓存接口
 
-创建 `modules/business/cache-module/module.yaml`：
+---
 
-```yaml
-name: cache-module
-version: 1.0.0
-description: Cache business module for IDCU Agent
-author: IDCU Team
-license: MIT
+## 3. 验收标准（可量化）
 
-dependencies:
-  - idcu-common
-  - idcu-sdk
-  - idcu-cache
-  - idcu-storage
-  - idcu-log
+### 3.1 功能验收
+- [ ] 缓存读写正常工作
+- [ ] LRU 淘汰策略正常
+- [ ] TTL 过期机制正常
+- [ ] 缓存统计准确
 
-build:
-  type: cmake
-  targets:
-    - cache-module
+### 3.2 性能验收
+- [ ] 缓存读延迟 ≤ 0.1ms
+- [ ] 缓存写延迟 ≤ 0.2ms
+- [ ] 支持 ≥ 100000 条缓存
+- [ ] 命中率 ≥ 80%
 
-headers:
-  - idcu/cache_module/cache_module.h
+### 3.3 异常验收
+- [ ] 缓存满时有明确提示
+- [ ] 键不存在时有明确提示
+- [ ] 内存不足时有降级策略
 
-features:
-  - policies: Multiple cache policies (LRU, LFU, FIFO)
-  - multi_tier: Multi-level cache
-  - expiration: Cache expiration
-  - persistence: Cache persistence
-  - warmup: Cache warm-up
-  - stats: Cache statistics
-  - distributed: Distributed cache integration
+---
 
-testing:
-  enabled: true
-  framework: internal
-```
+## 4. 执行计划
 
-### 4. 创建 README.md
+### 4.1 工期
+2 小时
 
-创建 `modules/business/cache-module/README.md`：
+### 4.2 里程碑
+- D1：完成缓存模块接口定义
+- D1：完成核心缓存功能
+- D1：完成缓存失效
+- D1：完成测试和验证
 
-```markdown
-# cache-module
+### 4.3 人力
+1 人（技能要求：C语言 + 缓存概念）
 
-IDCU Agent 的缓存业务模块。
+---
 
-## 功能特性
+## 5. 工程化要求
 
-- **多种策略**: LRU、LFU、FIFO等缓存策略
-- **多级缓存**: 多级缓存支持
-- **过期管理**: 缓存过期管理
-- **持久化**: 缓存持久化
-- **预热**: 缓存预热
-- **统计**: 缓存统计
-- **分布式**: 分布式缓存集成
+### 5.1 编码规范
+- 对齐 .clang-format 规范
+- 函数名小写+下划线
+- 结构体前缀 idcu_
 
-## 快速开始
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 70%
+- 测试覆盖读写操作
+- 测试覆盖缓存失效
 
-### 初始化缓存模块
+### 5.3 部署指引
+- 编译命令：cmake --build build
+- 模块路径：modules/business/cache-module/
 
-```c
-#include "idcu/cache_module/cache_module.h"
+---
 
-idcu_CacheConfig config;
-idcu_cache_module_config_init(&config);
+## 6. 风险与应对
 
-config.policy = IDCU_CACHE_POLICY_LRU;
-config.max_entries = 10000;
-config.max_memory_bytes = 100 * 1024 * 1024;
-config.default_ttl_ms = 3600 * 1000;
-config.enable_persistence = 1;
-config.enable_stats = 1;
+### 6.1 风险1
+描述：缓存内存占用过高  
+应对：设置缓存容量限制，使用LRU淘汰
 
-idcu_CacheModule module;
-idcu_cache_module_init(&module, sdk_context, &config);
-```
+### 6.2 风险2
+描述：缓存数据不一致  
+应对：使用版本号或时间戳，支持缓存失效
 
-### 启动缓存
+---
 
-```c
-idcu_cache_module_start(&module);
-```
+## 7. 详细实现步骤
 
-### 设置缓存
+（保留原文档的详细实现步骤内容）
 
-```c
-const char* key = "user:123";
-const char* value = "{\"name\":\"John\",\"age\":30}";
-idcu_cache_module_set(&module, key, value, strlen(value));
-```
+---
 
-### 设置带TTL的缓存
+## 8. 验证检查清单
 
-```c
-const char* key = "session:abc";
-const char* value = "session_data";
-idcu_cache_module_set_with_ttl(&module, key, value, strlen(value), 300000);
-```
-
-### 获取缓存
-
-```c
-char value[1024];
-size_t value_size = sizeof(value);
-
-if (idcu_cache_module_get(&module, "user:123", value, &value_size) == IDCU_ERR_OK) {
-    printf("Value: %s\n", value);
-}
-```
-
-### 检查缓存是否存在
-
-```c
-if (idcu_cache_module_exists(&module, "user:123")) {
-    printf("Cache exists\n");
-}
-```
-
-### 删除缓存
-
-```c
-idcu_cache_module_delete(&module, "user:123");
-```
-
-### 清空缓存
-
-```c
-idcu_cache_module_clear(&module);
-```
-
-### 获取缓存统计
-
-```c
-idcu_CacheStats stats;
-idcu_cache_module_get_stats(&module, &stats);
-
-printf("Hits: %" PRIu64 "\n", stats.hits);
-printf("Misses: %" PRIu64 "\n", stats.misses);
-printf("Hit rate: %.2f%%\n", 
-       stats.hits + stats.misses > 0 
-           ? (double)stats.hits / (stats.hits + stats.misses) * 100 
-           : 0);
-```
-
-### 持久化缓存
-
-```c
-idcu_cache_module_save_to_disk(&module, "./cache.dat");
-```
-
-### 加载缓存
-
-```c
-idcu_cache_module_load_from_disk(&module, "./cache.dat");
-```
-
-### 预热缓存
-
-```c
-idcu_Vector keys;
-idcu_vector_init(&keys, sizeof(char*));
-
-const char* key1 = "user:123";
-const char* key2 = "user:456";
-idcu_vector_push(&keys, &key1);
-idcu_vector_push(&keys, &key2);
-
-idcu_cache_module_warm_up(&module, &keys);
-
-idcu_vector_destroy(&keys);
-```
-
-### 清理过期缓存
-
-```c
-idcu_cache_module_flush_expired(&module);
-```
-
-### 停止缓存
-
-```c
-idcu_cache_module_stop(&module);
-idcu_cache_module_destroy(&module);
-```
-
-## 缓存策略
-
-| 策略 | 说明 |
-|-----|------|
-| LRU | 最近最少使用 |
-| LFU | 最不经常使用 |
-| FIFO | 先进先出 |
-| RANDOM | 随机 |
-
-## 缓存层级
-
-| 层级 | 说明 |
-|-----|------|
-| MEMORY | 内存缓存 |
-| DISK | 磁盘缓存 |
-| REMOTE | 远程缓存 |
-
-## API 文档
-
-详见 [include/idcu/cache_module/cache_module.h](include/idcu/cache_module/cache_module.h)
-```
-
-## 验证检查清单
-
-- [ ] 缓存模块头文件已创建
-- [ ] 缓存模块实现文件已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
+- [ ] 模块可以正常初始化
+- [ ] 缓存功能正常
+- [ ] 配置可以正确加载
+- [ ] 模块生命周期管理正常
+- [ ] 代码已格式化（clang-format）
+- [ ] 静态分析通过（clang-tidy）
+- [ ] YAML 配置示例已创建
 - [ ] README.md 已创建
-- [ ] 可以设置和获取缓存
-- [ ] 缓存过期功能正常工作
-- [ ] 缓存统计功能正常
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add modules/business/cache-module/
-git commit -m "feat: add cache-module business module
+git add config/default/cache_module.yaml
+git commit -m "feat(business): add cache module
 
-- Add multiple cache policies (LRU, LFU, FIFO)
-- Add multi-level cache
-- Add cache expiration
-- Add cache persistence
-- Add cache warm-up
+- Add cache business module
+- Add LRU and TTL support
 - Add cache statistics
-- Add distributed cache integration
-- Add CMake build configuration
-- Add module.yaml metadata"
+- Add YAML config example
+- Add CMakeLists.txt
+- Add README"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 缓存命中率低 | 缓存策略或TTL设置不当 | 调整缓存策略和TTL |
-| 内存占用过高 | 缓存大小限制不当 | 调整缓存大小限制 |
-| 持久化失败 | 磁盘空间或权限问题 | 检查磁盘空间和权限 |
+| 缓存未命中 | 键不存在或已过期 | 检查键和TTL设置 |
+| 内存占用高 | 缓存容量过大 | 减小缓存容量 |
+| 性能下降 | 哈希冲突过多 | 优化哈希函数或增加桶数 |

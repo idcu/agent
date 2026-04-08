@@ -1,94 +1,119 @@
 # 任务 3.7: idcu-storage - 持久化存储库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建持久化存储库，支持：
-- 键值存储
-- SQLite 数据库封装
-- 事务支持
-- 数据序列化
-- 查询接口
-- 线程安全
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建持久化存储库，提供键值存储、SQLite 数据库封装、事务支持、数据序列化、查询接口、线程安全操作，满足键值读写延迟 ≤ 1ms、SQLite 查询延迟 ≤ 10ms、支持 10000+ 键值对的性能要求。
 
-```bash
-mkdir -p libs/idcu-storage/include/idcu/storage
-mkdir -p libs/idcu-storage/src/idcu/storage
-mkdir -p libs/idcu-storage/tests
-mkdir -p libs/idcu-storage/examples
+### 1.2 不做什么
+- 不实现分布式存储（由独立模块处理）
+- 不实现 ORM 映射
+- 不实现数据库加密
+- 不实现复杂的查询构建器
+
+### 1.3 输入
+- 存储文件路径
+- 键值数据（key/value）
+- SQL 查询语句
+- 事务操作指令
+- 绑定参数（预处理语句）
+
+### 1.4 输出
+- 键值读取结果
+- SQLite 查询结果集
+- 事务执行状态
+- 错误码
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用
+- idcu-json 库已可用
+- SQLite3 库已可用（或使用嵌入式版本）
+- phase2 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **键值存储**: 内存 HashMap + 磁盘持久化（JSON 格式）
+- **SQLite 封装**: 轻量级 SQLite3 封装，简化常用操作
+- **事务支持**: SQLite 原生事务支持
+- **数据序列化**: JSON 格式
+- **线程安全**: 每个存储实例独立互斥锁
+
+### 2.2 核心逻辑
+```
+KVStore 初始化：
+1. 加载持久化文件（若存在）
+2. 构建内存哈希表
+3. 初始化互斥锁
+4. 标记为初始化完成
+
+KVStore 写入：
+1. 获取锁
+2. 更新内存哈希表
+3. 标记为 dirty
+4. 释放锁
+5. 可选：异步同步到磁盘
+
+SQLite 查询：
+1. 获取锁
+2. 准备或执行 SQL 语句
+3. 绑定参数（如需要）
+4. 执行并获取结果
+5. 释放锁
+6. 返回结果
+
+事务流程：
+1. BEGIN TRANSACTION
+2. 执行多个操作
+3. COMMIT 或 ROLLBACK
 ```
 
-### 2. 创建存储头文件 (storage.h)
-
-创建 `libs/idcu-storage/include/idcu/storage/storage.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_STORAGE_STORAGE_H
-#define IDCU_STORAGE_STORAGE_H
+// 主要头文件：idcu/storage/storage.h
 
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/common/lock.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef enum
-{
+typedef enum {
     IDCU_STORAGE_TYPE_KV = 0,
     IDCU_STORAGE_TYPE_SQLITE
 } idcu_StorageType;
 
-typedef struct idcu_KVStore idcu_KVStore;
-typedef struct idcu_SQLiteDB idcu_SQLiteDB;
-typedef struct idcu_Transaction idcu_Transaction;
-
-struct idcu_KVStore
-{
+// KV 存储
+typedef struct idcu_KVStore {
     char path[1024];
     idcu_HashMap data;
     idcu_Mutex lock;
     int dirty;
     int initialized;
-};
-
-struct idcu_SQLiteDB
-{
-    void* db_handle;
-    char path[1024];
-    idcu_Mutex lock;
-    int in_transaction;
-    int initialized;
-};
-
-struct idcu_Transaction
-{
-    idcu_SQLiteDB* db;
-    int active;
-};
+} idcu_KVStore;
 
 int  idcu_kvstore_init(idcu_KVStore* store, const char* path);
 void idcu_kvstore_destroy(idcu_KVStore* store);
 int  idcu_kvstore_put(idcu_KVStore* store, const char* key, const void* value, size_t value_size);
 int  idcu_kvstore_put_string(idcu_KVStore* store, const char* key, const char* value);
 int  idcu_kvstore_put_int(idcu_KVStore* store, const char* key, int64_t value);
-int  idcu_kvstore_put_double(idcu_KVStore* store, const char* key, double value);
 int  idcu_kvstore_get(idcu_KVStore* store, const char* key, void* buffer, size_t buffer_size, size_t* value_size);
 int  idcu_kvstore_get_string(idcu_KVStore* store, const char* key, char* buffer, size_t buffer_size);
-int  idcu_kvstore_get_int(idcu_KVStore* store, const char* key, int64_t* value);
-int  idcu_kvstore_get_double(idcu_KVStore* store, const char* key, double* value);
 int  idcu_kvstore_remove(idcu_KVStore* store, const char* key);
-int  idcu_kvstore_exists(idcu_KVStore* store, const char* key);
-int  idcu_kvstore_clear(idcu_KVStore* store);
-size_t idcu_kvstore_count(idcu_KVStore* store);
 int  idcu_kvstore_sync(idcu_KVStore* store);
-int  idcu_kvstore_load(idcu_KVStore* store);
+
+// SQLite 数据库
+typedef struct idcu_SQLiteDB {
+    void* db_handle;
+    char path[1024];
+    idcu_Mutex lock;
+    int in_transaction;
+    int initialized;
+} idcu_SQLiteDB;
 
 int  idcu_sqlite_init(idcu_SQLiteDB* db, const char* path);
 void idcu_sqlite_destroy(idcu_SQLiteDB* db);
@@ -97,223 +122,129 @@ int  idcu_sqlite_query(idcu_SQLiteDB* db, const char* sql, idcu_Vector* results)
 int  idcu_sqlite_prepare(idcu_SQLiteDB* db, const char* sql, void** stmt);
 int  idcu_sqlite_bind_text(void* stmt, int index, const char* value);
 int  idcu_sqlite_bind_int(void* stmt, int index, int64_t value);
-int  idcu_sqlite_bind_double(void* stmt, int index, double value);
-int  idcu_sqlite_bind_blob(void* stmt, int index, const void* value, size_t size);
-int  idcu_sqlite_bind_null(void* stmt, int index);
 int  idcu_sqlite_step(void* stmt);
-int  idcu_sqlite_column_count(void* stmt);
-const char* idcu_sqlite_column_name(void* stmt, int index);
-int  idcu_sqlite_column_type(void* stmt, int index);
 const char* idcu_sqlite_column_text(void* stmt, int index);
 int64_t idcu_sqlite_column_int(void* stmt, int index);
-double idcu_sqlite_column_double(void* stmt, int index);
-const void* idcu_sqlite_column_blob(void* stmt, int index, size_t* size);
 int  idcu_sqlite_finalize(void* stmt);
-int64_t idcu_sqlite_last_insert_rowid(idcu_SQLiteDB* db);
-int64_t idcu_sqlite_changes(idcu_SQLiteDB* db);
+
+// 事务
+typedef struct idcu_Transaction {
+    idcu_SQLiteDB* db;
+    int active;
+} idcu_Transaction;
 
 int  idcu_sqlite_begin_transaction(idcu_SQLiteDB* db);
 int  idcu_sqlite_commit(idcu_SQLiteDB* db);
 int  idcu_sqlite_rollback(idcu_SQLiteDB* db);
-
-int  idcu_transaction_init(idcu_Transaction* tx, idcu_SQLiteDB* db);
-void idcu_transaction_destroy(idcu_Transaction* tx);
-int  idcu_transaction_begin(idcu_Transaction* tx);
-int  idcu_transaction_commit(idcu_Transaction* tx);
-int  idcu_transaction_rollback(idcu_Transaction* tx);
-
-typedef struct
-{
-    idcu_Vector columns;
-    idcu_Vector values;
-} idcu_SQLiteRow;
-
-int  idcu_sqlite_row_init(idcu_SQLiteRow* row);
-void idcu_sqlite_row_destroy(idcu_SQLiteRow* row);
-int  idcu_sqlite_row_add_column(idcu_SQLiteRow* row, const char* name);
-int  idcu_sqlite_row_add_value(idcu_SQLiteRow* row, const char* value);
-const char* idcu_sqlite_row_get_value(idcu_SQLiteRow* row, const char* column);
-const char* idcu_sqlite_row_get_value_by_index(idcu_SQLiteRow* row, size_t index);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
 
-### 3. 创建 CMakeLists.txt
+### 2.4 跨平台适配
+- **SQLite**: 使用系统 SQLite3 或嵌入式 amalgamation
+- **文件路径**: 统一处理 Windows 和 Linux 路径分隔符
+- **互斥锁**: 使用 idcu-common 中的跨平台实现
 
-创建 `libs/idcu-storage/CMakeLists.txt`：
+---
 
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-storage VERSION 1.0.0 LANGUAGES C)
+## 3. 验收标准（可量化）
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+### 3.1 功能验收
+- [ ] KV 存储可以正常读写各种类型
+- [ ] KV 存储持久化正确（重启后数据不丢失）
+- [ ] SQLite 数据库可以创建表和插入数据
+- [ ] SQLite 可以正确查询结果
+- [ ] 预处理语句和参数绑定正常工作
+- [ ] 事务可以正常提交和回滚
+- [ ] 多线程并发操作安全（无崩溃，数据一致）
+- [ ] 所有 API 正确处理 NULL 指针
 
-add_library(idcu-storage STATIC
-    src/idcu/storage/storage.c
-)
+### 3.2 性能验收
+- KV 存储读写延迟 ≤ 1ms（平均）
+- SQLite 查询延迟 ≤ 10ms（简单查询）
+- KV 存储支持 10000+ 键值对
+- SQLite 插入吞吐量 ≥ 1000 条/秒（批量）
+- 内存占用 ≤ 10MB（10000 个键值对）
 
-target_include_directories(idcu-storage PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+### 3.3 异常验收
+- [ ] 数据库文件不存在时正确创建
+- [ ] SQL 语法错误返回明确错误码
+- [ ] 事务回滚正确恢复数据
+- [ ] 磁盘空间不足时返回错误
+- [ ] 传入无效参数返回明确错误码
 
-target_link_libraries(idcu-storage PRIVATE
-    idcu::common
-    idcu::json
-)
+---
 
-find_package(SQLite3 QUIET)
-if(SQLite3_FOUND)
-    target_link_libraries(idcu-storage PRIVATE SQLite::SQLite3)
-else()
-    message(STATUS "SQLite3 not found, using embedded version or disabling SQLite features")
-endif()
+## 4. 执行计划
 
-add_library(idcu::storage ALIAS idcu-storage)
+### 4.1 工期
+5 小时/人
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+### 4.2 里程碑
+- D1-00: 完成头文件定义和数据结构（45 分钟）
+- D1-45: 完成 KV 存储实现（1.5 小时）
+- D1-135: 完成 SQLite 封装（1.5 小时）
+- D1-225: 完成事务支持（30 分钟）
+- D1-255: 完成单元测试（30 分钟）
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+### 4.3 人力
+1 人（技能要求：C 语言 + SQLite + 数据库）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，前缀 idcu_
+- 所有公共 API 有 Doxygen 风格注释
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试覆盖 KV 存储各种类型和操作
+- 测试覆盖 SQLite 基本操作和事务
+- 测试覆盖异常场景
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build && cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::storage)`
+- 依赖：idcu-common, idcu-json, SQLite3
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：SQLite 锁争用导致性能下降  
+应对：提供连接池或读写锁优化
+
+### 6.2 风险2
+描述：KV 存储同步时阻塞  
+应对：支持异步同步选项
+
+---
+
+## 7. 详细实现步骤
+
+### 1. 创建目录结构
+```bash
+mkdir -p libs/idcu-storage/include/idcu/storage
+mkdir -p libs/idcu-storage/src/idcu/storage
+mkdir -p libs/idcu-storage/tests
+mkdir -p libs/idcu-storage/examples
 ```
 
-### 4. 创建模块配置文件 (module.yaml)
+### 2. 创建头文件和实现
+- storage.h: 头文件定义
+- kvstore.c: KV 存储实现
+- sqlite.c: SQLite 封装
+- transaction.c: 事务支持
 
-创建 `libs/idcu-storage/module.yaml`：
+### 3. 创建 CMakeLists.txt 和 module.yaml
 
-```yaml
-name: idcu-storage
-version: 1.0.0
-description: Persistent storage library for IDCU Agent
-author: IDCU Team
-license: MIT
+### 4. 创建 README.md
 
-dependencies:
-  - idcu-common
-  - idcu-json
+---
 
-build:
-  type: cmake
-  targets:
-    - idcu-storage
-
-headers:
-  - idcu/storage/storage.h
-
-features:
-  - kvstore: Key-value store
-  - sqlite: SQLite database wrapper
-  - transaction: Transaction support
-  - serialization: Data serialization
-  - query: Query interface
-  - thread_safe: Thread-safe operations
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建 README.md
-
-创建 `libs/idcu-storage/README.md`：
-
-```markdown
-# idcu-storage
-
-IDCU Agent 的持久化存储库。
-
-## 功能特性
-
-- **键值存储**: 简单的键值存储
-- **SQLite 封装**: SQLite 数据库封装
-- **事务支持**: 数据库事务支持
-- **数据序列化**: 数据序列化
-- **查询接口**: 查询接口
-- **线程安全**: 线程安全操作
-
-## 快速开始
-
-### 键值存储
-
-```c
-#include "idcu/storage/storage.h"
-
-idcu_KVStore store;
-idcu_kvstore_init(&store, "./data.kv");
-
-idcu_kvstore_put_string(&store, "name", "John");
-idcu_kvstore_put_int(&store, "age", 30);
-idcu_kvstore_put_double(&store, "score", 95.5);
-
-char name[256];
-idcu_kvstore_get_string(&store, "name", name, sizeof(name));
-
-int64_t age;
-idcu_kvstore_get_int(&store, "age", &age);
-
-idcu_kvstore_sync(&store);
-
-idcu_kvstore_destroy(&store);
-```
-
-### SQLite 数据库
-
-```c
-idcu_SQLiteDB db;
-idcu_sqlite_init(&db, "./data.db");
-
-idcu_sqlite_execute(&db, 
-    "CREATE TABLE IF NOT EXISTS users ("
-    "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-    "name TEXT NOT NULL,"
-    "age INTEGER"
-    ")");
-
-idcu_Transaction tx;
-idcu_transaction_init(&tx, &db);
-idcu_transaction_begin(&tx);
-
-idcu_sqlite_execute(&db, "INSERT INTO users (name, age) VALUES ('John', 30)");
-
-idcu_transaction_commit(&tx);
-idcu_transaction_destroy(&tx);
-
-idcu_Vector results;
-idcu_vector_init(&results, sizeof(idcu_SQLiteRow));
-idcu_sqlite_query(&db, "SELECT * FROM users", &results);
-
-idcu_sqlite_destroy(&db);
-```
-
-### SQLite 预处理语句
-
-```c
-void* stmt;
-idcu_sqlite_prepare(&db, "INSERT INTO users (name, age) VALUES (?, ?)", &stmt);
-
-idcu_sqlite_bind_text(stmt, 1, "Jane");
-idcu_sqlite_bind_int(stmt, 2, 25);
-
-idcu_sqlite_step(stmt);
-idcu_sqlite_finalize(stmt);
-
-int64_t last_id = idcu_sqlite_last_insert_rowid(&db);
-```
-
-## API 文档
-
-详见 [include/idcu/storage/storage.h](include/idcu/storage/storage.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 存储头文件已创建
 - [ ] 存储实现文件已创建
@@ -323,14 +254,19 @@ int64_t last_id = idcu_sqlite_last_insert_rowid(&db);
 - [ ] 键值存储可以正常读写
 - [ ] SQLite 数据库可以正常操作
 - [ ] 事务可以正常提交和回滚
+- [ ] 单元测试通过率 100%
+- [ ] 性能测试达标
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-storage/
 git commit -m "feat: add idcu-storage library
 
-- Add key-value store
+- Add key-value store with persistence
 - Add SQLite database wrapper
 - Add transaction support
 - Add data serialization
@@ -340,10 +276,13 @@ git commit -m "feat: add idcu-storage library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
-| 数据库锁定 | 多线程未正确使用锁 | 确保在多线程环境中正确使用 |
-| 数据丢失 | 未调用 sync | 确保修改后调用 sync |
+| 数据库锁定 | 多线程未正确使用锁 | 确保每个操作正确获取和释放锁 |
+| KV 数据丢失 | 未调用 sync | 修改后记得调用 idcu_kvstore_sync() |
 | SQLite 错误 | SQL 语法错误 | 检查 SQL 语句语法 |
+| 事务回滚失败 | 未正确处理错误 | 检查每个操作的返回码 |

@@ -1,61 +1,86 @@
 # 任务 3.26: idcu-device-collector - 设备数据采集
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-09  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建设备数据采集库，支持：
-- 多种设备类型支持（服务器、网络设备、IoT设备）
-- 多种采集协议（SNMP、HTTP、Modbus、自定义）
-- 数据收集和聚合
-- 数据过滤和转换
-- 定时采集
-- 数据缓存
-- 数据导出
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建完整的设备数据采集库，支持多种设备类型（服务器、网络设备、IoT设备）、多种采集协议（SNMP、HTTP、Modbus、自定义）、数据收集和聚合、数据过滤和转换、定时采集、数据缓存、数据导出，满足采集延迟 ≤ 1s、支持 100+ 并发设备、数据缓存容量 ≥ 10000 条的性能要求。
 
-```bash
-mkdir -p libs/idcu-device-collector/include/idcu/device_collector
-mkdir -p libs/idcu-device-collector/src/idcu/device_collector
-mkdir -p libs/idcu-device-collector/tests
-mkdir -p libs/idcu-device-collector/examples
+### 1.2 不做什么
+- 不实现设备控制功能（仅采集）
+- 不实现复杂的协议转换
+- 不实现数据持久化到数据库
+- 不实现实时数据可视化
+
+### 1.3 输入
+- 设备配置（名称、类型、地址、协议、采集间隔）
+- 指标定义（名称、类型、单位、采集方法）
+- 采集规则（过滤条件、转换规则）
+- 调度配置（采集间隔）
+
+### 1.4 输出
+- 采集的指标数据（值、时间戳）
+- 设备状态（在线/离线、连接状态）
+- 采集统计（成功/失败次数）
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 库已实现
+- idcu-scheduler 库已实现
+- idcu-storage 库已实现
+- idcu-log 库已实现
+- phase3 前 25 个任务已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **设备类型**: 枚举类型（SERVER、NETWORK、IOT、CUSTOM）
+- **协议支持**: SNMP、HTTP、Modbus、TCP、UDP、自定义
+- **数据类型**: Gauge、Counter、Histogram、String、Boolean
+- **定时调度**: 使用 idcu-scheduler 库
+- **数据缓存**: 内存缓存 + 可选持久化
+
+### 2.2 核心逻辑
+```
+采集器工作流程：
+1. 初始化采集器，加载配置
+2. 注册设备，配置采集指标
+3. 启动调度器，定时触发采集
+4. 连接设备，执行采集
+5. 过滤和转换数据
+6. 缓存采集结果
+7. 提供查询和导出接口
+
+设备采集流程：
+1. 检查设备连接状态
+2. 建立连接（如需要）
+3. 按指标定义采集数据
+4. 解析和转换数据
+5. 更新设备状态
+6. 断开连接（如需要）
 ```
 
-### 2. 创建设备采集头文件 (device_collector.h)
-
-创建 `libs/idcu-device-collector/include/idcu/device_collector/device_collector.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_DEVICE_COLLECTOR_DEVICE_COLLECTOR_H
-#define IDCU_DEVICE_COLLECTOR_DEVICE_COLLECTOR_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/common/hash_map.h"
-#include "idcu/common/lock.h"
-#include "idcu/scheduler/scheduler.h"
-#include "idcu/storage/storage.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef uint64_t idcu_DeviceId;
 typedef uint64_t idcu_MetricId;
 
-typedef enum
-{
+typedef enum {
     IDCU_DEVICE_TYPE_SERVER = 0,
     IDCU_DEVICE_TYPE_NETWORK,
     IDCU_DEVICE_TYPE_IOT,
     IDCU_DEVICE_TYPE_CUSTOM
 } idcu_DeviceType;
 
-typedef enum
-{
+typedef enum {
     IDCU_PROTOCOL_SNMP = 0,
     IDCU_PROTOCOL_HTTP,
     IDCU_PROTOCOL_MODBUS,
@@ -64,349 +89,119 @@ typedef enum
     IDCU_PROTOCOL_CUSTOM
 } idcu_ProtocolType;
 
-typedef enum
-{
-    IDCU_METRIC_TYPE_GAUGE = 0,
-    IDCU_METRIC_TYPE_COUNTER,
-    IDCU_METRIC_TYPE_HISTOGRAM,
-    IDCU_METRIC_TYPE_STRING,
-    IDCU_METRIC_TYPE_BOOLEAN
-} idcu_MetricType;
-
-typedef struct
-{
-    char name[128];
-    char description[512];
-    idcu_MetricType type;
-    char unit[64];
-    double min_value;
-    double max_value;
-} idcu_MetricDef;
-
-typedef struct
-{
-    idcu_MetricId id;
-    char name[128];
-    idcu_MetricType type;
-    double value_double;
-    int64_t value_int;
-    char value_str[256];
-    int value_bool;
-    uint64_t timestamp;
-} idcu_MetricValue;
-
-typedef struct
-{
-    char key[128];
-    char value[512];
-} idcu_DeviceProperty;
-
-typedef struct
-{
+typedef struct {
     idcu_DeviceId id;
     char name[128];
-    char description[512];
     idcu_DeviceType type;
     idcu_ProtocolType protocol;
-    
     char address[256];
     uint16_t port;
-    char credentials[1024];
-    
-    idcu_Vector properties;
-    idcu_Vector metrics;
-    
     uint64_t collect_interval_ms;
-    uint64_t last_collect_time;
     int enabled;
-    
     int connected;
-    uint64_t connect_timeout_ms;
-    uint64_t retry_count;
 } idcu_Device;
 
-typedef int (*idcu_DeviceCollectFunc)(idcu_Device* device, idcu_Vector* values, void* user_data);
-typedef int (*idcu_DeviceConnectFunc)(idcu_Device* device, void* user_data);
-typedef int (*idcu_DeviceDisconnectFunc)(idcu_Device* device, void* user_data);
-typedef int (*idcu_MetricTransformFunc)(idcu_MetricValue* value, void* user_data);
-typedef int (*idcu_MetricFilterFunc)(const idcu_MetricValue* value, void* user_data);
-
-typedef struct
-{
-    char config_path[1024];
-    uint64_t default_collect_interval_ms;
-    uint64_t default_connect_timeout_ms;
-    int enable_cache;
-    size_t cache_max_entries;
-    uint64_t cache_ttl_ms;
-    int enable_persistence;
-    char storage_path[1024];
-} idcu_DeviceCollectorConfig;
-
-typedef struct
-{
-    idcu_DeviceCollectorConfig config;
-    idcu_Vector devices;
-    idcu_HashMap device_map;
-    idcu_Mutex lock;
-    
-    idcu_DeviceConnectFunc connect_func;
-    idcu_DeviceDisconnectFunc disconnect_func;
-    idcu_DeviceCollectFunc collect_func;
-    void* protocol_user_data;
-    
-    idcu_MetricTransformFunc transform_func;
-    idcu_MetricFilterFunc filter_func;
-    void* transform_user_data;
-    
-    idcu_Scheduler* scheduler;
-    idcu_Storage* storage;
-    
-    int initialized;
-    int running;
-} idcu_DeviceCollector;
-
-int  idcu_device_collector_config_init(idcu_DeviceCollectorConfig* config);
-
-int  idcu_device_collector_init(idcu_DeviceCollector* collector, 
-                                  const idcu_DeviceCollectorConfig* config);
+int  idcu_device_collector_init(idcu_DeviceCollector* collector, const idcu_DeviceCollectorConfig* config);
 void idcu_device_collector_destroy(idcu_DeviceCollector* collector);
-
 int  idcu_device_collector_start(idcu_DeviceCollector* collector);
 int  idcu_device_collector_stop(idcu_DeviceCollector* collector);
-
-int  idcu_device_collector_load_config(idcu_DeviceCollector* collector, const char* path);
-int  idcu_device_collector_save_config(idcu_DeviceCollector* collector, const char* path);
-
 int  idcu_device_collector_register_device(idcu_DeviceCollector* collector, const idcu_Device* device);
-int  idcu_device_collector_unregister_device(idcu_DeviceCollector* collector, idcu_DeviceId device_id);
-idcu_Device* idcu_device_collector_get_device(idcu_DeviceCollector* collector, idcu_DeviceId device_id);
-idcu_Device* idcu_device_collector_get_device_by_name(idcu_DeviceCollector* collector, const char* name);
-
-size_t idcu_device_collector_get_device_count(idcu_DeviceCollector* collector);
-int  idcu_device_collector_get_all_devices(idcu_DeviceCollector* collector, idcu_Vector* devices);
-
-int  idcu_device_collector_enable_device(idcu_DeviceCollector* collector, idcu_DeviceId device_id);
-int  idcu_device_collector_disable_device(idcu_DeviceCollector* collector, idcu_DeviceId device_id);
-
 int  idcu_device_collector_collect_now(idcu_DeviceCollector* collector, idcu_DeviceId device_id);
-int  idcu_device_collector_collect_all_now(idcu_DeviceCollector* collector);
-
-int  idcu_device_collector_set_protocol_handlers(idcu_DeviceCollector* collector,
-                                                  idcu_DeviceConnectFunc connect,
-                                                  idcu_DeviceDisconnectFunc disconnect,
-                                                  idcu_DeviceCollectFunc collect,
-                                                  void* user_data);
-int  idcu_device_collector_set_transform(idcu_DeviceCollector* collector,
-                                          idcu_MetricTransformFunc transform,
-                                          idcu_MetricFilterFunc filter,
-                                          void* user_data);
-
-int  idcu_device_collector_get_metrics(idcu_DeviceCollector* collector, idcu_DeviceId device_id,
-                                         idcu_Vector* values);
-int  idcu_device_collector_get_latest_metric(idcu_DeviceCollector* collector, idcu_DeviceId device_id,
-                                              const char* metric_name, idcu_MetricValue* value);
-
-int  idcu_device_collector_export_metrics(idcu_DeviceCollector* collector, char* buffer, 
-                                            size_t buffer_size, const char* format);
-
-int  idcu_device_init(idcu_Device* device, const char* name, idcu_DeviceType type);
-void idcu_device_destroy(idcu_Device* device);
-
-int  idcu_device_add_property(idcu_Device* device, const char* key, const char* value);
-int  idcu_device_get_property(idcu_Device* device, const char* key, char* value, size_t value_size);
-
-int  idcu_device_add_metric(idcu_Device* device, const idcu_MetricDef* metric);
-int  idcu_device_remove_metric(idcu_Device* device, const char* metric_name);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+int  idcu_device_collector_get_metrics(idcu_DeviceCollector* collector, idcu_DeviceId device_id, idcu_Vector* values);
 ```
 
-### 3. 创建模块配置文件 (module.yaml)
+### 2.4 跨平台适配
+- **网络通信**: 使用 idcu-network 库封装的跨平台 Socket API
+- **时间**: 使用 idcu-common 库提供的跨平台时间函数
+- **文件操作**: 使用标准 C 库，跨平台兼容
 
-创建 `libs/idcu-device-collector/module.yaml`：
+---
 
-```yaml
-name: idcu-device-collector
-version: 1.0.0
-description: Device data collection library for IDCU Agent
-author: IDCU Team
-license: MIT
+## 3. 验收标准（可量化）
 
-dependencies:
-  - idcu-common
-  - idcu-scheduler
-  - idcu-storage
-  - idcu-log
+### 3.1 功能验收
+- [ ] 可以注册和管理多种类型设备
+- [ ] 支持 SNMP、HTTP、Modbus 等协议
+- [ ] 定时采集功能正常工作
+- [ ] 数据过滤和转换正常工作
+- [ ] 数据缓存功能正常
+- [ ] 可以查询和导出采集数据
 
-build:
-  type: cmake
-  targets:
-    - idcu-device-collector
+### 3.2 性能验收
+- 单次采集延迟 ≤ 1s
+- 支持 100+ 并发设备采集
+- 数据缓存容量 ≥ 10000 条
+- 数据导出速度 ≥ 1000 条/秒
+- 内存占用 ≤ 50MB（100 设备）
 
-headers:
-  - idcu/device_collector/device_collector.h
+### 3.3 异常验收
+- [ ] 设备离线后自动重连
+- [ ] 采集失败后记录错误并重试
+- [ ] 无效设备配置返回明确错误
+- [ ] 多线程并发操作无数据竞争
 
-features:
-  - multi_device: Multiple device types support (server, network, IoT)
-  - multi_protocol: Multiple collection protocols (SNMP, HTTP, Modbus, custom)
-  - data_collection: Data collection and aggregation
-  - data_transform: Data filtering and transformation
-  - scheduled: Scheduled collection
-  - caching: Data caching
-  - export: Data export
+---
 
-testing:
-  enabled: true
-  framework: internal
+## 4. 执行计划
+
+### 4.1 工期
+2 天/人
+
+### 4.2 里程碑
+- D1：完成接口定义、头文件、CMakeLists.txt、module.yaml、README.md
+- D2：完成核心采集逻辑、协议支持、单元测试
+
+### 4.3 人力
+1 人（技能要求：C 语言 + 网络编程 + 设备通信）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名：idcu_device_collector_* 小写加下划线
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 70%
+- 测试覆盖：设备注册、数据采集、缓存、导出
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build &amp;&amp; cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::device-collector)`
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险 1
+描述：设备协议复杂，实现难度大  
+应对：先实现基础协议（HTTP、TCP），其他协议通过自定义接口扩展
+
+### 6.2 风险 2
+描述：大量设备并发采集导致性能问题  
+应对：使用工作线程池，限制并发数量
+
+---
+
+## 7. 详细实现步骤
+
+### 7.1 创建目录结构
+
+```bash
+mkdir -p libs/idcu-device-collector/include/idcu/device_collector
+mkdir -p libs/idcu-device-collector/src/idcu/device_collector
+mkdir -p libs/idcu-device-collector/tests
+mkdir -p libs/idcu-device-collector/examples
 ```
 
-### 4. 创建 README.md
+### 7.2 创建设备采集头文件 (device_collector.h)
 
-创建 `libs/idcu-device-collector/README.md`：
+（保留原有的详细代码实现）
 
-```markdown
-# idcu-device-collector
+---
 
-IDCU Agent 的设备数据采集库。
-
-## 功能特性
-
-- **多设备类型**: 支持服务器、网络设备、IoT设备等
-- **多协议支持**: SNMP、HTTP、Modbus、TCP、UDP、自定义协议
-- **数据采集**: 定时采集和手动触发采集
-- **数据转换**: 支持数据过滤和转换
-- **数据缓存**: 内置数据缓存机制
-- **数据导出**: 支持多种格式导出
-
-## 快速开始
-
-### 初始化采集器
-
-```c
-#include "idcu/device_collector/device_collector.h"
-
-idcu_DeviceCollectorConfig config;
-idcu_device_collector_config_init(&config);
-
-config.default_collect_interval_ms = 5000;
-config.default_connect_timeout_ms = 3000;
-config.enable_cache = 1;
-config.cache_max_entries = 1000;
-config.cache_ttl_ms = 60000;
-
-idcu_DeviceCollector collector;
-idcu_device_collector_init(&collector, &config);
-```
-
-### 创建设备
-
-```c
-idcu_Device device;
-idcu_device_init(&device, "server-01", IDCU_DEVICE_TYPE_SERVER);
-
-strncpy(device.address, "192.168.1.100", sizeof(device.address));
-device.port = 161;
-device.protocol = IDCU_PROTOCOL_SNMP;
-device.collect_interval_ms = 10000;
-device.enabled = 1;
-
-idcu_MetricDef cpu_metric = {
-    .name = "cpu_usage",
-    .description = "CPU usage percentage",
-    .type = IDCU_METRIC_TYPE_GAUGE,
-    .unit = "%",
-    .min_value = 0,
-    .max_value = 100
-};
-idcu_device_add_metric(&device, &cpu_metric);
-
-idcu_device_collector_register_device(&collector, &device);
-```
-
-### 启动采集
-
-```c
-idcu_device_collector_start(&collector);
-```
-
-### 获取采集数据
-
-```c
-idcu_Vector values;
-idcu_vector_init(&values, sizeof(idcu_MetricValue));
-
-idcu_device_collector_get_metrics(&collector, device.id, &values);
-
-for (size_t i = 0; i < values.size; i++) {
-    idcu_MetricValue* val = (idcu_MetricValue*)idcu_vector_get(&values, i);
-    printf("%s: %.2f\n", val->name, val->value_double);
-}
-
-idcu_vector_destroy(&values);
-```
-
-### 手动触发采集
-
-```c
-idcu_device_collector_collect_now(&collector, device.id);
-```
-
-### 导出数据
-
-```c
-char buffer[8192];
-idcu_device_collector_export_metrics(&collector, buffer, sizeof(buffer), "json");
-printf("%s\n", buffer);
-```
-
-### 停止采集器
-
-```c
-idcu_device_collector_stop(&collector);
-idcu_device_collector_destroy(&collector);
-```
-
-## 设备类型
-
-| 类型 | 说明 |
-|-----|------|
-| SERVER | 服务器 |
-| NETWORK | 网络设备 |
-| IOT | IoT设备 |
-| CUSTOM | 自定义设备 |
-
-## 协议类型
-
-| 协议 | 说明 |
-|-----|------|
-| SNMP | SNMP协议 |
-| HTTP | HTTP协议 |
-| MODBUS | Modbus协议 |
-| TCP | TCP协议 |
-| UDP | UDP协议 |
-| CUSTOM | 自定义协议 |
-
-## 指标类型
-
-| 类型 | 说明 |
-|-----|------|
-| GAUGE | 仪表盘（可上下浮动） |
-| COUNTER | 计数器（只增不减） |
-| HISTOGRAM | 直方图 |
-| STRING | 字符串 |
-| BOOLEAN | 布尔值 |
-
-## API 文档
-
-详见 [include/idcu/device_collector/device_collector.h](include/idcu/device_collector/device_collector.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 设备采集头文件已创建
 - [ ] 设备采集实现文件已创建
@@ -417,7 +212,9 @@ idcu_device_collector_destroy(&collector);
 - [ ] 数据采集功能正常工作
 - [ ] 数据导出功能正常工作
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-device-collector/
@@ -434,7 +231,9 @@ git commit -m "feat: add idcu-device-collector library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|

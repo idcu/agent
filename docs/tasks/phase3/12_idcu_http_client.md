@@ -1,45 +1,84 @@
 # 任务 3.12: idcu-http-client - HTTP 客户端库
 
-## 目标
+&gt; **文档版本**: v2.0  
+&gt; **最后更新**: 2026-04-08  
+&gt; **责任人**: IDCU Team  
+&gt; **任务状态**: ⏳ 待开始
 
-创建轻量级 HTTP 客户端库，支持：
-- HTTP/1.1 协议
-- GET/POST/PUT/DELETE 等方法
-- 请求头设置
-- 查询参数
-- 请求体（表单、JSON）
-- 响应解析
+---
+
+## 1. 任务边界
+
+### 1.1 核心目标
+创建轻量级 HTTP 客户端库，支持 HTTP/1.1 协议、GET/POST/PUT/DELETE 等方法、请求头设置、查询参数、请求体（表单、JSON）、响应解析、超时设置、代理支持、重定向跟随，满足请求延迟 ≤ 100ms（局域网）、支持 100+ 并发请求、吞吐量 ≥ 1000 QPS 的性能要求。
+
+### 1.2 不做什么
+- 不实现 HTTPS（由外部 SSL 库处理）
+- 不实现 HTTP/2
+- 不实现 WebSocket
+- 不实现 Cookie 管理
+- 不实现连接池（由上层处理）
+
+### 1.3 输入
+- URL
+- HTTP 方法
+- 请求头
+- 请求体
 - 超时设置
-- 代理支持
+- 代理配置
 
-## 详细步骤
+### 1.4 输出
+- HTTP 响应状态码
+- 响应头
+- 响应体
+- 错误码：0 表示成功，非 0 表示错误
 
-### 1. 创建目录结构
+### 1.5 前置依赖
+- idcu-common 基础库已可用
+- idcu-network 网络库已可用
+- idcu-log 日志库已可用
+- phase2 已完成
 
-```bash
-mkdir -p libs/idcu-http-client/include/idcu/http
-mkdir -p libs/idcu-http-client/src/idcu/http
-mkdir -p libs/idcu-http-client/tests
-mkdir -p libs/idcu-http-client/examples
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **协议**: HTTP/1.1
+- **网络层**: 基于 idcu-network
+- **URL 解析**: 手动解析 URL 组件
+- **请求构建**: 手动格式化 HTTP 请求
+- **响应解析**: 逐行解析 HTTP 响应
+
+### 2.2 核心逻辑
+```
+请求执行流程：
+1. 解析 URL（主机、端口、路径、查询参数）
+2. 建立 TCP 连接
+3. 构建 HTTP 请求
+4. 发送请求
+5. 接收响应
+6. 解析响应（状态码、头部、Body）
+7. 关闭连接
+8. 返回结果
+
+URL 解析流程：
+1. 提取协议（http://）
+2. 提取主机名
+3. 提取端口（默认 80）
+4. 提取路径
+5. 提取查询参数
+
+重定向处理流程：
+1. 检查响应状态码（3xx）
+2. 提取 Location 头部
+3. 解析新 URL
+4. 递归执行请求（直到 max_redirects）
 ```
 
-### 2. 创建 HTTP 客户端头文件 (http_client.h)
-
-创建 `libs/idcu-http-client/include/idcu/http/http_client.h`：
-
+### 2.3 数据结构/接口
 ```c
-#ifndef IDCU_HTTP_HTTP_CLIENT_H
-#define IDCU_HTTP_HTTP_CLIENT_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/common/vector.h"
-#include "idcu/network/network.h"
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+// 主要头文件：idcu/http/http_client.h
 
 typedef enum
 {
@@ -102,6 +141,7 @@ typedef struct
     int use_ssl;
 } idcu_HttpClient;
 
+// 核心 API
 int  idcu_http_client_init(idcu_HttpClient* client);
 void idcu_http_client_destroy(idcu_HttpClient* client);
 int  idcu_http_client_connect(idcu_HttpClient* client, const char* host, uint16_t port);
@@ -137,244 +177,114 @@ int idcu_http_client_post_json(idcu_HttpClient* client, const char* url, const c
 int idcu_http_client_put(idcu_HttpClient* client, const char* url, const void* data, size_t length, idcu_HttpClientResponse* response);
 int idcu_http_client_delete(idcu_HttpClient* client, const char* url, idcu_HttpClientResponse* response);
 
-int idcu_http_client_headers_init(idcu_HttpClientHeaders* headers);
-int idcu_http_client_headers_add(idcu_HttpClientHeaders* headers, const char* name, const char* value);
-int idcu_http_client_headers_get(const idcu_HttpClientHeaders* headers, const char* name, const char** value);
-void idcu_http_client_headers_clear(idcu_HttpClientHeaders* headers);
-
 int idcu_http_url_parse(const char* url, char* host, size_t host_size, uint16_t* port, char* path, size_t path_size, char* query, size_t query_size);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
 ```
+
+### 2.4 跨平台适配
+- **网络层**: 基于 idcu-network 统一封装
+- **Socket 操作**: 统一接口
+- **超时处理**: select 模型跨平台
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 可以发送 GET 请求
+- [ ] 可以发送 POST 请求
+- [ ] 可以设置请求头
+- [ ] 可以解析响应头
+- [ ] 可以解析响应体
+- [ ] 可以添加查询参数
+- [ ] 可以跟随重定向
+- [ ] 可以使用代理
+- [ ] 超时设置生效
+- [ ] 跨平台正常运行（Windows + Linux）
+
+### 3.2 性能验收
+- 请求延迟 ≤ 100ms（局域网）
+- 支持 100+ 并发请求
+- 吞吐量 ≥ 1000 QPS
+- 内存占用 ≤ 10MB（100 并发）
+
+### 3.3 异常验收
+- [ ] 连接失败返回正确错误码
+- [ ] 超时返回正确错误码
+- [ ] 无效 URL 返回正确错误
+- [ ] NULL 指针检查正确
+- [ ] 超大响应正确处理
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+4 小时/人
+
+### 4.2 里程碑
+- D1-00: 完成数据结构和头文件（45 分钟）
+- D1-45: 完成 URL 解析（45 分钟）
+- D1-90: 完成请求构建和发送（1 小时）
+- D1-150: 完成响应解析（45 分钟）
+- D1-195: 完成重定向和代理（30 分钟）
+- D1-225: 完成单元测试（60 分钟）
+
+### 4.3 人力
+1 人（技能要求：C 语言 + HTTP 协议知识）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，前缀 idcu_
+- 枚举前缀 IDCU_HTTP_CLIENT_
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 75%
+- 性能测试验证 QPS 和延迟
+- 跨平台测试（Windows + Linux）
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build &amp;&amp; cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::http-client)`
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：HTTP 解析存在边界情况  
+应对：充分测试各种边界情况，添加模糊测试
+
+### 6.2 风险2
+描述：重定向循环导致无限递归  
+应对：限制 max_redirects，检测循环
+
+---
+
+## 7. 详细实现步骤
+
+### 1. 创建目录结构
+```bash
+mkdir -p libs/idcu-http-client/include/idcu/http
+mkdir -p libs/idcu-http-client/src/idcu/http
+mkdir -p libs/idcu-http-client/tests
+mkdir -p libs/idcu-http-client/examples
+```
+
+### 2. 创建 HTTP 客户端头文件 (http_client.h)
 
 ### 3. 创建 CMakeLists.txt
 
-创建 `libs/idcu-http-client/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-http-client VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(idcu-http-client STATIC
-    src/idcu/http/http_client.c
-)
-
-target_include_directories(idcu-http-client PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(idcu-http-client PRIVATE
-    idcu::common
-    idcu::network
-    idcu::log
-)
-
-add_library(idcu::http-client ALIAS idcu-http-client)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
-
 ### 4. 创建模块配置文件 (module.yaml)
-
-创建 `libs/idcu-http-client/module.yaml`：
-
-```yaml
-name: idcu-http-client
-version: 1.0.0
-description: HTTP client library for IDCU Agent
-author: IDCU Team
-license: MIT
-
-dependencies:
-  - idcu-common
-  - idcu-network
-  - idcu-log
-
-build:
-  type: cmake
-  targets:
-    - idcu-http-client
-
-headers:
-  - idcu/http/http_client.h
-
-features:
-  - http11: HTTP/1.1 protocol support
-  - methods: GET/POST/PUT/DELETE/HEAD/OPTIONS/PATCH
-  - headers: HTTP header support
-  - query: Query parameter support
-  - body: Request body support (form, JSON)
-  - response: Response parsing
-  - timeout: Timeout settings
-  - redirect: Follow redirects support
-  - proxy: Proxy support
-
-testing:
-  enabled: true
-  framework: internal
-```
 
 ### 5. 创建 README.md
 
-创建 `libs/idcu-http-client/README.md`：
+---
 
-```markdown
-# idcu-http-client
-
-IDCU Agent 的轻量级 HTTP 客户端库。
-
-## 功能特性
-
-- **HTTP/1.1**: HTTP/1.1 协议支持
-- **HTTP 方法**: GET/POST/PUT/DELETE/HEAD/OPTIONS/PATCH
-- **请求头**: HTTP 头支持
-- **查询参数**: 查询参数支持
-- **请求体**: 请求体支持（表单、JSON）
-- **响应解析**: 响应解析
-- **超时设置**: 超时设置
-- **重定向**: 重定向跟随支持
-- **代理**: 代理支持
-
-## 快速开始
-
-### 初始化客户端
-
-```c
-#include "idcu/http/http_client.h"
-
-idcu_HttpClient client;
-idcu_http_client_init(&client);
-```
-
-### 简单 GET 请求
-
-```c
-idcu_HttpClientResponse response;
-idcu_http_client_response_init(&response);
-
-int ret = idcu_http_client_get(&client, "https://api.example.com/data", &response);
-if (ret == IDCU_ERR_OK) {
-    printf("Status: %d\n", response.status_code);
-    printf("Body: %.*s\n", (int)response.body_length, response.body);
-}
-
-idcu_http_client_response_destroy(&response);
-```
-
-### POST JSON 数据
-
-```c
-idcu_HttpClientRequest request;
-idcu_http_client_request_init(&request);
-
-idcu_http_client_request_set_method(&request, IDCU_HTTP_CLIENT_METHOD_POST);
-idcu_http_client_request_set_url(&request, "https://api.example.com/users");
-idcu_http_client_request_set_header(&request, "Content-Type", "application/json");
-idcu_http_client_request_set_json(&request, "{\"name\": \"John\", \"age\": 30}");
-
-idcu_HttpClientResponse response;
-idcu_http_client_response_init(&response);
-
-idcu_http_client_execute(&client, &request, &response);
-
-idcu_http_client_request_destroy(&request);
-idcu_http_client_response_destroy(&response);
-```
-
-### 使用查询参数
-
-```c
-idcu_HttpClientRequest request;
-idcu_http_client_request_init(&request);
-
-idcu_http_client_request_set_method(&request, IDCU_HTTP_CLIENT_METHOD_GET);
-idcu_http_client_request_set_url(&request, "https://api.example.com/search");
-idcu_http_client_request_add_query_param(&request, "q", "hello");
-idcu_http_client_request_add_query_param(&request, "page", "1");
-
-idcu_HttpClientResponse response;
-idcu_http_client_response_init(&response);
-
-idcu_http_client_execute(&client, &request, &response);
-
-idcu_http_client_request_destroy(&request);
-idcu_http_client_response_destroy(&response);
-```
-
-### 设置超时
-
-```c
-idcu_http_client_set_timeout(&client, 5000);
-```
-
-### 跟随重定向
-
-```c
-idcu_HttpClientRequest request;
-idcu_http_client_request_init(&request);
-
-idcu_http_client_request_set_url(&request, "https://example.com");
-idcu_http_client_request_set_follow_redirects(&request, 1, 5);
-```
-
-### 使用代理
-
-```c
-idcu_HttpClientRequest request;
-idcu_http_client_request_init(&request);
-
-idcu_http_client_request_set_url(&request, "https://example.com");
-idcu_http_client_request_set_proxy(&request, "proxy.example.com", 8080);
-```
-
-### 获取响应头
-
-```c
-const char* content_type = NULL;
-idcu_http_client_response_get_header(&response, "Content-Type", &content_type);
-if (content_type) {
-    printf("Content-Type: %s\n", content_type);
-}
-```
-
-### 清理
-
-```c
-idcu_http_client_destroy(&client);
-```
-
-## HTTP 方法
-
-| 方法 | 说明 |
-|-----|------|
-| GET | 获取资源 |
-| POST | 创建资源 |
-| PUT | 更新资源 |
-| DELETE | 删除资源 |
-| HEAD | 获取头部 |
-| OPTIONS | 获取允许的方法 |
-| PATCH | 部分更新 |
-
-## API 文档
-
-详见 [include/idcu/http/http_client.h](include/idcu/http/http_client.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] HTTP 客户端头文件已创建
 - [ ] HTTP 客户端实现文件已创建
@@ -384,8 +294,13 @@ idcu_http_client_destroy(&client);
 - [ ] 可以发送 GET 请求
 - [ ] 可以发送 POST 请求
 - [ ] 可以解析响应
+- [ ] 单元测试通过
+- [ ] 跨平台测试通过
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-http-client/
@@ -404,10 +319,13 @@ git commit -m "feat: add idcu-http-client library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
 | 连接超时 | 网络问题或服务器无响应 | 增加超时时间或检查网络 |
 | SSL 错误 | 未配置 SSL | 使用 HTTPS 时需要 SSL 支持 |
 | 重定向循环 | max_redirects 太小 | 增加 max_redirects 值 |
+| 代理连接失败 | 代理配置错误 | 检查代理主机和端口 |

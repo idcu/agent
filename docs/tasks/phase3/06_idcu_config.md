@@ -1,19 +1,245 @@
 # 任务 3.6: idcu-config - 配置管理库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建完整的配置管理库，支持：
-- YAML 和 JSON 格式配置文件
-- 配置热重载
-- 多环境配置支持
-- 类型安全的配置访问
-- 配置变更通知
-- 文件监控和自动重载
+---
 
-## 详细步骤
+## 1. 任务边界
+
+### 1.1 核心目标
+创建完整的配置管理库，支持 YAML 和 JSON 格式配置文件、热重载、多环境配置、类型安全访问、变更通知、文件监控自动重载，满足配置加载时间 ≤ 100ms、热重载延迟 ≤ 500ms、支持 1000+ 配置项的性能要求。
+
+### 1.2 不做什么
+- 不实现加密配置（由上层模块处理）
+- 不实现远程配置中心（独立模块）
+- 不实现配置版本控制
+- 不实现复杂配置验证规则（仅基础类型）
+
+### 1.3 输入
+- 配置文件路径（YAML/JSON）
+- 配置项访问路径（section + key）
+- 配置值（string/int/bool/double/list）
+- 环境变量前缀
+- 监控间隔（毫秒）
+
+### 1.4 输出
+- 配置值（各类型）
+- 配置变更回调通知
+- 配置加载/保存结果（成功/失败）
+- 配置统计信息（项数、最后修改时间）
+- 返回码：0 表示成功，非 0 表示错误
+
+### 1.5 前置依赖
+- idcu-common 基础库已可用
+- idcu-json 库已可用
+- idcu-yaml 库已可用
+- phase2 已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- **配置格式**: YAML（优先）和 JSON（备选）
+- **数据存储**: 内存哈希表 + 链表，支持多节
+- **线程安全**: 读写锁保护，支持多线程读取
+- **文件监控**: Windows ReadDirectoryChangesW，Linux inotify
+- **热重载**: 原子指针替换，避免锁争用
+
+### 2.2 核心逻辑
+```
+初始化流程：
+1. 解析文件路径和格式
+2. 读取并解析配置文件
+3. 构建内存数据结构
+4. 初始化读写锁
+5. 可选：启动文件监控线程
+
+配置读取流程：
+1. 获取读锁
+2. 查找 section 和 key
+3. 类型转换
+4. 返回结果或默认值
+5. 释放读锁
+
+配置热重载流程：
+1. 监控线程检测文件变更
+2. 后台线程解析新配置
+3. 获取写锁，原子替换配置指针
+4. 触发所有变更回调
+5. 释放写锁
+```
+
+### 2.3 数据结构/接口
+```c
+// 主要头文件：idcu/config/config.h
+
+#define IDCU_CONFIG_MAX_SECTIONS         64
+#define IDCU_CONFIG_MAX_KEYS_PER_SECTION 128
+#define IDCU_CONFIG_KEY_MAX              128
+#define IDCU_CONFIG_VALUE_MAX            512
+
+// 配置项
+typedef struct {
+    char key[IDCU_CONFIG_KEY_MAX];
+    char value[IDCU_CONFIG_VALUE_MAX];
+} idcu_ConfigEntry;
+
+// 配置节
+typedef struct {
+    char             name[IDCU_CONFIG_SECTION_MAX];
+    idcu_ConfigEntry entries[IDCU_CONFIG_MAX_KEYS_PER_SECTION];
+    uint32_t         entry_count;
+} idcu_ConfigSection;
+
+// 配置管理器
+typedef struct {
+    idcu_ConfigSection sections[IDCU_CONFIG_MAX_SECTIONS];
+    uint32_t           section_count;
+    idcu_RWLock        lock;
+    int                loaded;
+    char               file_path[IDCU_CONFIG_PATH_MAX];
+} idcu_ConfigManager;
+
+// 核心 API
+int   idcu_config_init(const char* file_path);
+void  idcu_config_shutdown(void);
+int   idcu_config_is_loaded(void);
+int   idcu_config_reload(void);
+int   idcu_config_save(const char* file_path);
+
+// 类型安全访问
+const char* idcu_config_get_string(const char* section, const char* key, const char* default_value);
+int         idcu_config_get_int(const char* section, const char* key, int default_value);
+int64_t     idcu_config_get_int64(const char* section, const char* key, int64_t default_value);
+double      idcu_config_get_double(const char* section, const char* key, double default_value);
+int         idcu_config_get_bool(const char* section, const char* key, int default_value);
+
+// 配置写入
+int idcu_config_set_string(const char* section, const char* key, const char* value);
+int idcu_config_set_int(const char* section, const char* key, int value);
+int idcu_config_set_int64(const char* section, const char* key, int64_t value);
+int idcu_config_set_double(const char* section, const char* key, double value);
+int idcu_config_set_bool(const char* section, const char* key, int value);
+
+// 列表支持
+typedef struct { char items[32][128]; int count; } idcu_ConfigList;
+int idcu_config_get_list(const char* section, const char* key, const char* delimiter, idcu_ConfigList* out_list);
+
+// 变更通知
+typedef void (*idcu_ConfigChangeCallback)(const char* section, const char* key,
+                                          const char* old_value, const char* new_value,
+                                          void* user_data);
+int  idcu_config_register_change_callback(idcu_ConfigChangeCallback callback, void* user_data);
+int  idcu_config_unregister_change_callback(idcu_ConfigChangeCallback callback);
+
+// 文件监控
+int  idcu_config_watch_start(uint32_t interval_ms);
+void idcu_config_watch_stop(void);
+int  idcu_config_watch_is_running(void);
+
+// 环境变量支持
+void idcu_config_enable_env_var(int enable);
+int  idcu_config_load_profile(const char* profile_name);
+```
+
+### 2.4 跨平台适配
+- **Windows**: 使用 ReadDirectoryChangesW 监控文件
+- **Linux**: 使用 inotify 监控文件
+- **路径处理**: 统一处理 \ 和 /
+- **读写锁**: 使用 idcu-common 中的跨平台实现
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] 可以加载 YAML 和 JSON 格式配置文件
+- [ ] 可以读取各种类型的配置值（string/int/bool/double/list）
+- [ ] 可以写入并保存配置
+- [ ] 配置热重载功能正常
+- [ ] 文件监控自动重载正常工作
+- [ ] 配置变更回调通知正确触发
+- [ ] 多环境配置支持正常
+- [ ] 环境变量覆盖配置正常
+- [ ] 多线程并发读取安全（无崩溃，数据一致性）
+- [ ] 类型安全检查正确（类型不匹配返回默认值）
+
+### 3.2 性能验收
+- 配置加载时间 ≤ 100ms（1000 项配置）
+- 配置项读取延迟 ≤ 1μs（平均）
+- 配置热重载延迟 ≤ 500ms（从文件变更到生效）
+- 支持 1000+ 配置项
+- 文件监控 CPU 占用 ≤ 1%（空闲时）
+- 多线程（10 线程）读取 QPS ≥ 1,000,000
+
+### 3.3 异常验收
+- [ ] 配置文件不存在返回明确错误码
+- [ ] 配置格式错误返回明确错误码
+- [ ] 配置项不存在返回默认值
+- [ ] 类型转换失败返回默认值
+- [ ] 监控失败不影响配置读取
+- [ ] 内存不足时返回错误而非崩溃
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+5 小时/人
+
+### 4.2 里程碑
+- D1-00: 完成头文件定义和数据结构（45 分钟）
+- D1-45: 完成配置解析和基础读写功能（1.5 小时）
+- D1-135: 完成热重载和文件监控（1 小时）
+- D1-195: 完成变更通知和多环境支持（45 分钟）
+- D1-240: 完成单元测试（30 分钟）
+
+### 4.3 人力
+1 人（技能要求：C 语言 + 文件操作 + 多线程）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名小写 + 下划线，前缀 idcu_
+- 所有公共 API 有 Doxygen 风格注释
+- 内部函数使用 static 修饰
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试覆盖 YAML 和 JSON 格式
+- 测试覆盖各种类型和异常场景
+- 性能测试验证加载和读取速度
+- 跨平台测试（Windows + Linux）
+
+### 5.3 部署指引
+- 编译命令：`cmake -B build && cmake --build build`
+- 链接：`target_link_libraries(myapp PRIVATE idcu::config)`
+- 依赖：idcu-common, idcu-json, idcu-yaml
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：热重载时锁争用导致性能下降  
+应对：使用原子指针替换，最小化锁持有时间
+
+### 6.2 风险2
+描述：跨平台文件监控差异导致兼容性问题  
+应对：提供降级方案（定时轮询），统一 API
+
+---
+
+## 7. 详细实现步骤
 
 ### 1. 创建目录结构
-
 ```bash
 mkdir -p libs/idcu-config/include/idcu/config
 mkdir -p libs/idcu-config/src/idcu/config
@@ -22,296 +248,30 @@ mkdir -p libs/idcu-config/examples
 ```
 
 ### 2. 创建配置头文件 (config.h)
-
-创建 `libs/idcu-config/include/idcu/config/config.h`：
-
-```c
-#ifndef IDCU_CONFIG_CONFIG_H
-#define IDCU_CONFIG_CONFIG_H
-
-#include "idcu/common/error_code.h"
-#include "idcu/common/lock.h"
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define IDCU_CONFIG_MAX_SECTIONS         64
-#define IDCU_CONFIG_MAX_KEYS_PER_SECTION 128
-#define IDCU_CONFIG_KEY_MAX              128
-#define IDCU_CONFIG_VALUE_MAX            512
-#define IDCU_CONFIG_SECTION_MAX          128
-#define IDCU_CONFIG_MAX_LIST_ITEMS       32
-#define IDCU_CONFIG_LIST_ITEM_MAX        128
-#define IDCU_CONFIG_PATH_MAX             1024
-
-typedef struct
-{
-    char key[IDCU_CONFIG_KEY_MAX];
-    char value[IDCU_CONFIG_VALUE_MAX];
-} idcu_ConfigEntry;
-
-typedef struct
-{
-    char             name[IDCU_CONFIG_SECTION_MAX];
-    idcu_ConfigEntry entries[IDCU_CONFIG_MAX_KEYS_PER_SECTION];
-    uint32_t         entry_count;
-} idcu_ConfigSection;
-
-typedef struct
-{
-    idcu_ConfigSection sections[IDCU_CONFIG_MAX_SECTIONS];
-    uint32_t           section_count;
-    idcu_Mutex         lock;
-    int                loaded;
-    int                env_var_enabled;
-    int                validation_enabled;
-} idcu_ConfigManager;
-
-typedef struct
-{
-    char items[IDCU_CONFIG_MAX_LIST_ITEMS][IDCU_CONFIG_LIST_ITEM_MAX];
-    int  count;
-} idcu_ConfigList;
-
-int  idcu_config_init(const char* file_path);
-void idcu_config_shutdown(void);
-int  idcu_config_is_loaded(void);
-int  idcu_config_reload(void);
-int  idcu_config_save(const char* file_path);
-
-const char* idcu_config_get_string(const char* section, const char* key,
-                                   const char* default_value);
-int         idcu_config_get_int(const char* section, const char* key, int default_value);
-int64_t     idcu_config_get_int64(const char* section, const char* key, int64_t default_value);
-double      idcu_config_get_double(const char* section, const char* key, double default_value);
-int         idcu_config_get_bool(const char* section, const char* key, int default_value);
-
-int idcu_config_set_string(const char* section, const char* key, const char* value);
-int idcu_config_set_int(const char* section, const char* key, int value);
-int idcu_config_set_int64(const char* section, const char* key, int64_t value);
-int idcu_config_set_double(const char* section, const char* key, double value);
-int idcu_config_set_bool(const char* section, const char* key, int value);
-
-int idcu_config_has_section(const char* section);
-int idcu_config_has_key(const char* section, const char* key);
-int idcu_config_remove_key(const char* section, const char* key);
-int idcu_config_remove_section(const char* section);
-
-int idcu_config_get_list(const char* section, const char* key, const char* delimiter,
-                         idcu_ConfigList* out_list);
-int idcu_config_list_contains(const char* section, const char* key, const char* delimiter,
-                              const char* value);
-
-int idcu_config_get_nested_bool(const char* section, const char* prefix, const char* subkey,
-                                int default_value);
-int idcu_config_get_nested_int(const char* section, const char* prefix, const char* subkey,
-                               int default_value);
-const char* idcu_config_get_nested_string(const char* section, const char* prefix,
-                                          const char* subkey, const char* default_value);
-
-void idcu_config_enable_env_var(int enable);
-void idcu_config_enable_validation(int enable);
-int  idcu_config_validate(void);
-
-int idcu_config_load_profile(const char* profile_name);
-
-typedef void (*idcu_ConfigChangeCallback)(const char* section, const char* key,
-                                          const char* old_value, const char* new_value,
-                                          void* user_data);
-
-int  idcu_config_register_change_callback(idcu_ConfigChangeCallback callback, void* user_data);
-int  idcu_config_unregister_change_callback(idcu_ConfigChangeCallback callback);
-void idcu_config_notify_changes(void);
-
-int idcu_config_get_file_path(char* buffer, size_t buffer_size);
-int idcu_config_get_last_modified_time(uint64_t* timestamp);
-
-int  idcu_config_watch_start(uint32_t interval_ms);
-void idcu_config_watch_stop(void);
-int  idcu_config_watch_is_running(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
-```
+创建 `libs/idcu-config/include/idcu/config/config.h`。
 
 ### 3. 创建 CMakeLists.txt
-
-创建 `libs/idcu-config/CMakeLists.txt`：
-
-```cmake
-cmake_minimum_required(VERSION 3.15)
-project(idcu-config VERSION 1.0.0 LANGUAGES C)
-
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(idcu-config STATIC
-    src/idcu/config/config.c
-)
-
-target_include_directories(idcu-config PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(idcu-config PRIVATE
-    idcu::common
-    idcu::json
-    idcu::yaml
-)
-
-add_library(idcu::config ALIAS idcu-config)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-```
+创建 `libs/idcu-config/CMakeLists.txt`。
 
 ### 4. 创建模块配置文件 (module.yaml)
+创建 `libs/idcu-config/module.yaml`。
 
-创建 `libs/idcu-config/module.yaml`：
+### 5. 创建实现文件
+- config.c: 核心实现
+- parser_yaml.c: YAML 解析
+- parser_json.c: JSON 解析
+- watcher.c: 文件监控
+- callback.c: 变更通知
 
-```yaml
-name: idcu-config
-version: 1.0.0
-description: Configuration management library for IDCU Agent
-author: IDCU Team
-license: MIT
+### 6. 创建示例配置文件
+创建 `config/default/agent.yaml` 示例。
 
-dependencies:
-  - idcu-common
-  - idcu-json
-  - idcu-yaml
+### 7. 创建 README.md
+创建 `libs/idcu-config/README.md`。
 
-build:
-  type: cmake
-  targets:
-    - idcu-config
+---
 
-headers:
-  - idcu/config/config.h
-
-features:
-  - yaml_support: YAML format configuration
-  - json_support: JSON format configuration
-  - hot_reload: Hot configuration reloading
-  - multi_env: Multi-environment configuration support
-  - type_safe: Type-safe configuration access
-  - change_notify: Configuration change notifications
-  - file_watch: File monitoring and auto-reload
-
-testing:
-  enabled: true
-  framework: internal
-```
-
-### 5. 创建示例配置文件 (agent.yaml)
-
-创建 `config/default/agent.yaml`（示例）：
-
-```yaml
-agent:
-  name: "idcu-agent"
-  version: "1.0.0"
-  log_level: "info"
-
-log:
-  level: "info"
-  output: ["console", "file"]
-  file: "logs/agent.log"
-  max_size: 104857600
-  max_backups: 10
-
-modules:
-  enabled:
-    - core
-    - log
-    - metrics
-
-metrics:
-  enabled: true
-  interval: 60
-
-network:
-  listen_port: 8080
-  max_connections: 100
-```
-
-### 6. 创建 README.md
-
-创建 `libs/idcu-config/README.md`：
-
-```markdown
-# idcu-config
-
-IDCU Agent 的配置管理库。
-
-## 功能特性
-
-- **多格式支持**: YAML 和 JSON 格式
-- **热重载**: 支持配置热重载
-- **多环境**: 支持多环境配置
-- **类型安全**: 类型安全的配置访问
-- **变更通知**: 配置变更回调通知
-- **文件监控**: 自动监控配置文件变更
-
-## 快速开始
-
-### 基本使用
-
-```c
-#include "idcu/config/config.h"
-
-int ret = idcu_config_init("config/agent.yaml");
-if (ret != IDCU_ERR_OK) {
-    printf("Config load failed: %s\n", idcu_err_to_str(ret));
-    return -1;
-}
-
-const char* name = idcu_config_get_string("agent", "name", "default");
-int port = idcu_config_get_int("network", "listen_port", 8080);
-
-printf("Agent name: %s\n", name);
-printf("Listen port: %d\n", port);
-
-idcu_config_shutdown();
-```
-
-### 配置热重载
-
-```c
-idcu_config_register_change_callback(my_config_change_handler, user_data);
-idcu_config_watch_start(5000);
-
-idcu_config_reload();
-```
-
-## 配置文件格式
-
-### YAML 格式
-
-```yaml
-section:
-  key: value
-  number: 42
-  boolean: true
-```
-
-## API 文档
-
-详见 [include/idcu/config/config.h](include/idcu/config/config.h)
-```
-
-## 验证检查清单
+## 8. 验证检查清单
 
 - [ ] 配置头文件已创建
 - [ ] 配置实现文件已创建
@@ -319,29 +279,48 @@ section:
 - [ ] module.yaml 配置文件已创建
 - [ ] README.md 已创建
 - [ ] 可以加载 YAML 配置文件
+- [ ] 可以加载 JSON 配置文件
 - [ ] 可以读取各种类型的配置值
+- [ ] 可以写入和保存配置
 - [ ] 配置热重载功能正常
+- [ ] 文件监控自动重载正常
+- [ ] 配置变更通知正常
+- [ ] 多环境配置支持正常
+- [ ] 环境变量覆盖正常
+- [ ] 多线程测试通过
+- [ ] 跨平台测试通过（Windows + Linux）
+- [ ] 性能测试达标
+- [ ] 已提交 Git
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-config/
 git commit -m "feat: add idcu-config library
 
-- Add YAML and JSON config support
-- Add hot configuration reload
-- Add multi-environment support
-- Add type-safe config access
-- Add change notifications
-- Add file monitoring
+- Add YAML and JSON config format support
+- Add type-safe config access (string/int/bool/double/list)
+- Add config hot reload with atomic update
+- Add file monitoring and auto-reload
+- Add config change callback notifications
+- Add multi-environment config support
+- Add environment variable override support
 - Add CMake build configuration
-- Add module.yaml metadata"
+- Add module.yaml metadata
+- Add comprehensive unit tests"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
 | 配置加载失败 | 文件格式错误或路径不对 | 检查配置文件格式和路径 |
-| 热重载不生效 | 未正确启动监控 | 确保调用了 idcu_config_watch_start |
+| 热重载不生效 | 未正确启动监控 | 确保调用了 idcu_config_watch_start() |
 | 类型转换错误 | 配置值类型不匹配 | 确保使用正确的 get_* 函数 |
+| 文件监控在 Linux 不工作 | inotify 限制 | 检查 /proc/sys/fs/inotify/max_user_watches |
+| 多线程读取崩溃 | 未正确使用锁 | 确保读写锁正确初始化和使用 |
+| 配置保存丢失 | 未调用 save | 修改配置后记得调用 idcu_config_save() |

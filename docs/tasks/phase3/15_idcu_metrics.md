@@ -1,18 +1,183 @@
 # 任务 3.15: idcu-metrics - 指标收集库
 
-## 目标
+> **文档版本**: v2.0  
+> **最后更新**: 2026-04-08  
+> **责任人**: IDCU Team  
+> **任务状态**: ⏳ 待开始
 
-创建完整的指标收集库，支持：
-- Counter（计数器）
-- Gauge（仪表盘）
-- Histogram（直方图）
-- 标签支持
-- 指标注册和查询
-- 导出为 Prometheus 格式
+---
 
-## 详细步骤
+## 1. 任务边界
 
-### 1. 创建目录结构
+### 1.1 核心目标
+创建完整的指标收集库，支持 Counter、Gauge、Histogram 三种指标类型，支持标签维度，支持指标注册和查询，支持 Prometheus 和 JSON 格式导出，支持并发 1000 个指标操作，指标操作延迟 ≤ 1ms。
+
+### 1.2 不做什么
+- 不实现指标持久化存储
+- 不实现自动推送到 Prometheus Server
+- 不实现指标聚合和告警功能
+- 不实现分布式指标收集
+
+### 1.3 输入
+- 指标名称（最大 64 字符）
+- 指标帮助信息（最大 256 字符）
+- 标签键值对（最多 16 个标签）
+- Histogram 桶配置
+
+### 1.4 输出
+- 指标操作返回码（成功 0，失败非 0）
+- Prometheus 格式文本输出
+- JSON 格式文本输出
+
+### 1.5 前置依赖
+- idcu-common 模块已完成（vector、hash_map、lock）
+- idcu-log 模块已完成
+
+---
+
+## 2. 技术实现方案
+
+### 2.1 核心选型
+- 语言：C11
+- 构建：CMake
+- 锁：idcu-common 提供的互斥锁
+- 容器：idcu-common 提供的 vector、hash_map
+
+### 2.2 核心逻辑
+1. 指标注册中心管理所有指标
+2. 每种指标类型独立实现（Counter/Gauge/Histogram）
+3. 指标操作使用互斥锁保证线程安全
+4. 导出时遍历所有指标并格式化输出
+
+### 2.3 数据结构/接口
+```c
+typedef enum {
+    IDCU_METRIC_TYPE_COUNTER = 0,
+    IDCU_METRIC_TYPE_GAUGE,
+    IDCU_METRIC_TYPE_HISTOGRAM
+} idcu_MetricType;
+
+typedef struct {
+    char name[64];
+    char value[128];
+} idcu_MetricLabel;
+
+typedef struct {
+    idcu_MetricLabel labels[16];
+    size_t label_count;
+} idcu_MetricLabels;
+
+typedef struct idcu_MetricsRegistry {
+    idcu_Vector metrics;
+    idcu_HashMap metrics_by_name;
+    idcu_Mutex lock;
+    int initialized;
+} idcu_MetricsRegistry;
+
+// Counter API
+idcu_MetricCounter* idcu_metrics_counter_create(const char* name, const char* help, const idcu_MetricLabels* labels);
+void idcu_metrics_counter_inc(idcu_MetricCounter* counter);
+void idcu_metrics_counter_add(idcu_MetricCounter* counter, uint64_t value);
+
+// Gauge API
+idcu_MetricGauge* idcu_metrics_gauge_create(const char* name, const char* help, const idcu_MetricLabels* labels);
+void idcu_metrics_gauge_set(idcu_MetricGauge* gauge, double value);
+void idcu_metrics_gauge_inc(idcu_MetricGauge* gauge);
+void idcu_metrics_gauge_dec(idcu_MetricGauge* gauge);
+
+// Histogram API
+idcu_MetricHistogram* idcu_metrics_histogram_create(const char* name, const char* help, const idcu_MetricLabels* labels, const double* buckets, size_t bucket_count);
+void idcu_metrics_histogram_observe(idcu_MetricHistogram* histogram, double value);
+
+// 导出 API
+int idcu_metrics_to_prometheus(const idcu_MetricsRegistry* registry, char* buffer, size_t buffer_size);
+int idcu_metrics_to_json(const idcu_MetricsRegistry* registry, char* buffer, size_t buffer_size);
+```
+
+### 2.4 跨平台适配
+- Windows/Linux 使用相同的 API 接口
+- 互斥锁底层由 idcu-common 处理跨平台差异
+- 无需额外的平台特定代码
+
+---
+
+## 3. 验收标准（可量化）
+
+### 3.1 功能验收
+- [ ] Counter 可以正常递增和累加
+- [ ] Gauge 可以正常设置、增减
+- [ ] Histogram 可以正常观测和统计分布
+- [ ] 支持最多 16 个标签
+- [ ] 指标可以注册到 Registry 并查询
+- [ ] 可以导出为 Prometheus 格式
+- [ ] 可以导出为 JSON 格式
+
+### 3.2 性能验收
+- 单指标操作延迟 ≤ 1ms
+- 支持并发 1000 个指标操作无崩溃
+- 100 个指标的 Prometheus 导出耗时 ≤ 10ms
+- 单个指标内存占用 ≤ 1KB
+
+### 3.3 异常验收
+- 创建重复名称指标返回错误码
+- 使用空指针操作返回错误码
+- 导出缓冲区不足返回错误码
+- 多线程并发操作无数据竞争
+
+---
+
+## 4. 执行计划
+
+### 4.1 工期
+2 天/人
+
+### 4.2 里程碑
+- D1：完成数据结构定义和头文件
+- D2：完成 Counter、Gauge、Histogram 实现和导出功能
+- D2：完成单元测试和验证
+
+### 4.3 人力
+1 人（技能要求：C语言 + 多线程编程）
+
+---
+
+## 5. 工程化要求
+
+### 5.1 编码规范
+- 对齐项目 .clang-format 规范
+- 函数名使用小写+下划线，前缀 idcu_metrics_
+- 结构体名前缀 idcu_Metric
+- 宏定义全大写，前缀 IDCU_METRIC_
+
+### 5.2 测试要求
+- 单元测试覆盖率 ≥ 80%
+- 测试覆盖三种指标类型的所有操作
+- 测试覆盖标签功能
+- 测试覆盖导出功能
+- 测试覆盖多线程并发场景
+
+### 5.3 部署指引
+- 编译命令：`cmake --build build --target idcu-metrics`
+- 头文件部署路径：`include/idcu/metrics/`
+- 库文件部署路径：`lib/`
+
+---
+
+## 6. 风险与应对
+
+### 6.1 风险1
+描述：多线程并发操作导致数据竞争  
+应对：每个指标独立使用互斥锁，Registry 操作也加锁保护
+
+### 6.2 风险2
+描述：导出时缓冲区不足导致截断  
+应对：返回需要的缓冲区大小，调用方可以重新分配足够的缓冲区
+
+---
+
+## 7. 详细实现步骤
+
+### 7.1 创建目录结构
 
 ```bash
 mkdir -p libs/idcu-metrics/include/idcu/metrics
@@ -21,7 +186,7 @@ mkdir -p libs/idcu-metrics/tests
 mkdir -p libs/idcu-metrics/examples
 ```
 
-### 2. 创建指标头文件 (metrics.h)
+### 7.2 创建指标头文件 (metrics.h)
 
 创建 `libs/idcu-metrics/include/idcu/metrics/metrics.h`：
 
@@ -157,7 +322,7 @@ void idcu_metrics_labels_clear(idcu_MetricLabels* labels);
 #endif
 ```
 
-### 3. 创建 CMakeLists.txt
+### 7.3 创建 CMakeLists.txt
 
 创建 `libs/idcu-metrics/CMakeLists.txt`：
 
@@ -193,7 +358,7 @@ if(BUILD_EXAMPLES)
 endif()
 ```
 
-### 4. 创建模块配置文件 (module.yaml)
+### 7.4 创建模块配置文件 (module.yaml)
 
 创建 `libs/idcu-metrics/module.yaml`：
 
@@ -230,7 +395,7 @@ testing:
   framework: internal
 ```
 
-### 5. 创建 README.md
+### 7.5 创建 README.md
 
 创建 `libs/idcu-metrics/README.md`：
 
@@ -325,7 +490,9 @@ printf("%s\n", buffer);
 详见 [include/idcu/metrics/metrics.h](include/idcu/metrics/metrics.h)
 ```
 
-## 验证检查清单
+---
+
+## 8. 验证检查清单
 
 - [ ] 指标头文件已创建
 - [ ] 指标实现文件已创建
@@ -334,9 +501,16 @@ printf("%s\n", buffer);
 - [ ] README.md 已创建
 - [ ] Counter 可以正常增减
 - [ ] Gauge 可以正常设置和修改
+- [ ] Histogram 可以正常观测
 - [ ] 指标可以导出为 Prometheus 格式
+- [ ] 指标可以导出为 JSON 格式
+- [ ] 单元测试通过
+- [ ] 可以正常编译
+- [ ] 性能指标达标
 
-## Git 提交
+---
+
+## 9. Git 提交
 
 ```bash
 git add libs/idcu-metrics/
@@ -353,7 +527,9 @@ git commit -m "feat: add idcu-metrics library
 - Add module.yaml metadata"
 ```
 
-## 常见问题排查
+---
+
+## 10. 常见问题排查
 
 | 问题 | 可能原因 | 解决方案 |
 |-----|---------|---------|
