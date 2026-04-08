@@ -158,6 +158,12 @@ int idcu_alert_manager_add_notifier(idcu_AlertManager* manager, const idcu_Alert
 - 部署路径：`libs/idcu-alert/`
 - 头文件安装路径：`include/idcu/alert/`
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对

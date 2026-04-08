@@ -192,6 +192,12 @@ int idcu_yaml_to_json(const idcu_YamlValue* yaml_value, char* buffer, size_t buf
 - 链接：`target_link_libraries(myapp PRIVATE idcu::yaml)`
 - 注：当前项目使用 idcu-config 的 INI 格式，本库为可选扩展
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对

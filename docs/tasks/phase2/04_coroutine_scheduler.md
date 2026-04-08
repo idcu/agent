@@ -134,6 +134,12 @@ int idcu_coro_scheduler_run(idcu_CoroutineScheduler* scheduler);
 ### 5.3 部署指引
 - 库文件: libs/idcu-coroutine/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -145,6 +151,14 @@ int idcu_coro_scheduler_run(idcu_CoroutineScheduler* scheduler);
 ### 6.2 风险2
 描述：协程栈溢出  
 应对：设置合理默认值，提供配置选项
+
+### 6.3 风险3
+描述：协程调度器在高负载下性能下降  
+应对：优化调度算法，提供性能基准测试
+
+### 6.4 风险4
+描述：协程间同步机制复杂导致死锁  
+应对：提供清晰的同步原语和使用文档，充分测试
 
 ---
 
@@ -163,6 +177,11 @@ int idcu_coro_scheduler_run(idcu_CoroutineScheduler* scheduler);
 - [ ] README.md 已创建
 - [ ] 代码可以成功编译
 - [ ] 基本协程创建和调度功能正常
+- [ ] 代码已通过 clang-format 格式化
+- [ ] 代码已通过 clang-tidy 静态分析
+- [ ] 单元测试覆盖率达标
+- [ ] 性能测试满足要求
+- [ ] 跨平台兼容性已验证
 
 ---
 

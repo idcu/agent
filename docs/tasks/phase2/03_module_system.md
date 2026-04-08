@@ -148,6 +148,12 @@ int idcu_module_system_start_all(idcu_ModuleSystem* system);
 - 库文件: libs/idcu-module-system/
 - 头文件: include/idcu/module/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -159,6 +165,14 @@ int idcu_module_system_start_all(idcu_ModuleSystem* system);
 ### 6.2 风险2
 描述：依赖解析复杂场景  
 应对：逐步实现，先支持简单场景
+
+### 6.3 风险3
+描述：模块加载导致系统不稳定  
+应对：提供模块隔离机制，充分测试模块边界
+
+### 6.4 风险4
+描述：版本兼容性问题  
+应对：实现严格的版本检查，提供版本兼容性文档
 
 ---
 
@@ -178,6 +192,10 @@ int idcu_module_system_start_all(idcu_ModuleSystem* system);
 - [ ] 可以定义和注册模块
 - [ ] 可以管理模块生命周期
 - [ ] 依赖解析功能正常
+- [ ] 代码已通过 clang-format 格式化
+- [ ] 代码已通过 clang-tidy 静态分析
+- [ ] 单元测试覆盖率达标
+- [ ] 跨平台兼容性已验证
 
 ---
 
