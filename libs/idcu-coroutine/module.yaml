@@ -1,0 +1,26 @@
+name: idcu-coroutine
+version: 1.0.0
+description: Coroutine scheduler library for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-coroutine
+
+headers:
+  - idcu/coroutine/types.h
+  - idcu/coroutine/coroutine.h
+
+features:
+  - coroutine: Coroutine context switching
+  - scheduler: Coroutine scheduler with round-robin policy
+  - cross_platform: Windows Fiber / Linux ucontext support
+
+testing:
+  enabled: true
+  framework: internal

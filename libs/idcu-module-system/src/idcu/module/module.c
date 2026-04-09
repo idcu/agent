@@ -2,6 +2,7 @@
 #include <idcu/common/error_code.h>
 #include <idcu/common/vector.h>
 #include <idcu/common/hash_map.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,12 +23,6 @@ static void module_dtor(void* data)
         dlclose(module->library_handle);
 #endif
     }
-}
-
-static void module_info_vector_dtor(void* data)
-{
-    idcu_ModuleInfo* info = (idcu_ModuleInfo*)data;
-    (void)info;
 }
 
 int idcu_module_system_init(idcu_ModuleSystem* system)
@@ -181,7 +176,7 @@ int idcu_module_system_unregister(idcu_ModuleSystem* system, const char* name)
 {
     (void)system;
     (void)name;
-    return IDCU_ERR_NOT_IMPLEMENTED;
+    return IDCU_ERR_GENERAL;
 }
 
 int idcu_module_system_find_by_name(idcu_ModuleSystem* system, const char* name, idcu_Module** out_module)
@@ -246,7 +241,7 @@ int idcu_module_system_get_by_category(idcu_ModuleSystem* system, const char* ca
     (void)category;
     (void)out_infos;
     (void)out_count;
-    return IDCU_ERR_NOT_IMPLEMENTED;
+    return IDCU_ERR_GENERAL;
 }
 
 static int check_dependencies(idcu_ModuleSystem* system, const idcu_ModuleDef* def)
@@ -502,14 +497,14 @@ int idcu_module_system_load_module(idcu_ModuleSystem* system, const char* module
 {
     (void)system;
     (void)module_path;
-    return IDCU_ERR_NOT_IMPLEMENTED;
+    return IDCU_ERR_GENERAL;
 }
 
 int idcu_module_system_load_directory(idcu_ModuleSystem* system, const char* dir_path)
 {
     (void)system;
     (void)dir_path;
-    return IDCU_ERR_NOT_IMPLEMENTED;
+    return IDCU_ERR_GENERAL;
 }
 
 const char* idcu_module_state_to_str(idcu_ModuleState state)
