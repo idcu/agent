@@ -1,0 +1,29 @@
+name: idcu-microkernel
+version: 1.0.0
+description: Microkernel core library for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies:
+  - idcu-common
+  - idcu-module-system
+  - idcu-coroutine
+  - idcu-msgbus
+
+build:
+  type: cmake
+  targets:
+    - idcu-microkernel
+
+headers:
+  - idcu/microkernel/types.h
+  - idcu/microkernel/kernel.h
+
+features:
+  - lifecycle: Kernel lifecycle management
+  - integration: Integration of all core components
+  - main_loop: Main event loop
+
+testing:
+  enabled: true
+  framework: internal
