@@ -1,8 +1,0 @@
-{
-  "name": "idcu-watchdog",
-  "version": "1.0.0",
-  "description": "Watchdog module for process monitoring and automatic restart",
-  "author": "IDCU Team",
-  "dependencies": ["idcu-common", "idcu-log"],
-  "type": "library"
-}
