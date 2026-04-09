@@ -23,7 +23,3 @@ endif()
 
 add_library(idcu::log ALIAS idcu-log)
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
-

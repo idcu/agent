@@ -1,0 +1,8 @@
+module:
+  name: idcu-json
+  version: 1.0.0
+  description: JSON parsing and serialization library
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
