@@ -1,0 +1,4 @@
+# IDCU Module Build Config
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/idcu_module_build.cmake")
