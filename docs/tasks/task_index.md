@@ -13,8 +13,8 @@
 项目已完成部分基础设施准备工作：
 - ✅ 完整的任务文档体系已建立
 - ✅ idcu-module-build 模块构建系统已可用
-- ✅ 多个基础库已初始化（idcu-common, idcu-log, idcu-json, idcu-config, idcu-network）
-- 🚧 准备进入实际开发阶段
+- ✅ idcu-common 通用基础库已完成并可编译
+- 🚧 阶段 2 核心基础设施构建进行中
 
 ---
 
@@ -49,7 +49,7 @@
 | 任务 | 状态 | 文件 |
 |-----|------|------|
 | 2.0 阶段 2 概述 | ⏳ 待开始 | [phase2/00_phase2_overview.md](phase2/00_phase2_overview.md) |
-| 2.1 创建通用基础库 (idcu-common) | ⏳ 待开始 | [phase2/01_create_idcu_common.md](phase2/01_create_idcu_common.md) |
+| 2.1 创建通用基础库 (idcu-common) | ✅ 已完成 | [phase2/01_create_idcu_common.md](phase2/01_create_idcu_common.md) |
 | 2.2 完善 idcu-module-build | ⏳ 待开始 | [phase2/02_improve_module_build.md](phase2/02_improve_module_build.md) |
 | 2.3 模块系统 | ⏳ 待开始 | [phase2/03_module_system.md](phase2/03_module_system.md) |
 | 2.4 协程调度器 | ⏳ 待开始 | [phase2/04_coroutine_scheduler.md](phase2/04_coroutine_scheduler.md) |
