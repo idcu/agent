@@ -1,0 +1,42 @@
+adapters:
+  - name: cmake
+    enabled: true
+    priority: 100
+    patterns:
+      - "CMakeLists.txt"
+
+  - name: make
+    enabled: true
+    priority: 90
+    patterns:
+      - "Makefile"
+      - "makefile"
+
+  - name: meson
+    enabled: true
+    priority: 80
+    patterns:
+      - "meson.build"
+
+auto_discovery:
+  enabled: true
+  scan_depth: 3
+  exclude_dirs:
+    - "build"
+    - "out"
+    - ".git"
+    - "node_modules"
+
+validation:
+  required_fields:
+    - name
+    - version
+    - description
+
+  optional_fields:
+    - author
+    - license
+    - dependencies
+    - build
+    - features
+    - testing

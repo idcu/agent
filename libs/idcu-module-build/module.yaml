@@ -1,0 +1,31 @@
+name: idcu-module-build
+version: 1.0.0
+description: Module build system for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies: []
+
+build:
+  type: cmake
+  targets:
+    - idcu-module-build
+
+config_files:
+  - config/default.yaml
+  - config/auto-adapter.yaml
+
+scripts:
+  - scripts/build.py
+  - scripts/build.sh
+  - scripts/build.bat
+
+features:
+  - cmake_helpers: CMake helper functions
+  - auto_discovery: Automatic module discovery
+  - yaml_config: YAML-based module configuration
+  - cross_platform: Cross-platform build support
+
+testing:
+  enabled: true
+  framework: internal

@@ -1,0 +1,21 @@
+build:
+  cmake_minimum_required: "3.15"
+  c_standard: "11"
+  cxx_standard: "17"
+
+defaults:
+  library_type: STATIC
+  build_testing: true
+  build_examples: false
+  install_prefix: "/usr/local"
+
+paths:
+  include_dir: "include"
+  source_dir: "src"
+  test_dir: "tests"
+  example_dir: "examples"
+  config_dir: "config"
+
+modules:
+  metadata_file: "module.yaml"
+  json_metadata_file: "module.json"

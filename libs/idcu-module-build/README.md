@@ -1,87 +1,59 @@
 # idcu-module-build
 
-IDCU 模块构建辅助工具，提供 CMake 函数简化库和模块的创建。
+IDCU Agent 的模块构建系统。
+
+## 功能特性
+
+- **CMake 辅助函数**: 简化模块构建的 CMake 函数
+- **自动发现**: 自动发现和构建模块
+- **YAML 配置**: 基于 YAML 的模块元数据配置
+- **跨平台**: 支持 Windows、Linux、macOS
 
 ## 快速开始
 
-### 在项目中使用
-
-在根 CMakeLists.txt 中添加：
+### 使用 CMake 辅助函数
 
 ```cmake
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake")
-include(idcu_module)
-```
+find_package(idcu-module-build REQUIRED)
 
-### 创建一个库
-
-```cmake
-idcu_add_library(my_lib
-    SOURCES src/my_lib.c
-    HEADERS include/idcu/my_lib/my_lib.h
-    DEPENDS idcu::common
-)
-```
-
-### 创建一个模块
-
-```cmake
-idcu_add_module(my_module
+idcu_add_module(my-module
+    STATIC
+    VERSION 1.0.0
+    DESCRIPTION "My module"
     SOURCES src/my_module.c
-    DEPENDS idcu::my_lib
+    INCLUDE_DIRS include
+    LINK_LIBRARIES idcu::common
 )
 ```
 
-## API 参考
+### 使用 module.yaml
 
-### idcu_add_library
+在模块根目录创建 `module.yaml`：
 
-创建一个 IDCU 库。
+```yaml
+name: my-module
+version: 1.0.0
+description: My module description
+author: My Name
+license: MIT
 
-**参数：**
-- `NAME`：库名称
-- `SOURCES`：源文件列表
-- `HEADERS`：头文件列表（可选）
-- `DEPENDS`：依赖库列表（可选）
-- `VERSION`：版本号（可选）
+dependencies:
+  - idcu-common
 
-**示例：**
-```cmake
-idcu_add_library(idcu_log
-    SOURCES src/idcu/log/log.c
-    HEADERS include/idcu/log/log.h
-    DEPENDS idcu::common
-)
+build:
+  type: cmake
+  targets:
+    - my-module
 ```
 
-### idcu_add_module
+## 构建脚本
 
-创建一个 IDCU 模块。
+使用 Python 构建脚本：
 
-**参数：**
-- `NAME`：模块名称
-- `SOURCES`：源文件列表
-- `DEPENDS`：依赖库列表（可选）
-- `VERSION`：版本号（可选）
-
-**示例：**
-```cmake
-idcu_add_module(log_module
-    SOURCES src/log_module.c
-    DEPENDS idcu::log
-)
+```bash
+python3 scripts/build.py --root libs --build-type Release
 ```
 
-## 目录结构
+## API 文档
 
-```
-libs/idcu-module-build/
-├── cmake/
-│   └── idcu_module.cmake    # CMake 模块文件
-├── include/                  # 头文件目录（预留）
-├── src/                      # 源文件目录（预留）
-├── tests/                    # 测试目录（预留）
-├── examples/                 # 示例目录（预留）
-├── CMakeLists.txt            # 构建配置
-└── README.md                 # 本文档
-```
+详见 [CMakeLists.txt](CMakeLists.txt) 中的辅助函数。
