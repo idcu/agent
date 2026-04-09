@@ -18,7 +18,7 @@ if(MSVC)
     add_compile_options(/W4 /utf-8)
     add_compile_options(/MP)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -pipe)
     
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-g -O0)

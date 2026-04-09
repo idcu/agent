@@ -1,0 +1,26 @@
+name: idcu-msgbus
+version: 1.0.0
+description: Message bus library for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-msgbus
+
+headers:
+  - idcu/msgbus/types.h
+  - idcu/msgbus/msgbus.h
+
+features:
+  - publish_subscribe: Publish-Subscribe messaging pattern
+  - priority_queues: Priority-based message queuing
+  - topic_routing: Topic-based message routing
+
+testing:
+  enabled: true
+  framework: internal
