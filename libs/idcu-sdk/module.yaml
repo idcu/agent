@@ -1,0 +1,29 @@
+name: idcu-sdk
+version: 1.0.0
+description: SDK library for IDCU Agent module development
+author: IDCU Team
+license: MIT
+
+dependencies:
+  - idcu-common
+  - idcu-microkernel
+
+build:
+  type: cmake
+  targets:
+    - idcu-sdk
+
+headers:
+  - idcu/sdk/types.h
+  - idcu/sdk/sdk.h
+
+features:
+  - lifecycle: Simplified module lifecycle management
+  - logging: Logging interface wrappers
+  - config: Configuration interface wrappers
+  - messaging: Messaging interface wrappers
+  - macros: Module definition macros
+
+testing:
+  enabled: true
+  framework: internal
