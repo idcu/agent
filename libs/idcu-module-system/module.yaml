@@ -1,0 +1,24 @@
+name: idcu-module-system
+version: 1.0.0
+description: Module system for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-module-system
+
+features:
+  - module_definition: Module definition API
+  - module_registry: Module registry
+  - lifecycle: Module lifecycle management
+  - dependency: Dependency resolution
+  - dynamic_loading: Dynamic module loading
+
+testing:
+  enabled: true
+  framework: idcu-testframework
