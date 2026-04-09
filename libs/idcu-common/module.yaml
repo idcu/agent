@@ -1,0 +1,39 @@
+name: idcu-common
+version: 1.0.0
+description: Common utilities library for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies: []
+
+build:
+  type: cmake
+  targets:
+    - idcu-common
+
+headers:
+  - idcu/common/error_code.h
+  - idcu/common/config.h
+  - idcu/common/vector.h
+  - idcu/common/hash_map.h
+  - idcu/common/string_buf.h
+  - idcu/common/lock.h
+  - idcu/common/atomic.h
+  - idcu/common/linked_list.h
+  - idcu/common/security.h
+  - idcu/common/option.h
+
+features:
+  - error_code: Unified error code definitions
+  - vector: Dynamic array implementation
+  - hash_map: Hash map implementation
+  - string_buf: String buffer for dynamic string manipulation
+  - lock: Mutex and synchronization primitives
+  - atomic: Atomic operations
+  - linked_list: Doubly linked list
+  - security: Security utilities
+  - option: Optional type
+
+testing:
+  enabled: true
+  framework: internal
