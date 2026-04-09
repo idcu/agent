@@ -1,0 +1,8 @@
+module:
+  name: idcu-watchdog
+  version: 1.0.0
+  description: Watchdog library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

@@ -1,0 +1,8 @@
+module:
+  name: idcu-server-monitor
+  version: 1.0.0
+  description: Server-Monitor library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

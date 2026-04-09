@@ -1,0 +1,8 @@
+module:
+  name: idcu-storage
+  version: 1.0.0
+  description: Storage library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

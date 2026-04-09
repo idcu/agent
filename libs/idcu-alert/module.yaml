@@ -1,0 +1,8 @@
+module:
+  name: idcu-alert
+  version: 1.0.0
+  description: Alert library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

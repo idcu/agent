@@ -1,0 +1,8 @@
+module:
+  name: idcu-http-server
+  version: 1.0.0
+  description: Http-Server library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

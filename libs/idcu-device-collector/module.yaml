@@ -1,0 +1,8 @@
+module:
+  name: idcu-device-collector
+  version: 1.0.0
+  description: Device-Collector library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

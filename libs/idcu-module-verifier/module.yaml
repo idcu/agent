@@ -1,0 +1,8 @@
+module:
+  name: idcu-module-verifier
+  version: 1.0.0
+  description: Module-Verifier library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

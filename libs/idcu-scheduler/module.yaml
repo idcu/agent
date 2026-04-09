@@ -1,0 +1,8 @@
+module:
+  name: idcu-scheduler
+  version: 1.0.0
+  description: Scheduler library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common

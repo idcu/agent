@@ -1,0 +1,8 @@
+module:
+  name: idcu-discovery
+  version: 1.0.0
+  description: Discovery library for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
