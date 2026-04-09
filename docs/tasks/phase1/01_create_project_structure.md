@@ -130,6 +130,12 @@ idcu-agent/
 ### 5.3 部署指引
 - 无特殊部署要求，目录创建即完成
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -141,6 +147,14 @@ idcu-agent/
 ### 6.2 风险2
 描述：某些目录已存在，可能与预期不符  
 应对：检查现有目录结构，确认是否需要清理
+
+### 6.3 风险3
+描述：.gitignore 配置错误，导致敏感文件被提交  
+应对：仔细检查 .gitignore 内容，使用标准模板，并进行预提交验证
+
+### 6.4 风险4
+描述：目录权限设置不当，导致后续操作失败  
+应对：使用适当的权限（755 目录，644 文件），并验证权限设置
 
 ---
 
@@ -274,9 +288,11 @@ touch CMakeLists.txt
 ## 8. 验证检查清单
 
 - [ ] 所有目录都已创建
-- [ ] .gitignore 已创建
-- [ ] README.md 已创建
+- [ ] .gitignore 已创建，包含标准排除规则
+- [ ] README.md 已创建，包含项目结构说明
 - [ ] 可以使用 `tree -L 2` 查看目录结构（Linux）或 `dir /s`（Windows）
+- [ ] 代码符合工程化标准（见[工程化标准与CI/CD指南](../reference/engineering_standards.md)）
+- [ ] Git 仓库已初始化（如需要）
 - [ ] 已提交 Git
 
 ---

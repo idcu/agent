@@ -155,6 +155,12 @@ idcu_KernelState idcu_kernel_get_state(const idcu_MicroKernel* kernel);
 ### 5.3 部署指引
 - 库文件: modules/core/micro-kernel/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -166,6 +172,14 @@ idcu_KernelState idcu_kernel_get_state(const idcu_MicroKernel* kernel);
 ### 6.2 风险2
 描述：生命周期管理复杂，状态转换出错  
 应对：使用状态机模式，充分测试状态转换
+
+### 6.3 风险3
+描述：内核异常导致整个系统崩溃  
+应对：实现异常隔离机制，充分测试异常场景
+
+### 6.4 风险4
+描述：资源泄漏导致系统不稳定  
+应对：完善资源管理，使用内存检测工具充分测试
 
 ---
 
@@ -184,6 +198,11 @@ idcu_KernelState idcu_kernel_get_state(const idcu_MicroKernel* kernel);
 - [ ] 代码可以成功编译
 - [ ] 内核初始化和启动功能正常
 - [ ] 核心组件正确整合
+- [ ] 代码已通过 clang-format 格式化
+- [ ] 代码已通过 clang-tidy 静态分析
+- [ ] 单元测试覆盖率达标
+- [ ] 集成测试通过
+- [ ] 性能测试满足要求
 
 ---
 

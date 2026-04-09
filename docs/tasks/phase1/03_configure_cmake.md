@@ -132,6 +132,12 @@ CMake 函数和变量：
 - 编译命令：`cmake --build build -j4`
 - 安装路径（可选）：`cmake --install build --prefix /usr/local`
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -143,6 +149,14 @@ CMake 函数和变量：
 ### 6.2 风险2
 描述：编译器选项差异导致编译失败  
 应对：分别为 MSVC 和 GCC/Clang 配置不同的编译选项
+
+### 6.3 风险3
+描述：跨平台路径分隔符问题  
+应对：使用 CMake 的路径处理函数，避免硬编码路径分隔符
+
+### 6.4 风险4
+描述：第三方依赖库缺失导致链接错误  
+应对：在 CMake 中添加依赖检查，提供清晰的错误提示
 
 ---
 
@@ -325,6 +339,8 @@ make -j4
 - [ ] Release 版本编译成功
 - [ ] BUILD_TESTS 选项工作正常
 - [ ] BUILD_EXAMPLES 选项工作正常
+- [ ] 编译过程中无警告（符合工程化标准）
+- [ ] 已验证跨平台兼容性
 - [ ] 已提交 Git
 
 ---

@@ -116,6 +116,12 @@ const char* idcu_agent_get_version(void);
 - 编译命令：由 CMake 统一管理（见任务 1.3）
 - 可执行文件位置：build/bin/idcu_agent
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -127,6 +133,14 @@ const char* idcu_agent_get_version(void);
 ### 6.2 风险2
 描述：命令行参数解析错误  
 应对：充分测试各种参数组合
+
+### 6.3 风险3
+描述：内存泄漏或资源未正确释放  
+应对：使用 Valgrind 或 AddressSanitizer 进行内存检测，确保所有资源正确释放
+
+### 6.4 风险4
+描述：平台相关的换行符或编码问题  
+应对：使用标准 C 库函数处理 I/O，在不同平台进行测试
 
 ---
 
@@ -231,10 +245,14 @@ const char* idcu_agent_get_version(void) {
 - [ ] 代码已创建
 - [ ] 语法检查通过（可以用编译器检查）
 - [ ] 代码已通过 clang-format 格式化
+- [ ] 代码符合工程化标准（见[工程化标准与CI/CD指南](../reference/engineering_standards.md)）
 - [ ] 可以正常编译
 - [ ] 程序可以运行
 - [ ] --help 参数工作正常
 - [ ] --version 参数工作正常
+- [ ] 无参数运行时输出欢迎消息
+- [ ] 可以通过 Ctrl+C 正常退出
+- [ ] 未知参数时输出错误信息并显示帮助
 - [ ] 已提交 Git
 
 ---

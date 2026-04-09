@@ -145,6 +145,12 @@ idcu_ErrorCode idcu_sdk_get_config_bool(idcu_SdkContext* ctx, const char* key, b
 ### 5.3 部署指引
 - 库文件: modules/core/sdk/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -156,6 +162,14 @@ idcu_ErrorCode idcu_sdk_get_config_bool(idcu_SdkContext* ctx, const char* key, b
 ### 6.2 风险2
 描述：宏定义复杂，容易出错  
 应对：提供详细文档和示例，充分测试
+
+### 6.3 风险3
+描述：SDK 与底层组件版本不兼容  
+应对：实现版本兼容性检查，提供版本升级指南
+
+### 6.4 风险4
+描述：SDK 封装导致性能开销过大  
+应对：优化封装层，提供性能基准测试
 
 ---
 
@@ -178,6 +192,9 @@ idcu_ErrorCode idcu_sdk_get_config_bool(idcu_SdkContext* ctx, const char* key, b
 - [ ] 所有单元测试通过
 - [ ] YAML 配置示例已创建
 - [ ] README.md 已创建
+- [ ] 单元测试覆盖率达标
+- [ ] 符合工程化标准中的 API 设计要求
+- [ ] 示例代码完整且可运行
 
 ---
 

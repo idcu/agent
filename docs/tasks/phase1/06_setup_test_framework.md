@@ -142,6 +142,12 @@ IDCU_TEST_CASE(suite, name)
 - 编译命令：`cmake -B build -DBUILD_EXAMPLES=ON && cmake --build build`
 - 运行示例：`./build/libs/idcu-testframework/example_simple_test`
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -153,6 +159,14 @@ IDCU_TEST_CASE(suite, name)
 ### 6.2 风险2
 描述：宏定义使用复杂，容易出错  
 应对：提供清晰的示例和文档
+
+### 6.3 风险3
+描述：测试框架性能不满足要求  
+应对：优化测试统计和运行逻辑，确保满足性能指标
+
+### 6.4 风险4
+描述：内存管理不当导致测试框架泄漏  
+应对：采用简单的内存策略，避免复杂的内存管理
 
 ---
 
@@ -448,6 +462,10 @@ add_subdirectory(idcu-testframework)
 - [ ] 可以运行示例测试
 - [ ] 示例测试通过
 - [ ] libs/CMakeLists.txt 已更新
+- [ ] 断言失败时正确标记测试
+- [ ] 测试统计准确
+- [ ] 符合工程化标准中的测试要求
+- [ ] 已通过代码质量工具检查
 - [ ] 已提交 Git
 
 ---

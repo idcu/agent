@@ -138,6 +138,73 @@
 
 ## 7. 详细实现步骤
 
+### 阶段架构图
+
+```mermaid
+flowchart TD
+    subgraph 业务模块开发
+        core_module[核心基础模块]
+        log_module[日志业务模块]
+        config_module[配置业务模块]
+        heartbeat[心跳模块]
+        metrics_module[指标业务模块]
+        task_queue[任务队列模块]
+        healthcheck_module[健康检查业务模块]
+        alert_module[告警业务模块]
+        collect_module[数据采集业务模块]
+        cache_module[缓存业务模块]
+        storage_module[存储业务模块]
+        security_module[安全业务模块]
+        http_client_module[HTTP客户端模块]
+        http_management_module[HTTP管理业务模块]
+    end
+
+    subgraph 依赖关系
+        phase2[Phase 2: 核心基础设施]
+        phase3[Phase 3: 独立库]
+        phase4[Phase 4: 模块系统完善]
+    end
+
+    phase2 --> core_module
+    phase3 --> log_module
+    phase3 --> config_module
+    phase3 --> metrics_module
+    phase3 --> task_queue
+    phase3 --> healthcheck_module
+    phase3 --> alert_module
+    phase3 --> collect_module
+    phase3 --> cache_module
+    phase3 --> storage_module
+    phase3 --> security_module
+    phase3 --> http_client_module
+    phase3 --> http_management_module
+    phase4 --> core_module
+    phase4 --> log_module
+    phase4 --> config_module
+    phase4 --> heartbeat
+    phase4 --> metrics_module
+    phase4 --> task_queue
+    phase4 --> healthcheck_module
+    phase4 --> alert_module
+    phase4 --> collect_module
+    phase4 --> cache_module
+    phase4 --> storage_module
+    phase4 --> security_module
+    phase4 --> http_client_module
+    phase4 --> http_management_module
+
+    core_module --> log_module
+    core_module --> config_module
+    core_module --> heartbeat
+    core_module --> metrics_module
+    log_module --> alert_module
+    metrics_module --> healthcheck_module
+    metrics_module --> alert_module
+    collect_module --> storage_module
+    collect_module --> cache_module
+    http_management_module --> security_module
+```
+
 ### 业务模块任务列表
 
 | 序号 | 业务模块 | 状态 | 预计时间 | 依赖 | 功能 |

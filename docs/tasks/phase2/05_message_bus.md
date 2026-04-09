@@ -134,6 +134,12 @@ int idcu_msgbus_process(idcu_MsgBus* bus);
 ### 5.3 部署指引
 - 库文件: libs/idcu-msgbus/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -145,6 +151,14 @@ int idcu_msgbus_process(idcu_MsgBus* bus);
 ### 6.2 风险2
 描述：消息处理回调耗时过长  
 应对：异步处理或限制回调执行时间
+
+### 6.3 风险3
+描述：消息总线在高并发下性能下降  
+应对：优化消息分发算法，提供性能基准测试
+
+### 6.4 风险4
+描述：消息优先级处理不当导致重要消息延迟  
+应对：完善优先级队列实现，充分测试优先级场景
 
 ---
 
@@ -162,6 +176,11 @@ int idcu_msgbus_process(idcu_MsgBus* bus);
 - [ ] README.md 已创建
 - [ ] 代码可以成功编译
 - [ ] 基本消息发布和订阅功能正常
+- [ ] 代码已通过 clang-format 格式化
+- [ ] 代码已通过 clang-tidy 静态分析
+- [ ] 单元测试覆盖率达标
+- [ ] 性能测试满足要求
+- [ ] 消息优先级功能正常
 
 ---
 

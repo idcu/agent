@@ -156,6 +156,12 @@ int idcu_mutex_unlock(idcu_Mutex* mutex);
 - 库文件输出：build/libidcu-common.a
 - 头文件路径：include/idcu/common/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -167,6 +173,14 @@ int idcu_mutex_unlock(idcu_Mutex* mutex);
 ### 6.2 风险2
 描述：哈希表性能不达标  
 应对：准备备用实现（如更好的哈希函数、红黑树 fallback）
+
+### 6.3 风险3
+描述：数据结构在并发场景下出现竞态条件  
+应对：确保所有数据结构都是线程安全的，或提供线程安全的封装
+
+### 6.4 风险4
+描述：内存管理不当导致泄漏  
+应对：使用 valgrind 等工具进行内存检测，编写完整的单元测试
 
 ---
 
@@ -1114,6 +1128,10 @@ make
 - [ ] 所有数据结构的基本操作正常工作
 - [ ] 错误码转换功能正常
 - [ ] 单元测试通过
+- [ ] 代码已通过 clang-format 格式化
+- [ ] 代码已通过 clang-tidy 静态分析
+- [ ] 符合工程化标准中的编码规范要求
+- [ ] 性能测试满足指标要求
 
 ---
 

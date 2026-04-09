@@ -165,6 +165,12 @@ features: []
 - Python 脚本放在 scripts/ 目录
 - 配置文件放在 libs/idcu-module-build/config/
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -176,6 +182,14 @@ features: []
 ### 6.2 风险2
 描述：跨平台路径处理问题  
 应对：使用 CMake 和 Python 的跨平台路径处理 API
+
+### 6.3 风险3
+描述：YAML 解析库缺失导致配置加载失败  
+应对：提供清晰的依赖安装指引，考虑集成简单的 YAML 解析
+
+### 6.4 风险4
+描述：Python 版本兼容性问题  
+应对：指定最低 Python 版本要求，充分测试不同版本
 
 ---
 
@@ -593,6 +607,9 @@ endif()
 - [ ] 可以使用 idcu_add_module 函数构建简单模块
 - [ ] 可以使用 Python 脚本发现和构建模块
 - [ ] 跨平台测试通过
+- [ ] Python 代码符合 PEP 8 规范
+- [ ] YAML 配置文件语法正确
+- [ ] 符合工程化标准中的构建要求
 
 ---
 

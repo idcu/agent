@@ -126,6 +126,12 @@ idcu_add_module(name
 ### 5.3 部署指引
 - 在根 CMakeLists.txt 中添加：`list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake")`
 
+### 5.4 相关参考文档
+- 详细工程化标准请参考：[工程化标准与CI/CD指南](../reference/engineering_standards.md)
+- 性能与可靠性要求请参考：[性能指标与可靠性要求](../reference/performance_reliability.md)
+- 模块依赖关系请参考：[模块依赖关系图](../reference/module_dependencies.md)
+- 技术决策请参考：[技术决策记录](../reference/technical_decisions.md)
+
 ---
 
 ## 6. 风险与应对
@@ -137,6 +143,14 @@ idcu_add_module(name
 ### 6.2 风险2
 描述：跨平台兼容性问题  
 应对：使用 CMake 标准命令，充分测试
+
+### 6.3 风险3
+描述：模块依赖关系管理复杂  
+应对：提供清晰的依赖关系示例和文档
+
+### 6.4 风险4
+描述：构建配置错误导致模块无法正确编译  
+应对：提供详细的错误提示和调试信息
 
 ---
 
@@ -351,6 +365,11 @@ libs/idcu-module-build/
 - [ ] CMakeLists.txt 已创建
 - [ ] README 文档已创建
 - [ ] 可以被其他 CMakeLists.txt 引用
+- [ ] idcu_add_library() 函数正常工作
+- [ ] idcu_add_module() 函数正常工作
+- [ ] 符合工程化标准中的构建要求
+- [ ] 跨平台兼容性已验证
+- [ ] 已通过代码质量工具检查
 - [ ] 已提交 Git
 
 ---
