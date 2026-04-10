@@ -16,7 +16,7 @@ target_include_directories(idcu-utils PUBLIC
 target_link_libraries(idcu-utils PUBLIC idcu::common)
 
 if(WIN32)
-    target_link_libraries(idcu-utils PRIVATE)
+    target_link_libraries(idcu-utils PRIVATE advapi32 shell32 shlwapi)
 else()
     target_link_libraries(idcu-utils PRIVATE pthread)
 endif()
