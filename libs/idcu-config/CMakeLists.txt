@@ -13,7 +13,7 @@ target_include_directories(idcu-config PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(idcu-config PUBLIC idcu::common)
+target_link_libraries(idcu-config PUBLIC idcu::common idcu::json idcu::yaml)
 
 if(WIN32)
     target_link_libraries(idcu-config PRIVATE)
