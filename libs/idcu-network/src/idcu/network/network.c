@@ -1,13 +1,13 @@
-#include <idcu/healthcheck/healthcheck.h>
+#include <idcu/network/network.h>
 #include <stdlib.h>
 #include <string.h>
 
-int idcu_healthcheck_init(idcu_Healthcheck_Context** ctx) {
+int idcu_network_init(idcu_Network_Context** ctx) {
     if (!ctx) {
         return IDCU_ERR_INVALID_ARG;
     }
     
-    *ctx = (idcu_Healthcheck_Context*)calloc(1, sizeof(idcu_Healthcheck_Context));
+    *ctx = (idcu_Network_Context*)calloc(1, sizeof(idcu_Network_Context));
     if (!*ctx) {
         return IDCU_ERR_MEMORY;
     }
@@ -20,7 +20,7 @@ int idcu_healthcheck_init(idcu_Healthcheck_Context** ctx) {
     return IDCU_ERR_OK;
 }
 
-void idcu_healthcheck_destroy(idcu_Healthcheck_Context* ctx) {
+void idcu_network_destroy(idcu_Network_Context* ctx) {
     if (!ctx) {
         return;
     }
@@ -34,17 +34,17 @@ void idcu_healthcheck_destroy(idcu_Healthcheck_Context* ctx) {
     free(ctx);
 }
 
-int idcu_healthcheck_is_initialized(idcu_Healthcheck_Context* ctx) {
+int idcu_network_is_initialized(idcu_Network_Context* ctx) {
     if (!ctx) return 0;
     return ctx->initialized;
 }
 
-uint64_t idcu_healthcheck_get_operation_count(idcu_Healthcheck_Context* ctx) {
+uint64_t idcu_network_get_operation_count(idcu_Network_Context* ctx) {
     if (!ctx) return 0;
     return ctx->operation_count;
 }
 
-uint64_t idcu_healthcheck_get_error_count(idcu_Healthcheck_Context* ctx) {
+uint64_t idcu_network_get_error_count(idcu_Network_Context* ctx) {
     if (!ctx) return 0;
     return ctx->error_count;
 }

@@ -4,14 +4,18 @@
 #include <idcu/common/config.h>
 #include <idcu/common/error_code.h>
 #include <idcu/scheduler/types.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Placeholder API - will be expanded in full implementation
 int idcu_scheduler_init(idcu_Scheduler_Context** ctx);
 void idcu_scheduler_destroy(idcu_Scheduler_Context* ctx);
+int idcu_scheduler_is_initialized(idcu_Scheduler_Context* ctx);
+uint64_t idcu_scheduler_get_operation_count(idcu_Scheduler_Context* ctx);
+uint64_t idcu_scheduler_get_error_count(idcu_Scheduler_Context* ctx);
 
 #ifdef __cplusplus
 }

@@ -4,14 +4,18 @@
 #include <idcu/common/config.h>
 #include <idcu/common/error_code.h>
 #include <idcu/watchdog/types.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Placeholder API - will be expanded in full implementation
 int idcu_watchdog_init(idcu_Watchdog_Context** ctx);
 void idcu_watchdog_destroy(idcu_Watchdog_Context* ctx);
+int idcu_watchdog_is_initialized(idcu_Watchdog_Context* ctx);
+uint64_t idcu_watchdog_get_operation_count(idcu_Watchdog_Context* ctx);
+uint64_t idcu_watchdog_get_error_count(idcu_Watchdog_Context* ctx);
 
 #ifdef __cplusplus
 }

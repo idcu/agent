@@ -4,14 +4,18 @@
 #include <idcu/common/config.h>
 #include <idcu/common/error_code.h>
 #include <idcu/sandbox/types.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Placeholder API - will be expanded in full implementation
 int idcu_sandbox_init(idcu_Sandbox_Context** ctx);
 void idcu_sandbox_destroy(idcu_Sandbox_Context* ctx);
+int idcu_sandbox_is_initialized(idcu_Sandbox_Context* ctx);
+uint64_t idcu_sandbox_get_operation_count(idcu_Sandbox_Context* ctx);
+uint64_t idcu_sandbox_get_error_count(idcu_Sandbox_Context* ctx);
 
 #ifdef __cplusplus
 }

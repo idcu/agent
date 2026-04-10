@@ -6,10 +6,45 @@ int idcu_management_init(idcu_Management_Context** ctx) {
     if (!ctx) {
         return IDCU_ERR_INVALID_ARG;
     }
-    *ctx = NULL;
+    
+    *ctx = (idcu_Management_Context*)calloc(1, sizeof(idcu_Management_Context));
+    if (!*ctx) {
+        return IDCU_ERR_MEMORY;
+    }
+    
+    idcu_mutex_init(&(*ctx)->lock);
+    (*ctx)->initialized = 1;
+    (*ctx)->operation_count = 0;
+    (*ctx)->error_count = 0;
+    
     return IDCU_ERR_OK;
 }
 
 void idcu_management_destroy(idcu_Management_Context* ctx) {
-    (void)ctx;
+    if (!ctx) {
+        return;
+    }
+    
+    idcu_mutex_lock(&ctx->lock);
+    idcu_Mutex lock_copy = ctx->lock;
+    ctx->initialized = 0;
+    idcu_mutex_unlock(&lock_copy);
+    idcu_mutex_destroy(&lock_copy);
+    
+    free(ctx);
+}
+
+int idcu_management_is_initialized(idcu_Management_Context* ctx) {
+    if (!ctx) return 0;
+    return ctx->initialized;
+}
+
+uint64_t idcu_management_get_operation_count(idcu_Management_Context* ctx) {
+    if (!ctx) return 0;
+    return ctx->operation_count;
+}
+
+uint64_t idcu_management_get_error_count(idcu_Management_Context* ctx) {
+    if (!ctx) return 0;
+    return ctx->error_count;
 }

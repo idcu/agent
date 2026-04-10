@@ -4,14 +4,18 @@
 #include <idcu/common/config.h>
 #include <idcu/common/error_code.h>
 #include <idcu/plugin/types.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Placeholder API - will be expanded in full implementation
 int idcu_plugin_init(idcu_Plugin_Context** ctx);
 void idcu_plugin_destroy(idcu_Plugin_Context* ctx);
+int idcu_plugin_is_initialized(idcu_Plugin_Context* ctx);
+uint64_t idcu_plugin_get_operation_count(idcu_Plugin_Context* ctx);
+uint64_t idcu_plugin_get_error_count(idcu_Plugin_Context* ctx);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
-#ifndef IDCU_MODULE-ISOLATION_TYPES_H
-#define IDCU_MODULE-ISOLATION_TYPES_H
+#ifndef IDCU_NETWORK_TYPES_H
+#define IDCU_NETWORK_TYPES_H
 
 #include <idcu/common/config.h>
 #include <idcu/common/lock.h>
@@ -10,14 +10,14 @@
 extern "C" {
 #endif
 
-#define IDCU_MODULE-ISOLATION_MAX_ITEMS 1024
+#define IDCU_NETWORK_MAX_ITEMS 1024
 
-typedef struct idcu_Module-Isolation_Context {
+typedef struct idcu_Network_Context {
     int initialized;
     idcu_Mutex lock;
     uint64_t operation_count;
     uint64_t error_count;
-} idcu_Module-Isolation_Context;
+} idcu_Network_Context;
 
 #ifdef __cplusplus
 }
