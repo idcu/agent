@@ -37,6 +37,7 @@ option(BUILD_EXAMPLES "Build example programs" ON)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake")
 
 add_subdirectory(libs)
+add_subdirectory(modules)
 add_subdirectory(app)
 
 if(BUILD_TESTS)
