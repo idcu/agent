@@ -2,6 +2,7 @@
 #define IDCU_COMMON_ERROR_CODE_H
 
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef enum
 {
@@ -84,14 +85,21 @@ typedef enum
 #define IDCU_ERROR_VERSION_INCOMPATIBLE IDCU_ERR_VERSION_INCOMPATIBLE
 
 #define IDCU_ERROR_CONTEXT_MAX_LEN 256
+#define IDCU_ERROR_STACKTRACE_MAX_FRAMES 32
+#define IDCU_ERROR_CHAIN_MAX_DEPTH 16
 
-typedef struct
+typedef struct idcu_ErrorInfo idcu_ErrorInfo;
+
+struct idcu_ErrorInfo
 {
     int         error_code;
     char        context[IDCU_ERROR_CONTEXT_MAX_LEN];
     const char* file;
     int         line;
-} idcu_ErrorInfo;
+    idcu_ErrorInfo* cause;
+    int         stacktrace_frame_count;
+    void*       stacktrace_frames[IDCU_ERROR_STACKTRACE_MAX_FRAMES];
+};
 
 const char* idcu_err_to_str(int err_code);
 
@@ -104,6 +112,24 @@ void idcu_err_set_last_error(int err_code, const char* context, const char* file
 const idcu_ErrorInfo* idcu_err_get_last_error(void);
 void idcu_err_clear_last_error(void);
 
+void idcu_err_set_last_error_with_cause(int err_code, const char* context, 
+                                         const char* file, int line, idcu_ErrorInfo* cause);
+idcu_ErrorInfo* idcu_err_clone_error(const idcu_ErrorInfo* error);
+void idcu_err_free_error(idcu_ErrorInfo* error);
+
+bool idcu_err_has_cause(const idcu_ErrorInfo* error);
+const idcu_ErrorInfo* idcu_err_get_cause(const idcu_ErrorInfo* error);
+
+int idcu_err_format_error(const idcu_ErrorInfo* error, char* buffer, size_t buffer_size);
+int idcu_err_format_error_chain(const idcu_ErrorInfo* error, char* buffer, size_t buffer_size);
+
+#ifdef IDCU_DEBUG
+void idcu_err_capture_stacktrace(idcu_ErrorInfo* error);
+int idcu_err_format_stacktrace(const idcu_ErrorInfo* error, char* buffer, size_t buffer_size);
+#endif
+
 #define IDCU_ERR_SET(code, ctx) idcu_err_set_last_error((code), (ctx), __FILE__, __LINE__)
+#define IDCU_ERR_SET_WITH_CAUSE(code, ctx, cause) \
+    idcu_err_set_last_error_with_cause((code), (ctx), __FILE__, __LINE__, (cause))
 
 #endif

@@ -185,6 +185,72 @@ IDCU_TEST_CASE(error_code, is_ok) {
     IDCU_TEST_ASSERT(!idcu_err_is_ok(IDCU_ERR_GENERAL));
 }
 
+IDCU_TEST_CASE(error_code, error_chain) {
+    idcu_err_set_last_error(IDCU_ERR_INVALID_PARAM, "invalid parameter value", __FILE__, __LINE__);
+    idcu_ErrorInfo* cause = idcu_err_clone_error(idcu_err_get_last_error());
+    
+    idcu_err_set_last_error_with_cause(IDCU_ERR_CONFIG_LOAD, "failed to load config", 
+                                        __FILE__, __LINE__, cause);
+    
+    const idcu_ErrorInfo* info = idcu_err_get_last_error();
+    IDCU_TEST_ASSERT(info != NULL);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_CONFIG_LOAD, info->error_code);
+    IDCU_TEST_ASSERT(idcu_err_has_cause(info));
+    
+    const idcu_ErrorInfo* cause_info = idcu_err_get_cause(info);
+    IDCU_TEST_ASSERT(cause_info != NULL);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_INVALID_PARAM, cause_info->error_code);
+    
+    idcu_err_free_error(cause);
+    idcu_err_clear_last_error();
+}
+
+IDCU_TEST_CASE(error_code, format_error) {
+    idcu_err_set_last_error(IDCU_ERR_GENERAL, "test error", __FILE__, __LINE__);
+    
+    char buffer[512];
+    int len = idcu_err_format_error(idcu_err_get_last_error(), buffer, sizeof(buffer));
+    
+    IDCU_TEST_ASSERT(len > 0);
+    IDCU_TEST_ASSERT(strstr(buffer, "General error") != NULL);
+    IDCU_TEST_ASSERT(strstr(buffer, "test error") != NULL);
+    
+    idcu_err_clear_last_error();
+}
+
+IDCU_TEST_CASE(error_code, format_error_chain) {
+    idcu_err_set_last_error(IDCU_ERR_INVALID_PARAM, "invalid parameter value", __FILE__, __LINE__);
+    idcu_ErrorInfo* cause = idcu_err_clone_error(idcu_err_get_last_error());
+    
+    idcu_err_set_last_error_with_cause(IDCU_ERR_CONFIG_LOAD, "failed to load config", 
+                                        __FILE__, __LINE__, cause);
+    
+    char buffer[1024];
+    int len = idcu_err_format_error_chain(idcu_err_get_last_error(), buffer, sizeof(buffer));
+    
+    IDCU_TEST_ASSERT(len > 0);
+    IDCU_TEST_ASSERT(strstr(buffer, "Config load failed") != NULL);
+    IDCU_TEST_ASSERT(strstr(buffer, "Invalid parameter") != NULL);
+    
+    idcu_err_free_error(cause);
+    idcu_err_clear_last_error();
+}
+
+IDCU_TEST_CASE(error_code, clone_and_free) {
+    idcu_err_set_last_error(IDCU_ERR_NO_MEMORY, "out of memory", __FILE__, __LINE__);
+    
+    const idcu_ErrorInfo* original = idcu_err_get_last_error();
+    idcu_ErrorInfo* cloned = idcu_err_clone_error(original);
+    
+    IDCU_TEST_ASSERT(cloned != NULL);
+    IDCU_TEST_ASSERT_EQUAL(original->error_code, cloned->error_code);
+    IDCU_TEST_ASSERT_STRING_EQUAL(original->context, cloned->context);
+    IDCU_TEST_ASSERT_EQUAL(original->line, cloned->line);
+    
+    idcu_err_free_error(cloned);
+    idcu_err_clear_last_error();
+}
+
 IDCU_TEST_CASE(vector, init_destroy) {
     idcu_Vector vec;
     int ret = idcu_vector_init(&vec, sizeof(int), 4);
