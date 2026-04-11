@@ -22,3 +22,4 @@ else()
 endif()
 
 add_library(idcu::device-collector ALIAS idcu-device-collector)
+add_library(idcu::device_collector ALIAS idcu-device-collector)

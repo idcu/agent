@@ -22,3 +22,4 @@ else()
 endif()
 
 add_library(idcu::http-client ALIAS idcu-http-client)
+add_library(idcu::http_client ALIAS idcu-http-client)

@@ -30,6 +30,7 @@ target_link_libraries(idcu-module-system
 )
 
 add_library(idcu::module-system ALIAS idcu-module-system)
+add_library(idcu::module_system ALIAS idcu-module-system)
 
 set_target_properties(idcu-module-system PROPERTIES
     VERSION ${PROJECT_VERSION}

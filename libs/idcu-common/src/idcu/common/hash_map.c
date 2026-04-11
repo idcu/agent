@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define IDCU_HASH_MAP_DEFAULT_BUCKETS 32
+#define IDCU_HASH_MAP_MAX_LOAD_FACTOR 0.7f
 
 static uint32_t idcu_hash_func(const char* key)
 {
@@ -12,6 +13,37 @@ static uint32_t idcu_hash_func(const char* key)
         hash *= 0x01000193;
     }
     return hash;
+}
+
+static int idcu_hash_map_resize(idcu_HashMap* map, size_t new_bucket_count)
+{
+    if (!map || new_bucket_count == 0) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+    idcu_HashMapEntry** new_buckets = (idcu_HashMapEntry**)calloc(new_bucket_count, sizeof(idcu_HashMapEntry*));
+    if (!new_buckets) {
+        return IDCU_ERR_NO_MEMORY;
+    }
+
+    // Rehash all entries
+    for (size_t i = 0; i < map->bucket_count; ++i) {
+        idcu_HashMapEntry* entry = map->buckets[i];
+        while (entry) {
+            idcu_HashMapEntry* next = entry->next;
+            uint32_t hash = idcu_hash_func(entry->key);
+            size_t new_bucket_idx = hash % new_bucket_count;
+            entry->next = new_buckets[new_bucket_idx];
+            new_buckets[new_bucket_idx] = entry;
+            entry = next;
+        }
+    }
+
+    free(map->buckets);
+    map->buckets = new_buckets;
+    map->bucket_count = new_bucket_count;
+
+    return IDCU_ERR_OK;
 }
 
 int idcu_hash_map_init(idcu_HashMap* map, size_t bucket_count, size_t value_size)
@@ -123,6 +155,16 @@ int idcu_hash_map_put(idcu_HashMap* map, const char* key, const void* value)
     entry->next = map->buckets[bucket_idx];
     map->buckets[bucket_idx] = entry;
     map->size++;
+
+    // Check if we need to resize
+    float load_factor = (float)map->size / (float)map->bucket_count;
+    if (load_factor > IDCU_HASH_MAP_MAX_LOAD_FACTOR) {
+        int ret = idcu_hash_map_resize(map, map->bucket_count * 2);
+        if (ret != IDCU_ERR_OK) {
+            // Resize failed, but we still added the entry
+            return IDCU_ERR_OK;
+        }
+    }
 
     return IDCU_ERR_OK;
 }

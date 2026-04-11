@@ -266,11 +266,43 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
         return IDCU_ERR_INVALID_ARG;
     }
 
+    idcu_MsgTopic topic = subscriber->topic;
+    if (topic >= IDCU_MSG_MAX_TOPICS) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+
     idcu_mutex_lock(&bus->mutex);
 
     subscriber->active = 0;
 
+    // Remove from topic subscribers list
+    if (bus->topic_subscribers[topic].subscribers) {
+        idcu_Vector* subs = bus->topic_subscribers[topic].subscribers;
+        for (size_t i = 0; i < idcu_vector_size(subs); i++) {
+            idcu_MsgSubscriber** sub_ptr = (idcu_MsgSubscriber**)idcu_vector_get(subs, i);
+            if (sub_ptr && *sub_ptr == subscriber) {
+                idcu_vector_remove(subs, i);
+                break;
+            }
+        }
+    }
+
+    // Remove from all subscribers list
+    if (bus->all_subscribers) {
+        idcu_Vector* all_subs = bus->all_subscribers;
+        for (size_t i = 0; i < idcu_vector_size(all_subs); i++) {
+            idcu_MsgSubscriber** sub_ptr = (idcu_MsgSubscriber**)idcu_vector_get(all_subs, i);
+            if (sub_ptr && *sub_ptr == subscriber) {
+                idcu_vector_remove(all_subs, i);
+                break;
+            }
+        }
+    }
+
     idcu_mutex_unlock(&bus->mutex);
+
+    // Free the subscriber
+    free(subscriber);
 
     return IDCU_ERR_OK;
 }

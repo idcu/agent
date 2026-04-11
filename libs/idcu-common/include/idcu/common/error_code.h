@@ -69,7 +69,10 @@ typedef enum
     IDCU_ERR_FILE_ERROR        = -56,
     IDCU_ERR_SECURITY_ERROR    = -57,
     IDCU_ERR_RESOURCE_EXHAUSTED = -58,
-    IDCU_ERR_VERIFICATION_FAILED = -59
+    IDCU_ERR_VERIFICATION_FAILED = -59,
+    IDCU_ERR_UNKNOWN           = -60,
+    IDCU_ERR_INVALID_STATE     = -61,
+    IDCU_ERR_OUT_OF_RANGE      = -62
 } idcu_ErrorCode;
 
 #define IDCU_SUCCESS                    IDCU_ERR_SUCCESS

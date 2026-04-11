@@ -309,3 +309,67 @@ int idcu_mem_pool_get_safety_stats(idcu_MemoryPool* pool, uint32_t* null_checks,
     
     return IDCU_ERR_OK;
 }
+
+uint32_t idcu_mem_pool_get_leak_count(idcu_MemoryPool* pool) {
+    if (!pool) {
+        return 0;
+    }
+    
+    uint32_t leak_count = 0;
+    idcu_mutex_lock(&pool->lock);
+    
+    for (uint32_t i = 0; i < pool->num_size_classes; i++) {
+        idcu_SizeClass* sc = &pool->size_classes[i];
+        idcu_mutex_lock(&sc->class_lock);
+        
+        for (uint32_t j = 0; j < sc->block_count; j++) {
+            if (sc->blocks[j].in_use) {
+                leak_count++;
+            }
+        }
+        
+        idcu_mutex_unlock(&sc->class_lock);
+    }
+    
+    idcu_mutex_unlock(&pool->lock);
+    return leak_count;
+}
+
+void idcu_mem_pool_report_leaks(idcu_MemoryPool* pool) {
+    if (!pool) {
+        return;
+    }
+    
+    idcu_mutex_lock(&pool->lock);
+    fprintf(stderr, "=== Memory Leak Report ===\n");
+    
+    uint32_t total_leaks = 0;
+    uint64_t total_leaked_bytes = 0;
+    
+    for (uint32_t i = 0; i < pool->num_size_classes; i++) {
+        idcu_SizeClass* sc = &pool->size_classes[i];
+        idcu_mutex_lock(&sc->class_lock);
+        
+        uint32_t class_leaks = 0;
+        for (uint32_t j = 0; j < sc->block_count; j++) {
+            if (sc->blocks[j].in_use) {
+                class_leaks++;
+                total_leaks++;
+                total_leaked_bytes += sc->block_size;
+            }
+        }
+        
+        if (class_leaks > 0) {
+            fprintf(stderr, "  Size class %u (%u bytes): %u leaked blocks\n", 
+                    i, sc->block_size, class_leaks);
+        }
+        
+        idcu_mutex_unlock(&sc->class_lock);
+    }
+    
+    fprintf(stderr, "Total: %u leaked blocks, %llu bytes\n", 
+            total_leaks, (unsigned long long)total_leaked_bytes);
+    fprintf(stderr, "==========================\n");
+    
+    idcu_mutex_unlock(&pool->lock);
+}

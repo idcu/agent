@@ -22,3 +22,4 @@ else()
 endif()
 
 add_library(idcu::conn-pool ALIAS idcu-conn-pool)
+add_library(idcu::conn_pool ALIAS idcu-conn-pool)

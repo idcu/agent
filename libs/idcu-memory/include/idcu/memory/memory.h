@@ -98,6 +98,19 @@ int idcu_mem_safe_copy(void* dst, size_t dst_size, const void* src, size_t src_s
 int idcu_mem_pool_get_safety_stats(idcu_MemoryPool* pool, uint32_t* null_checks,
                                     uint32_t* overflow_checks);
 
+/**
+ * @brief 获取当前未释放的内存块数
+ * @param pool 内存池指针
+ * @return 未释放的内存块数
+ */
+uint32_t idcu_mem_pool_get_leak_count(idcu_MemoryPool* pool);
+
+/**
+ * @brief 报告内存泄漏信息
+ * @param pool 内存池指针
+ */
+void idcu_mem_pool_report_leaks(idcu_MemoryPool* pool);
+
 #ifdef __cplusplus
 }
 #endif

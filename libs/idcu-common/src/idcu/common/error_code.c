@@ -66,6 +66,9 @@ const char* idcu_err_to_str(int err_code)
     case IDCU_ERR_SECURITY_ERROR: return "Security error";
     case IDCU_ERR_RESOURCE_EXHAUSTED: return "Resource exhausted";
     case IDCU_ERR_VERIFICATION_FAILED: return "Verification failed";
+    case IDCU_ERR_UNKNOWN: return "Unknown error";
+    case IDCU_ERR_INVALID_STATE: return "Invalid state";
+    case IDCU_ERR_OUT_OF_RANGE: return "Out of range";
     default: return "Unknown error";
     }
 }
