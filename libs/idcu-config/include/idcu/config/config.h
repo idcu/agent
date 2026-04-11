@@ -49,6 +49,19 @@ int  idcu_config_watch_is_running(void);
 void idcu_config_enable_env_var(int enable);
 int  idcu_config_load_profile(const char* profile_name);
 
+// ========== JSON/YAML support ==========
+int idcu_config_init_from_json(const char* file_path);
+int idcu_config_init_from_yaml(const char* file_path);
+int idcu_config_save_to_json(const char* file_path);
+int idcu_config_save_to_yaml(const char* file_path);
+
+// ========== Environment variable substitution ==========
+void idcu_config_set_env_prefix(const char* prefix);
+int idcu_config_apply_env_overrides(void);
+
+// ========== Command line override ==========
+int idcu_config_apply_cmdline(int argc, char* argv[]);
+
 #ifdef __cplusplus
 }
 #endif

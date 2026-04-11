@@ -18,6 +18,7 @@ This directory contains API documentation for the core libraries of the IDCU Age
 - [idcu-json](json.md) - JSON parser and serializer
 - [idcu-yaml](yaml.md) - YAML parser and serializer
 - [idcu-config](config.md) - Configuration management
+- [idcu-storage](storage.md) - Key-value storage
 
 ### Network Libraries
 
@@ -29,7 +30,6 @@ This directory contains API documentation for the core libraries of the IDCU Age
 
 - [idcu-metrics](metrics.md) - Metrics collection
 - [idcu-healthcheck](healthcheck.md) - Health checking
-- [idcu-alert](alert.md) - Alert management
 
 ## Usage Patterns
 
