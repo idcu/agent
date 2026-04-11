@@ -1,0 +1,10 @@
+module:
+  name: idcu-task-queue
+  version: 1.0.0
+  description: Task queue module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-scheduler
+    - idcu-core-module
