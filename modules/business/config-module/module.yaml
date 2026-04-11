@@ -1,0 +1,13 @@
+module:
+  name: idcu-config-module
+  version: 1.0.0
+  description: Config business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-config
+    - idcu-yaml
+    - idcu-json
+    - idcu-msgbus
+    - idcu-core-module
