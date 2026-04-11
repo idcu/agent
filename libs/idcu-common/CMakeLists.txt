@@ -29,10 +29,6 @@ endif()
 
 add_library(idcu::common ALIAS idcu-common)
 
-# if(BUILD_TESTING)
-#     add_subdirectory(tests)
-# endif()
-
-# if(BUILD_EXAMPLES)
-#     add_subdirectory(examples)
-# endif()
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
