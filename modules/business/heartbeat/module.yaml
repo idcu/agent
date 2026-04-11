@@ -1,0 +1,11 @@
+module:
+  name: idcu-heartbeat
+  version: 1.0.0
+  description: Heartbeat module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-network
+    - idcu-metrics
+    - idcu-core-module
