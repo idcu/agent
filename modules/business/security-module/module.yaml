@@ -1,0 +1,11 @@
+module:
+  name: idcu-security-module
+  version: 1.0.0
+  description: Security business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-sandbox
+    - idcu-permission
+    - idcu-core-module
