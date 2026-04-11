@@ -10,14 +10,28 @@
 extern "C" {
 #endif
 
-#define IDCU_PERMISSION_MAX_ITEMS 1024
+#define IDCU_MAX_PERMISSIONS        256
+#define IDCU_PERMISSION_NAME_MAX    128
+#define IDCU_MAX_MODULE_PERMISSIONS 64
 
-typedef struct idcu_Permission_Context {
-    int initialized;
-    idcu_Mutex lock;
-    uint64_t operation_count;
-    uint64_t error_count;
-} idcu_Permission_Context;
+typedef struct
+{
+    char module_name[64];
+    char permissions[IDCU_MAX_MODULE_PERMISSIONS][IDCU_PERMISSION_NAME_MAX];
+    int  permission_count;
+} idcu_ModulePermission;
+
+typedef struct
+{
+    idcu_ModulePermission module_perms[IDCU_MAX_MODULE_PERMISSIONS];
+    int                   module_count;
+    idcu_Mutex            lock;
+    int                   initialized;
+    uint64_t              operation_count;
+    uint64_t              error_count;
+} idcu_PermissionManager;
+
+typedef idcu_PermissionManager idcu_Permission_Context;
 
 #ifdef __cplusplus
 }
