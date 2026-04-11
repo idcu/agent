@@ -1,0 +1,10 @@
+# JSON 集成配置
+json:
+  # 默认输出格式: compact, pretty
+  output_format: "pretty"
+
+  # 默认缩进
+  indent: 2
+
+  # 是否启用 JSON Schema 验证
+  schema_validation: true
