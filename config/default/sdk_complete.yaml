@@ -1,0 +1,21 @@
+# SDK 完善配置
+sdk:
+  # 模块生命周期配置
+  lifecycle:
+    enable_pause_resume: true
+    enable_run: true
+
+  # 协程配置
+  coroutine:
+    enabled: true
+    stack_size: 8192
+    max_coroutines: 1024
+
+  # 服务注册配置
+  service_registry:
+    enabled: true
+
+  # 性能监控配置
+  performance_monitoring:
+    enabled: true
+    sample_interval: 1000
