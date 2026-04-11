@@ -48,6 +48,20 @@ idcu_MetricHistogram* idcu_metrics_registry_get_histogram(idcu_MetricsRegistry* 
 int idcu_metrics_to_prometheus(const idcu_MetricsRegistry* registry, char* buffer, size_t buffer_size);
 int idcu_metrics_to_json(const idcu_MetricsRegistry* registry, char* buffer, size_t buffer_size);
 
+idcu_MetricSummary* idcu_metrics_summary_create(const char* name, const char* help, const idcu_MetricLabels* labels,
+                                                    const double* quantiles, size_t quantile_count);
+void idcu_metrics_summary_destroy(idcu_MetricSummary* summary);
+void idcu_metrics_summary_observe(idcu_MetricSummary* summary, double value);
+void idcu_metrics_summary_get(idcu_MetricSummary* summary, uint64_t* sample_count, double* sample_sum,
+                                double* out_quantiles, size_t quantile_count);
+
+int idcu_metrics_registry_register_summary(idcu_MetricsRegistry* registry, idcu_MetricSummary* summary);
+idcu_MetricSummary* idcu_metrics_registry_get_summary(idcu_MetricsRegistry* registry, const char* name);
+
+// Persistence
+int idcu_metrics_save_to_file(const idcu_MetricsRegistry* registry, const char* filepath);
+int idcu_metrics_load_from_file(idcu_MetricsRegistry* registry, const char* filepath);
+
 int idcu_metrics_labels_init(idcu_MetricLabels* labels);
 int idcu_metrics_labels_add(idcu_MetricLabels* labels, const char* name, const char* value);
 void idcu_metrics_labels_clear(idcu_MetricLabels* labels);

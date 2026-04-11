@@ -23,11 +23,18 @@ typedef enum
 {
     IDCU_HEALTH_CHECK_TYPE_CUSTOM = 0,
     IDCU_HEALTH_CHECK_TYPE_HTTP,
+    IDCU_HEALTH_CHECK_TYPE_TCP,
     IDCU_HEALTH_CHECK_TYPE_DATABASE,
     IDCU_HEALTH_CHECK_TYPE_DISK,
     IDCU_HEALTH_CHECK_TYPE_MEMORY,
     IDCU_HEALTH_CHECK_TYPE_CPU
 } idcu_HealthCheckType;
+
+// Health status change callback
+typedef void (*idcu_HealthStatusChangeCallback)(const char* check_name,
+                                                   idcu_HealthStatus old_status,
+                                                   idcu_HealthStatus new_status,
+                                                   void* user_data);
 
 typedef struct
 {
@@ -56,12 +63,25 @@ typedef struct idcu_HealthCheck
     uint64_t last_checked_at;
     idcu_HealthCheckResult last_result;
     int enabled;
+    // Cache configuration
+    int cache_enabled;
+    uint64_t cache_ttl_ms;
     union {
         struct {
             char url[1024];
             int timeout_ms;
             int expected_status_code;
         } http;
+        struct {
+            char host[256];
+            uint16_t port;
+            int timeout_ms;
+        } tcp;
+        struct {
+            char connection_string[1024];
+            char query[256];
+            int timeout_ms;
+        } database;
         struct {
             char path[1024];
             uint64_t min_free_bytes;
@@ -84,6 +104,10 @@ typedef struct
     uint64_t overall_checked_at;
     idcu_HealthStatus overall_status;
     int initialized;
+    // Status change callbacks
+    idcu_HealthStatusChangeCallback callbacks[16];
+    void* callback_user_data[16];
+    size_t callback_count;
 } idcu_HealthChecker;
 
 int  idcu_healthchecker_init(idcu_HealthChecker* checker);
@@ -103,9 +127,19 @@ int  idcu_healthcheck_set_custom(idcu_HealthCheck* check, idcu_HealthCheckFunc f
 int  idcu_healthcheck_set_http(idcu_HealthCheck* check, const char* url, int timeout_ms, int expected_status);
 int  idcu_healthcheck_set_disk(idcu_HealthCheck* check, const char* path, uint64_t min_free_bytes, double min_free_percent);
 int  idcu_healthcheck_set_memory(idcu_HealthCheck* check, uint64_t min_free_bytes, double min_free_percent);
+int  idcu_healthcheck_set_tcp(idcu_HealthCheck* check, const char* host, uint16_t port, int timeout_ms);
+int  idcu_healthcheck_set_database(idcu_HealthCheck* check, const char* conn_str, const char* query, int timeout_ms);
 int  idcu_healthcheck_set_cpu(idcu_HealthCheck* check, double max_usage_percent);
 int  idcu_healthcheck_set_interval(idcu_HealthCheck* check, uint64_t interval_ms);
 int  idcu_healthcheck_set_timeout(idcu_HealthCheck* check, uint64_t timeout_ms);
+int  idcu_healthcheck_set_cache(idcu_HealthCheck* check, int enabled, uint64_t ttl_ms);
+
+// Status change notification
+int  idcu_healthchecker_register_status_callback(idcu_HealthChecker* checker, 
+                                                   idcu_HealthStatusChangeCallback callback, 
+                                                   void* user_data);
+int  idcu_healthchecker_unregister_status_callback(idcu_HealthChecker* checker, 
+                                                     idcu_HealthStatusChangeCallback callback);
 
 int  idcu_healthcheck_result_init(idcu_HealthCheckResult* result);
 void idcu_healthcheck_result_destroy(idcu_HealthCheckResult* result);

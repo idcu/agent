@@ -28,15 +28,51 @@ typedef struct {
     size_t  value_size;
 } idcu_KVEntry;
 
+// Cache entry for LRU cache
+typedef struct idcu_KVCacheEntry {
+    char             key[IDCU_STORAGE_KEY_MAX];
+    uint8_t*         value;
+    size_t           value_size;
+    uint64_t         last_access;
+    struct idcu_KVCacheEntry* prev;
+    struct idcu_KVCacheEntry* next;
+} idcu_KVCacheEntry;
+
+// Cache configuration
+typedef struct {
+    size_t max_entries;
+    size_t max_memory_bytes;
+    int    enabled;
+} idcu_KVCacheConfig;
+
+// Compression level
+typedef enum {
+    IDCU_STORAGE_COMPRESSION_NONE = 0,
+    IDCU_STORAGE_COMPRESSION_FAST,
+    IDCU_STORAGE_COMPRESSION_NORMAL,
+    IDCU_STORAGE_COMPRESSION_BEST
+} idcu_StorageCompressionLevel;
+
 // KV存储
 typedef struct idcu_KVStore {
-    char           path[IDCU_STORAGE_PATH_MAX];
-    idcu_KVEntry*  entries;
-    uint32_t       entry_count;
-    uint32_t       capacity;
-    idcu_Mutex     lock;
-    int            dirty;
-    int            initialized;
+    char                     path[IDCU_STORAGE_PATH_MAX];
+    idcu_KVEntry*            entries;
+    uint32_t                 entry_count;
+    uint32_t                 capacity;
+    idcu_Mutex               lock;
+    int                      dirty;
+    int                      initialized;
+    
+    // Cache
+    idcu_KVCacheEntry*       cache_head;
+    idcu_KVCacheEntry*       cache_tail;
+    size_t                   cache_entry_count;
+    size_t                   cache_memory_usage;
+    idcu_KVCacheConfig       cache_config;
+    
+    // Compression
+    idcu_StorageCompressionLevel compression_level;
+    int                      compression_enabled;
 } idcu_KVStore;
 
 // SQLite数据库（简化版）

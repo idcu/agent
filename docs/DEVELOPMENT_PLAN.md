@@ -218,16 +218,16 @@
 
 #### 任务 3.1.4: 完善 idcu-storage 实现深度
 
-**状态**: ⏳ 待开始  
+**状态**: ✅ 已完成  
 **预计时间**: 3-4 小时
 
 **增强内容**:
-- [ ] 实现键值存储接口
-- [ ] 支持多种后端 (内存, 文件, SQLite)
-- [ ] 实现数据序列化
-- [ ] 支持事务
-- [ ] 实现缓存层
-- [ ] 添加数据压缩支持
+- [x] 实现键值存储接口
+- [x] 支持多种后端 (内存, 文件, SQLite)
+- [x] 实现数据序列化
+- [x] 支持事务
+- [x] 实现缓存层 (LRU cache with configurable size/memory limits)
+- [x] 添加数据压缩支持 (RLE compression for demonstration)
 
 **文件位置**: `libs/idcu-storage/`
 
@@ -235,17 +235,17 @@
 
 #### 任务 3.1.5: 完善 idcu-metrics 实现深度
 
-**状态**: ⏳ 待开始  
+**状态**: ✅ 已完成  
 **预计时间**: 2-3 小时
 
 **增强内容**:
-- [ ] 实现 Counter 指标
-- [ ] 实现 Gauge 指标
-- [ ] 实现 Histogram 指标
-- [ ] 实现 Summary 指标
-- [ ] 支持标签 (Labels)
-- [ ] 实现指标导出 (Prometheus 格式)
-- [ ] 添加指标持久化
+- [x] 实现 Counter 指标
+- [x] 实现 Gauge 指标
+- [x] 实现 Histogram 指标
+- [x] 实现 Summary 指标 (quantile support: 0.5, 0.9, 0.99)
+- [x] 支持标签 (Labels)
+- [x] 实现指标导出 (Prometheus 格式)
+- [x] 添加指标持久化 (save/load from file)
 
 **文件位置**: `libs/idcu-metrics/`
 
@@ -253,17 +253,17 @@
 
 #### 任务 3.1.6: 完善 idcu-healthcheck 实现深度
 
-**状态**: ⏳ 待开始  
+**状态**: ✅ 已完成  
 **预计时间**: 2-3 小时
 
 **增强内容**:
-- [ ] 实现 HTTP 健康检查
-- [ ] 实现 TCP 健康检查
-- [ ] 实现数据库健康检查
-- [ ] 支持自定义检查器
-- [ ] 实现检查结果缓存
-- [ ] 添加健康状态通知
-- [ ] 实现检查超时处理
+- [x] 实现 HTTP 健康检查
+- [x] 实现 TCP 健康检查
+- [x] 实现数据库健康检查
+- [x] 支持自定义检查器
+- [x] 实现检查结果缓存 (with TTL)
+- [x] 添加健康状态通知 (status change callbacks)
+- [x] 实现检查超时处理
 
 **文件位置**: `libs/idcu-healthcheck/`
 

@@ -27,6 +27,16 @@ int  idcu_kvstore_sync(idcu_KVStore* store);
 int  idcu_kvstore_clear(idcu_KVStore* store);
 uint32_t idcu_kvstore_count(idcu_KVStore* store);
 
+// ========== Cache API ==========
+void idcu_kvstore_set_cache_config(idcu_KVStore* store, const idcu_KVCacheConfig* config);
+void idcu_kvstore_enable_cache(idcu_KVStore* store, int enabled);
+void idcu_kvstore_clear_cache(idcu_KVStore* store);
+size_t idcu_kvstore_get_cache_hit_count(idcu_KVStore* store);
+size_t idcu_kvstore_get_cache_miss_count(idcu_KVStore* store);
+
+// ========== Compression API ==========
+void idcu_kvstore_set_compression(idcu_KVStore* store, int enabled, idcu_StorageCompressionLevel level);
+
 // ========== SQLite数据库API（简化版）==========
 int  idcu_sqlite_init(idcu_SQLiteDB* db, const char* path);
 void idcu_sqlite_destroy(idcu_SQLiteDB* db);

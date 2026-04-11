@@ -23,8 +23,25 @@ typedef enum
 {
     IDCU_METRIC_TYPE_COUNTER = 0,
     IDCU_METRIC_TYPE_GAUGE,
-    IDCU_METRIC_TYPE_HISTOGRAM
+    IDCU_METRIC_TYPE_HISTOGRAM,
+    IDCU_METRIC_TYPE_SUMMARY
 } idcu_MetricType;
+
+// Summary metric (quantiles)
+typedef struct idcu_MetricSummary
+{
+    char name[IDCU_METRIC_NAME_MAX];
+    char help[IDCU_METRIC_HELP_MAX];
+    idcu_MetricLabels labels;
+    double quantiles[IDCU_METRIC_BUCKETS_MAX];  // e.g., 0.5, 0.9, 0.99
+    size_t quantile_count;
+    double* values;                               // For quantile calculation
+    size_t value_count;
+    size_t value_capacity;
+    uint64_t sample_count;
+    double sample_sum;
+    idcu_Mutex lock;
+} idcu_MetricSummary;
 
 typedef struct
 {

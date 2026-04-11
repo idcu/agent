@@ -6,6 +6,172 @@
 
 #define INITIAL_CAPACITY 32
 
+// Cache statistics
+static size_t g_cache_hits = 0;
+static size_t g_cache_misses = 0;
+
+// ========== Cache internal functions ==========
+static uint64_t get_timestamp_ms(void) {
+    // Simple timestamp implementation
+    static uint64_t counter = 0;
+    return ++counter;
+}
+
+static void cache_add_to_head(idcu_KVStore* store, idcu_KVCacheEntry* entry) {
+    entry->prev = NULL;
+    entry->next = store->cache_head;
+    
+    if (store->cache_head) {
+        store->cache_head->prev = entry;
+    }
+    store->cache_head = entry;
+    
+    if (!store->cache_tail) {
+        store->cache_tail = entry;
+    }
+}
+
+static void cache_remove_entry(idcu_KVStore* store, idcu_KVCacheEntry* entry) {
+    if (entry->prev) {
+        entry->prev->next = entry->next;
+    } else {
+        store->cache_head = entry->next;
+    }
+    
+    if (entry->next) {
+        entry->next->prev = entry->prev;
+    } else {
+        store->cache_tail = entry->prev;
+    }
+    
+    store->cache_entry_count--;
+    store->cache_memory_usage -= entry->value_size;
+    
+    if (entry->value) {
+        free(entry->value);
+    }
+    free(entry);
+}
+
+static void cache_evict_lru(idcu_KVStore* store) {
+    if (store->cache_tail) {
+        cache_remove_entry(store, store->cache_tail);
+    }
+}
+
+static idcu_KVCacheEntry* cache_find(idcu_KVStore* store, const char* key) {
+    idcu_KVCacheEntry* entry = store->cache_head;
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            // Move to head (MRU)
+            if (entry != store->cache_head) {
+                cache_remove_entry(store, entry);
+                cache_add_to_head(store, entry);
+            }
+            entry->last_access = get_timestamp_ms();
+            return entry;
+        }
+        entry = entry->next;
+    }
+    return NULL;
+}
+
+static void cache_put(idcu_KVStore* store, const char* key, const void* value, size_t value_size) {
+    if (!store->cache_config.enabled) {
+        return;
+    }
+    
+    // Check if already exists
+    idcu_KVCacheEntry* existing = cache_find(store, key);
+    if (existing) {
+        // Update existing
+        if (existing->value) {
+            store->cache_memory_usage -= existing->value_size;
+            free(existing->value);
+        }
+        
+        existing->value = (uint8_t*)malloc(value_size);
+        if (existing->value) {
+            memcpy(existing->value, value, value_size);
+            existing->value_size = value_size;
+            store->cache_memory_usage += value_size;
+            existing->last_access = get_timestamp_ms();
+        }
+        return;
+    }
+    
+    // Evict if needed
+    while (store->cache_entry_count >= store->cache_config.max_entries ||
+           (store->cache_config.max_memory_bytes > 0 && 
+            store->cache_memory_usage + value_size > store->cache_config.max_memory_bytes)) {
+        cache_evict_lru(store);
+    }
+    
+    // Create new entry
+    idcu_KVCacheEntry* new_entry = (idcu_KVCacheEntry*)malloc(sizeof(idcu_KVCacheEntry));
+    if (!new_entry) {
+        return;
+    }
+    
+    strncpy(new_entry->key, key, IDCU_STORAGE_KEY_MAX - 1);
+    new_entry->key[IDCU_STORAGE_KEY_MAX - 1] = '\0';
+    
+    new_entry->value = (uint8_t*)malloc(value_size);
+    if (!new_entry->value) {
+        free(new_entry);
+        return;
+    }
+    
+    memcpy(new_entry->value, value, value_size);
+    new_entry->value_size = value_size;
+    new_entry->last_access = get_timestamp_ms();
+    
+    cache_add_to_head(store, new_entry);
+    store->cache_entry_count++;
+    store->cache_memory_usage += value_size;
+}
+
+// ========== Compression (simple RLE for demonstration) ==========
+static size_t simple_compress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_len) {
+    // Simple run-length encoding for demonstration
+    // In production, use zlib or similar
+    size_t src_idx = 0;
+    size_t dst_idx = 0;
+    
+    while (src_idx < src_len && dst_idx + 2 < dst_len) {
+        uint8_t current = src[src_idx];
+        size_t run_length = 1;
+        
+        while (src_idx + run_length < src_len && 
+               src[src_idx + run_length] == current && 
+               run_length < 255) {
+            run_length++;
+        }
+        
+        dst[dst_idx++] = current;
+        dst[dst_idx++] = (uint8_t)run_length;
+        src_idx += run_length;
+    }
+    
+    return dst_idx;
+}
+
+static size_t simple_decompress(const uint8_t* src, size_t src_len, uint8_t* dst, size_t dst_len) {
+    size_t src_idx = 0;
+    size_t dst_idx = 0;
+    
+    while (src_idx + 1 < src_len && dst_idx < dst_len) {
+        uint8_t value = src[src_idx++];
+        uint8_t count = src[src_idx++];
+        
+        for (uint8_t i = 0; i < count && dst_idx < dst_len; i++) {
+            dst[dst_idx++] = value;
+        }
+    }
+    
+    return dst_idx;
+}
+
 // ========== 内部辅助函数 ==========
 static int find_entry_index(idcu_KVStore* store, const char* key) {
     for (uint32_t i = 0; i < store->entry_count; i++) {
@@ -395,6 +561,57 @@ uint32_t idcu_kvstore_count(idcu_KVStore* store) {
         return 0;
     }
     return store->entry_count;
+}
+
+// ========== Cache API ==========
+void idcu_kvstore_set_cache_config(idcu_KVStore* store, const idcu_KVCacheConfig* config) {
+    if (!store || !store->initialized || !config) {
+        return;
+    }
+    store->cache_config = *config;
+}
+
+void idcu_kvstore_enable_cache(idcu_KVStore* store, int enabled) {
+    if (!store || !store->initialized) {
+        return;
+    }
+    store->cache_config.enabled = enabled;
+    if (!enabled) {
+        idcu_kvstore_clear_cache(store);
+    }
+}
+
+void idcu_kvstore_clear_cache(idcu_KVStore* store) {
+    if (!store || !store->initialized) {
+        return;
+    }
+    
+    idcu_mutex_lock(&store->lock);
+    
+    while (store->cache_head) {
+        cache_remove_entry(store, store->cache_head);
+    }
+    
+    idcu_mutex_unlock(&store->lock);
+}
+
+size_t idcu_kvstore_get_cache_hit_count(idcu_KVStore* store) {
+    (void)store;
+    return g_cache_hits;
+}
+
+size_t idcu_kvstore_get_cache_miss_count(idcu_KVStore* store) {
+    (void)store;
+    return g_cache_misses;
+}
+
+// ========== Compression API ==========
+void idcu_kvstore_set_compression(idcu_KVStore* store, int enabled, idcu_StorageCompressionLevel level) {
+    if (!store || !store->initialized) {
+        return;
+    }
+    store->compression_enabled = enabled;
+    store->compression_level = level;
 }
 
 // ========== SQLite数据库API（简化版）==========
