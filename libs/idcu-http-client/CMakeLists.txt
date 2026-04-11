@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(idcu-http-client STATIC
-    src/idcu/http-client/http-client.c
+    src/idcu/http_client/http_client.c
 )
 
 target_include_directories(idcu-http-client PUBLIC
@@ -13,7 +13,7 @@ target_include_directories(idcu-http-client PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(idcu-http-client PUBLIC idcu::common)
+target_link_libraries(idcu-http-client PUBLIC idcu::common idcu::network)
 
 if(WIN32)
     target_link_libraries(idcu-http-client PRIVATE)
