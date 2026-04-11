@@ -1,0 +1,19 @@
+# 指标集成配置
+metrics:
+  # 启用/禁用指标收集
+  enabled: true
+
+  # 收集间隔（毫秒）
+  collection_interval: 1000
+
+  # Prometheus 导出配置
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+
+  # 指标持久化配置
+  persistence:
+    enabled: false
+    interval: 60000
+    file: "/var/lib/idcu/metrics.dat"
