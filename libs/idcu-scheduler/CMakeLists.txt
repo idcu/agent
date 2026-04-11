@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(idcu-scheduler C)
+project(idcu-scheduler VERSION 1.0.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -13,12 +13,13 @@ target_include_directories(idcu-scheduler PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(idcu-scheduler PUBLIC idcu::common)
+target_link_libraries(idcu-scheduler PRIVATE idcu::common)
+add_library(idcu::scheduler ALIAS idcu-scheduler)
 
-if(WIN32)
-    target_link_libraries(idcu-scheduler PRIVATE)
-else()
-    target_link_libraries(idcu-scheduler PRIVATE pthread)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
 endif()
 
-add_library(idcu::scheduler ALIAS idcu-scheduler)
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
