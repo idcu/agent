@@ -6,8 +6,10 @@
 #include <idcu/common/linked_list.h>
 #include <idcu/common/option.h>
 #include <idcu/common/deadlock_detector.h>
+#include <idcu/common/security.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -494,6 +496,132 @@ IDCU_TEST_CASE(option, basic) {
     
     idcu_option_none(&opt);
     IDCU_TEST_ASSERT(idcu_option_is_none(&opt));
+}
+
+IDCU_TEST_CASE(security, secure_zero) {
+    uint8_t buffer[16];
+    memset(buffer, 0xFF, sizeof(buffer));
+    
+    idcu_secure_zero(buffer, sizeof(buffer));
+    
+    for (size_t i = 0; i < sizeof(buffer); i++) {
+        IDCU_TEST_ASSERT_EQUAL(0, buffer[i]);
+    }
+}
+
+IDCU_TEST_CASE(security, memcmp_constant) {
+    uint8_t a[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t b[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t c[8] = {1, 2, 3, 4, 5, 6, 7, 9};
+    
+    IDCU_TEST_ASSERT_EQUAL(0, idcu_memcmp_constant(a, b, 8));
+    IDCU_TEST_ASSERT(idcu_memcmp_constant(a, c, 8) != 0);
+    IDCU_TEST_ASSERT_EQUAL(-1, idcu_memcmp_constant(NULL, b, 8));
+}
+
+IDCU_TEST_CASE(security, safe_add_uint64) {
+    uint64_t result;
+    
+    IDCU_TEST_ASSERT(idcu_safe_add_uint64(100, 200, &result));
+    IDCU_TEST_ASSERT_EQUAL(300, result);
+    
+    IDCU_TEST_ASSERT(!idcu_safe_add_uint64(UINT64_MAX, 1, &result));
+}
+
+IDCU_TEST_CASE(security, safe_sub_uint64) {
+    uint64_t result;
+    
+    IDCU_TEST_ASSERT(idcu_safe_sub_uint64(200, 100, &result));
+    IDCU_TEST_ASSERT_EQUAL(100, result);
+    
+    IDCU_TEST_ASSERT(!idcu_safe_sub_uint64(100, 200, &result));
+}
+
+IDCU_TEST_CASE(security, safe_mul_uint64) {
+    uint64_t result;
+    
+    IDCU_TEST_ASSERT(idcu_safe_mul_uint64(100, 200, &result));
+    IDCU_TEST_ASSERT_EQUAL(20000, result);
+    
+    IDCU_TEST_ASSERT(!idcu_safe_mul_uint64(UINT64_MAX, 2, &result));
+}
+
+IDCU_TEST_CASE(security, safe_add_size_t) {
+    size_t result;
+    
+    IDCU_TEST_ASSERT(idcu_safe_add_size_t(100, 200, &result));
+    IDCU_TEST_ASSERT_EQUAL(300, result);
+    
+    IDCU_TEST_ASSERT(!idcu_safe_add_size_t(SIZE_MAX, 1, &result));
+}
+
+IDCU_TEST_CASE(security, safe_add_int64) {
+    int64_t result;
+    
+    IDCU_TEST_ASSERT(idcu_safe_add_int64(100, 200, &result));
+    IDCU_TEST_ASSERT_EQUAL(300, result);
+    
+    IDCU_TEST_ASSERT(!idcu_safe_add_int64(INT64_MAX, 1, &result));
+    IDCU_TEST_ASSERT(!idcu_safe_add_int64(INT64_MIN, -1, &result));
+}
+
+IDCU_TEST_CASE(security, safe_memcpy) {
+    uint8_t src[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t dst[16];
+    
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_OK, idcu_safe_memcpy(dst, sizeof(dst), src, sizeof(src)));
+    IDCU_TEST_ASSERT(memcmp(dst, src, sizeof(src)) == 0);
+    
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_BUFFER_TOO_SMALL, idcu_safe_memcpy(dst, 4, src, 8));
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_INVALID_PARAM, idcu_safe_memcpy(NULL, sizeof(dst), src, 8));
+}
+
+IDCU_TEST_CASE(security, safe_strcpy) {
+    char dst[16];
+    
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_OK, idcu_safe_strcpy(dst, sizeof(dst), "hello"));
+    IDCU_TEST_ASSERT_STRING_EQUAL("hello", dst);
+    
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_BUFFER_TOO_SMALL, idcu_safe_strcpy(dst, 4, "hello world"));
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_INVALID_PARAM, idcu_safe_strcpy(NULL, sizeof(dst), "hello"));
+}
+
+IDCU_TEST_CASE(security, safe_strcat) {
+    char dst[32] = "hello";
+    
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_OK, idcu_safe_strcat(dst, sizeof(dst), " world"));
+    IDCU_TEST_ASSERT_STRING_EQUAL("hello world", dst);
+}
+
+IDCU_TEST_CASE(security, safe_strlen) {
+    IDCU_TEST_ASSERT_EQUAL(5, idcu_safe_strlen("hello", 100));
+    IDCU_TEST_ASSERT_EQUAL(5, idcu_safe_strlen("hello", 5));
+    IDCU_TEST_ASSERT_EQUAL(0, idcu_safe_strlen(NULL, 100));
+}
+
+IDCU_TEST_CASE(security, validate_input) {
+    uint8_t buffer[16];
+    
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_OK, idcu_validate_input(buffer, 8, 16));
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_INVALID_PARAM, idcu_validate_input(NULL, 8, 16));
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_OUT_OF_RANGE, idcu_validate_input(buffer, 32, 16));
+}
+
+IDCU_TEST_CASE(security, check_macros) {
+    int value = 42;
+    int* ptr = &value;
+    
+    IDCU_TEST_ASSERT(!IDCU_CHECK_NULL(ptr));
+    IDCU_TEST_ASSERT(IDCU_CHECK_NULL(NULL));
+    
+    IDCU_TEST_ASSERT(IDCU_CHECK_RANGE(42, 0, 100));
+    IDCU_TEST_ASSERT(!IDCU_CHECK_RANGE(150, 0, 100));
+    
+    IDCU_TEST_ASSERT(IDCU_CHECK_SIZE(50, 100));
+    IDCU_TEST_ASSERT(!IDCU_CHECK_SIZE(150, 100));
+    
+    IDCU_TEST_ASSERT(IDCU_CHECK_PTR_AND_SIZE(ptr, 50, 100));
+    IDCU_TEST_ASSERT(!IDCU_CHECK_PTR_AND_SIZE(NULL, 50, 100));
 }
 
 int main(void) {
