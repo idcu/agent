@@ -1,0 +1,17 @@
+# YAML 集成配置
+yaml:
+  # 默认输出格式: compact, block
+  output_format: "block"
+
+  # 默认缩进
+  indent: 2
+
+  # 是否启用 YAML Schema 验证
+  schema_validation: true
+
+  # 合并选项
+  merge:
+    deep_merge: true
+    overwrite_arrays: false
+    concat_arrays: true
+    preserve_null: false
