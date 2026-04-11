@@ -1,0 +1,11 @@
+module:
+  name: idcu-collect-module
+  version: 1.0.0
+  description: Collect business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-device-collector
+    - idcu-network
+    - idcu-core-module
