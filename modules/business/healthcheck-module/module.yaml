@@ -1,0 +1,10 @@
+module:
+  name: idcu-healthcheck-module
+  version: 1.0.0
+  description: Healthcheck business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-healthcheck
+    - idcu-core-module
