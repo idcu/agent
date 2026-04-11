@@ -1,0 +1,11 @@
+module:
+  name: idcu-http-management-module
+  version: 1.0.0
+  description: HTTP management business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-http-server
+    - idcu-management
+    - idcu-core-module
