@@ -1,0 +1,21 @@
+# 基础库统一集成配置
+basic_libs:
+  # 启用的库
+  enabled_libs:
+    - log
+    - config
+    - json
+    - yaml
+    - network
+    - metrics
+
+  # 初始化顺序（按依赖关系）
+  init_order:
+    - common
+    - memory
+    - log
+    - config
+    - json
+    - yaml
+    - network
+    - metrics
