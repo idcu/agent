@@ -143,14 +143,14 @@
 | 5.1 core-module - 核心基础模块 | ✅ 已完成 | [phase5/01_core_module.md](phase5/01_core_module.md) |
 | 5.2 log-module - 日志业务模块 | ✅ 已完成 | [phase5/02_log_module.md](phase5/02_log_module.md) |
 | 5.3 config-module - 配置业务模块 | ✅ 已完成 | [phase5/03_config_module.md](phase5/03_config_module.md) |
-| 5.4 heartbeat - 心跳模块 | ⏳ 待开始 | [phase5/04_heartbeat.md](phase5/04_heartbeat.md) |
-| 5.5 metrics-module - 指标模块 | ⏳ 待开始 | [phase5/05_metrics_module.md](phase5/05_metrics_module.md) |
-| 5.5 task-queue - 任务队列模块 | ⏳ 待开始 | [phase5/05_task_queue.md](phase5/05_task_queue.md) |
-| 5.6 healthcheck-module - 健康检查业务模块 | ⏳ 待开始 | [phase5/06_healthcheck_module.md](phase5/06_healthcheck_module.md) |
-| 5.7 alert-module - 告警业务模块 | ⏳ 待开始 | [phase5/07_alert_module.md](phase5/07_alert_module.md) |
-| 5.8 collect-module - 数据采集模块 | ⏳ 待开始 | [phase5/08_collect_module.md](phase5/08_collect_module.md) |
-| 5.9 cache-module - 缓存业务模块 | ⏳ 待开始 | [phase5/09_cache_module.md](phase5/09_cache_module.md) |
-| 5.10 storage-module - 存储业务模块 | ⏳ 待开始 | [phase5/10_storage_module.md](phase5/10_storage_module.md) |
-| 5.11 security-module - 安全业务模块 | ⏳ 待开始 | [phase5/11_security_module.md](phase5/11_security_module.md) |
-| 5.12 http-client-module - HTTP 客户端模块 | ⏳ 待开始 | [phase5/12_http_client_module.md](phase5/12_http_client_module.md) |
-| 5.13 http-management-module - HTTP 管理模块 | ⏳ 待开始 | [phase5/13_http_management_module.md](phase5/13_http_management_module.md) |
+| 5.4 heartbeat - 心跳模块 | ✅ 已完成 | [phase5/04_heartbeat.md](phase5/04_heartbeat.md) |
+| 5.5 metrics-module - 指标模块 | ✅ 已完成 | [phase5/05_metrics_module.md](phase5/05_metrics_module.md) |
+| 5.5 task-queue - 任务队列模块 | ✅ 已完成 | [phase5/05_task_queue.md](phase5/05_task_queue.md) |
+| 5.6 healthcheck-module - 健康检查业务模块 | ✅ 已完成 | [phase5/06_healthcheck_module.md](phase5/06_healthcheck_module.md) |
+| 5.7 alert-module - 告警业务模块 | ✅ 已完成 | [phase5/07_alert_module.md](phase5/07_alert_module.md) |
+| 5.8 collect-module - 数据采集模块 | ✅ 已完成 | [phase5/08_collect_module.md](phase5/08_collect_module.md) |
+| 5.9 cache-module - 缓存业务模块 | ✅ 已完成 | [phase5/09_cache_module.md](phase5/09_cache_module.md) |
+| 5.10 storage-module - 存储业务模块 | ✅ 已完成 | [phase5/10_storage_module.md](phase5/10_storage_module.md) |
+| 5.11 security-module - 安全业务模块 | ✅ 已完成 | [phase5/11_security_module.md](phase5/11_security_module.md) |
+| 5.12 http-client-module - HTTP 客户端模块 | ✅ 已完成 | [phase5/12_http_client_module.md](phase5/12_http_client_module.md) |
+| 5.13 http-management-module - HTTP 管理模块 | ✅ 已完成 | [phase5/13_http_management_module.md](phase5/13_http_management_module.md) |
