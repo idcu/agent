@@ -8,26 +8,17 @@ Configuration management library.
 #include <idcu/config/config.h>
 
 int main() {
-    idcu_Config* config = NULL;
-    idcu_config_init(&config, "config.ini");
+    idcu_config_init("config.ini");
     
-    const char* value = idcu_config_get_string(config, "database", "host", "localhost");
+    const char* value = idcu_config_get_string("database", "host", "localhost");
     printf("Database host: %s\n", value);
     
-    idcu_config_set_int(config, "app", "port", 8080);
-    idcu_config_save(config, "config.ini");
+    idcu_config_set_int("app", "port", 8080);
+    idcu_config_save("config.ini");
     
-    idcu_config_destroy(config);
+    idcu_config_shutdown();
     return 0;
 }
-```
-
-## Configuration Structure
-
-### Config Type
-
-```c
-typedef struct idcu_Config idcu_Config;
 ```
 
 ## Initialization
@@ -35,44 +26,51 @@ typedef struct idcu_Config idcu_Config;
 ### Initialize Config
 
 ```c
-idcu_ErrorCode idcu_config_init(idcu_Config** config, const char* file_path);
+int idcu_config_init(const char* file_path);
 ```
 
-Initialize a configuration manager, optionally loading from a file.
+Initialize a configuration manager, loading from a file.
 
-- `config`: Output pointer to config instance
-- `file_path`: Path to config file (NULL for empty config)
+- `file_path`: Path to config file
 
-### Load from File
+### Shutdown
 
 ```c
-idcu_ErrorCode idcu_config_load(idcu_Config* config, const char* file_path);
+void idcu_config_shutdown(void);
 ```
 
-Load configuration from a file.
+Shutdown the configuration manager.
 
-### Save to File
+### Is Loaded
 
 ```c
-idcu_ErrorCode idcu_config_save(idcu_Config* config, const char* file_path);
+int idcu_config_is_loaded(void);
+```
+
+Check if config is loaded.
+
+### Reload
+
+```c
+int idcu_config_reload(void);
+```
+
+Reload the config file.
+
+### Save
+
+```c
+int idcu_config_save(const char* file_path);
 ```
 
 Save configuration to a file.
-
-### Destroy
-
-```c
-void idcu_config_destroy(idcu_Config* config);
-```
-
-Destroy the configuration manager.
 
 ## Getting Values
 
 ### Get String
 
 ```c
-const char* idcu_config_get_string(idcu_Config* config, const char* section, const char* key, const char* default_value);
+const char* idcu_config_get_string(const char* section, const char* key, const char* default_value);
 ```
 
 Get a string value.
@@ -80,7 +78,7 @@ Get a string value.
 ### Get Integer
 
 ```c
-int idcu_config_get_int(idcu_Config* config, const char* section, const char* key, int default_value);
+int idcu_config_get_int(const char* section, const char* key, int default_value);
 ```
 
 Get an integer value.
@@ -88,7 +86,7 @@ Get an integer value.
 ### Get Int64
 
 ```c
-int64_t idcu_config_get_int64(idcu_Config* config, const char* section, const char* key, int64_t default_value);
+int64_t idcu_config_get_int64(const char* section, const char* key, int64_t default_value);
 ```
 
 Get a 64-bit integer value.
@@ -96,7 +94,7 @@ Get a 64-bit integer value.
 ### Get Double
 
 ```c
-double idcu_config_get_double(idcu_Config* config, const char* section, const char* key, double default_value);
+double idcu_config_get_double(const char* section, const char* key, double default_value);
 ```
 
 Get a double value.
@@ -104,7 +102,7 @@ Get a double value.
 ### Get Boolean
 
 ```c
-int idcu_config_get_bool(idcu_Config* config, const char* section, const char* key, int default_value);
+int idcu_config_get_bool(const char* section, const char* key, int default_value);
 ```
 
 Get a boolean value (0 = false, 1 = true).
@@ -114,7 +112,7 @@ Get a boolean value (0 = false, 1 = true).
 ### Set String
 
 ```c
-idcu_ErrorCode idcu_config_set_string(idcu_Config* config, const char* section, const char* key, const char* value);
+int idcu_config_set_string(const char* section, const char* key, const char* value);
 ```
 
 Set a string value.
@@ -122,7 +120,7 @@ Set a string value.
 ### Set Integer
 
 ```c
-idcu_ErrorCode idcu_config_set_int(idcu_Config* config, const char* section, const char* key, int value);
+int idcu_config_set_int(const char* section, const char* key, int value);
 ```
 
 Set an integer value.
@@ -130,7 +128,7 @@ Set an integer value.
 ### Set Int64
 
 ```c
-idcu_ErrorCode idcu_config_set_int64(idcu_Config* config, const char* section, const char* key, int64_t value);
+int idcu_config_set_int64(const char* section, const char* key, int64_t value);
 ```
 
 Set a 64-bit integer value.
@@ -138,7 +136,7 @@ Set a 64-bit integer value.
 ### Set Double
 
 ```c
-idcu_ErrorCode idcu_config_set_double(idcu_Config* config, const char* section, const char* key, double value);
+int idcu_config_set_double(const char* section, const char* key, double value);
 ```
 
 Set a double value.
@@ -146,7 +144,7 @@ Set a double value.
 ### Set Boolean
 
 ```c
-idcu_ErrorCode idcu_config_set_bool(idcu_Config* config, const char* section, const char* key, int value);
+int idcu_config_set_bool(const char* section, const char* key, int value);
 ```
 
 Set a boolean value.
@@ -156,7 +154,7 @@ Set a boolean value.
 ### Get List
 
 ```c
-idcu_ErrorCode idcu_config_get_list(idcu_Config* config, const char* section, const char* key, char*** out_values, size_t* out_count);
+int idcu_config_get_list(const char* section, const char* key, const char* delimiter, idcu_ConfigList* out_list);
 ```
 
 Get a list of strings.
@@ -164,25 +162,17 @@ Get a list of strings.
 ### Set List
 
 ```c
-idcu_ErrorCode idcu_config_set_list(idcu_Config* config, const char* section, const char* key, const char** values, size_t count);
+int idcu_config_set_list(const char* section, const char* key, const char* delimiter, const idcu_ConfigList* list);
 ```
 
 Set a list of strings.
-
-### Free List
-
-```c
-void idcu_config_free_list(char** values, size_t count);
-```
-
-Free the memory allocated by `idcu_config_get_list`.
 
 ## Change Notifications
 
 ### Register Change Callback
 
 ```c
-idcu_ErrorCode idcu_config_register_change_callback(idcu_Config* config, idcu_ConfigChangeCallback callback, void* user_data);
+int idcu_config_register_change_callback(idcu_ConfigChangeCallback callback, void* user_data);
 ```
 
 Register a callback to be notified when config changes.
@@ -190,53 +180,53 @@ Register a callback to be notified when config changes.
 ### Unregister Change Callback
 
 ```c
-void idcu_config_unregister_change_callback(idcu_Config* config, idcu_ConfigChangeCallback callback);
+int idcu_config_unregister_change_callback(idcu_ConfigChangeCallback callback);
 ```
 
 Unregister a change callback.
 
 ## Environment Variables
 
-### Load from Environment
+### Enable Environment Variables
 
 ```c
-idcu_ErrorCode idcu_config_load_from_env(idcu_Config* config, const char* prefix);
+void idcu_config_enable_env_var(int enable);
 ```
 
-Load configuration from environment variables.
+Enable/disable environment variable support.
 
-## Hot Reload
+## File Watch
 
-### Enable Auto Reload
+### Start Watch
 
 ```c
-idcu_ErrorCode idcu_config_enable_auto_reload(idcu_Config* config, const char* file_path, int check_interval_ms);
+int idcu_config_watch_start(uint32_t interval_ms);
 ```
 
-Enable automatic reloading when the config file changes.
+Start watching the config file for changes.
 
-### Disable Auto Reload
+### Stop Watch
 
 ```c
-void idcu_config_disable_auto_reload(idcu_Config* config);
+void idcu_config_watch_stop(void);
 ```
 
-Disable automatic reloading.
+Stop watching the config file.
 
-### Reload Manually
+### Is Watch Running
 
 ```c
-idcu_ErrorCode idcu_config_reload(idcu_Config* config);
+int idcu_config_watch_is_running(void);
 ```
 
-Reload the config file manually.
+Check if file watch is running.
 
 ## Profile Loading
 
 ### Load Profile
 
 ```c
-idcu_ErrorCode idcu_config_load_profile(idcu_Config* config, const char* profile_name);
+int idcu_config_load_profile(const char* profile_name);
 ```
 
 Load a configuration profile.
@@ -246,93 +236,26 @@ Load a configuration profile.
 ### Basic Usage
 
 ```c
-idcu_Config* config = NULL;
-idcu_config_init(&config, "app.ini");
+idcu_config_init("app.ini");
 
 // Get values with defaults
-const char* host = idcu_config_get_string(config, "database", "host", "localhost");
-int port = idcu_config_get_int(config, "database", "port", 5432);
+const char* host = idcu_config_get_string("database", "host", "localhost");
+int port = idcu_config_get_int("database", "port", 5432);
 
 printf("Connecting to %s:%d\n", host, port);
 
-idcu_config_destroy(config);
+idcu_config_shutdown();
 ```
 
 ### Setting Values
 
 ```c
-idcu_Config* config = NULL;
-idcu_config_init(&config, NULL);
+idcu_config_init("app.ini");
 
-idcu_config_set_string(config, "app", "name", "MyApp");
-idcu_config_set_int(config, "app", "version", 1);
-idcu_config_set_bool(config, "app", "debug", 1);
+idcu_config_set_string("app", "name", "MyApp");
+idcu_config_set_int("app", "version", 1);
+idcu_config_set_bool("app", "debug", 1);
 
-idcu_config_save(config, "app.ini");
-idcu_config_destroy(config);
-```
-
-### Working with Lists
-
-```c
-idcu_Config* config = NULL;
-idcu_config_init(&config, NULL);
-
-const char* servers[] = {"server1", "server2", "server3"};
-idcu_config_set_list(config, "cluster", "servers", servers, 3);
-
-char** values = NULL;
-size_t count = 0;
-idcu_config_get_list(config, "cluster", "servers", &values, &count);
-
-for (size_t i = 0; i < count; i++) {
-    printf("Server: %s\n", values[i]);
-}
-
-idcu_config_free_list(values, count);
-idcu_config_destroy(config);
-```
-
-### Change Notifications
-
-```c
-void on_config_change(const char* section, const char* key, void* user_data) {
-    printf("Config changed: %s.%s\n", section, key);
-}
-
-idcu_Config* config = NULL;
-idcu_config_init(&config, "app.ini");
-idcu_config_register_change_callback(config, on_config_change, NULL);
-
-// ... any change will trigger the callback
-
-idcu_config_destroy(config);
-```
-
-### Environment Variables
-
-```c
-idcu_Config* config = NULL;
-idcu_config_init(&config, NULL);
-
-// Load variables like MYAPP_DATABASE_HOST
-idcu_config_load_from_env(config, "MYAPP_");
-
-const char* host = idcu_config_get_string(config, "database", "host", "localhost");
-idcu_config_destroy(config);
-```
-
-### Hot Reload
-
-```c
-idcu_Config* config = NULL;
-idcu_config_init(&config, "app.ini");
-
-// Check for changes every 5 seconds
-idcu_config_enable_auto_reload(config, "app.ini", 5000);
-
-// ... config will reload automatically when file changes
-
-idcu_config_disable_auto_reload(config);
-idcu_config_destroy(config);
+idcu_config_save("app.ini");
+idcu_config_shutdown();
 ```

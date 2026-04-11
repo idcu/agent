@@ -21,7 +21,10 @@ typedef enum {
     IDCU_ERR_BUSY = -10,
     IDCU_ERR_CANCELLED = -11,
     IDCU_ERR_NOT_IMPLEMENTED = -12,
-    IDCU_ERR_INTERNAL = -13
+    IDCU_ERR_INTERNAL = -13,
+    IDCU_ERR_OUT_OF_RANGE = -14,
+    IDCU_ERR_BUFFER_TOO_SMALL = -15,
+    IDCU_ERR_INVALID_STATE = -16
 } idcu_ErrorCode;
 ```
 
@@ -38,40 +41,65 @@ Returns a human-readable error message for the given error code.
 ### Vector Type
 
 ```c
-typedef struct idcu_Vector idcu_Vector;
+typedef struct
+{
+    void** data;
+    size_t size;
+    size_t capacity;
+    size_t element_size;
+    void (*element_dtor)(void*);
+} idcu_Vector;
 ```
 
 ### Vector Functions
 
 ```c
-idcu_ErrorCode idcu_vector_init(idcu_Vector** vector, size_t element_size);
-void idcu_vector_destroy(idcu_Vector* vector);
+int  idcu_vector_init(idcu_Vector* vec, size_t element_size, size_t initial_capacity);
+int  idcu_vector_init_with_dtor(idcu_Vector* vec, size_t element_size, size_t initial_capacity,
+                                void (*element_dtor)(void*));
+void idcu_vector_destroy(idcu_Vector* vec);
 
-idcu_ErrorCode idcu_vector_push(idcu_Vector* vector, const void* element);
-idcu_ErrorCode idcu_vector_pop(idcu_Vector* vector, void* out_element);
-void* idcu_vector_get(idcu_Vector* vector, size_t index);
-idcu_ErrorCode idcu_vector_set(idcu_Vector* vector, size_t index, const void* element);
-size_t idcu_vector_size(idcu_Vector* vector);
-idcu_ErrorCode idcu_vector_reserve(idcu_Vector* vector, size_t capacity);
-void idcu_vector_clear(idcu_Vector* vector);
+int idcu_vector_push_back(idcu_Vector* vec, const void* element);
+int idcu_vector_pop_back(idcu_Vector* vec, void* out_element);
+int idcu_vector_insert(idcu_Vector* vec, size_t index, const void* element);
+int idcu_vector_remove(idcu_Vector* vec, size_t index);
+
+void* idcu_vector_get(const idcu_Vector* vec, size_t index);
+int   idcu_vector_set(idcu_Vector* vec, size_t index, const void* element);
+
+size_t idcu_vector_size(const idcu_Vector* vec);
+size_t idcu_vector_capacity(const idcu_Vector* vec);
+bool   idcu_vector_empty(const idcu_Vector* vec);
+void   idcu_vector_clear(idcu_Vector* vec);
+
+int idcu_vector_reserve(idcu_Vector* vec, size_t new_capacity);
+int idcu_vector_resize(idcu_Vector* vec, size_t new_size, const void* default_value);
 ```
 
 ### Vector Example
 
 ```c
-idcu_Vector* vec = NULL;
-idcu_vector_init(&vec, sizeof(int));
+idcu_Vector vec;
+idcu_vector_init(&vec, sizeof(int), 16);
 
 int value = 42;
-idcu_vector_push(vec, &value);
+idcu_vector_push_back(&vec, &value);
 
 value = 100;
-idcu_vector_push(vec, &value);
+idcu_vector_push_back(&vec, &value);
 
-int* retrieved = (int*)idcu_vector_get(vec, 0);
+int* retrieved = (int*)idcu_vector_get(&vec, 0);
 printf("First element: %d\n", *retrieved);
 
-idcu_vector_destroy(vec);
+idcu_vector_destroy(&vec);
+```
+
+### Vector For-Each Macro
+
+```c
+#define IDCU_VECTOR_FOR_EACH(vec, type, var, index)                \
+    for (size_t index = 0; index < idcu_vector_size(vec); ++index) \
+        for (type* var = (type*)idcu_vector_get(vec, index); var; var = NULL)
 ```
 
 ## Hash Map
