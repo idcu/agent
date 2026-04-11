@@ -27,6 +27,7 @@ typedef void (*idcu_MsgHandler)(idcu_MsgTopic topic,
 
 #define IDCU_MSG_MAX_TOPICS 64
 #define IDCU_MSG_MAX_SIZE 4096
+#define IDCU_MSG_PRIORITY_COUNT 4
 
 #ifdef __cplusplus
 }

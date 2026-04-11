@@ -119,6 +119,57 @@ void idcu_mem_pool_destroy(idcu_MemoryPool* pool) {
     memset(pool, 0, sizeof(idcu_MemoryPool));
 }
 
+static int expand_size_class(idcu_SizeClass* sc) {
+    uint32_t new_block_count = sc->block_count * 2;
+    if (new_block_count > UINT16_MAX) {
+        return IDCU_ERR_MEMORY;
+    }
+
+    idcu_PoolBlock* new_blocks = (idcu_PoolBlock*)realloc(sc->blocks, new_block_count * sizeof(idcu_PoolBlock));
+    if (!new_blocks) {
+        return IDCU_ERR_MEMORY;
+    }
+    sc->blocks = new_blocks;
+
+    uint32_t* new_free_list = (uint32_t*)realloc(sc->free_list, new_block_count * sizeof(uint32_t));
+    if (!new_free_list) {
+        return IDCU_ERR_MEMORY;
+    }
+    sc->free_list = new_free_list;
+
+    // Initialize new blocks
+    for (uint32_t j = sc->block_count; j < new_block_count - 1; j++) {
+        sc->free_list[j] = j + 1;
+        sc->blocks[j].size_class = sc->blocks[0].size_class;
+        sc->blocks[j].in_use = 0;
+
+        // Allocate actual data memory
+        sc->blocks[j].data = calloc(1, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
+        if (!sc->blocks[j].data) {
+            return IDCU_ERR_MEMORY;
+        }
+
+        // Initialize guard marks
+        memset(sc->blocks[j].guard, 0xAA, IDCU_MEM_GUARD_SIZE);
+    }
+
+    // Last new block
+    sc->free_list[new_block_count - 1] = sc->free_head;
+    sc->free_head = sc->block_count;
+    sc->blocks[new_block_count - 1].size_class = sc->blocks[0].size_class;
+    sc->blocks[new_block_count - 1].in_use = 0;
+    sc->blocks[new_block_count - 1].data = calloc(1, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
+    if (!sc->blocks[new_block_count - 1].data) {
+        return IDCU_ERR_MEMORY;
+    }
+    memset(sc->blocks[new_block_count - 1].guard, 0xAA, IDCU_MEM_GUARD_SIZE);
+
+    sc->free_count += (new_block_count - sc->block_count);
+    sc->block_count = new_block_count;
+
+    return IDCU_ERR_OK;
+}
+
 void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size) {
     if (!pool || size == 0) {
         return NULL;
@@ -133,8 +184,11 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size) {
     idcu_mutex_lock(&sc->class_lock);
     
     if (sc->free_head == UINT32_MAX || sc->free_count == 0) {
-        idcu_mutex_unlock(&sc->class_lock);
-        return NULL;
+        int ret = expand_size_class(sc);
+        if (ret != IDCU_ERR_OK) {
+            idcu_mutex_unlock(&sc->class_lock);
+            return NULL;
+        }
     }
     
     // 从空闲链表取块
