@@ -1,0 +1,10 @@
+module:
+  name: idcu-http-client-module
+  version: 1.0.0
+  description: HTTP client business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-http-client
+    - idcu-core-module
