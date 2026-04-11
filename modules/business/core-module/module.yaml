@@ -1,0 +1,12 @@
+module:
+  name: idcu-core-module
+  version: 1.0.0
+  description: Core foundation module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-log
+    - idcu-config
+    - idcu-healthcheck
+    - idcu-metrics

@@ -139,8 +139,8 @@
 
 | 任务 | 状态 | 文件 |
 |-----|------|------|
-| 5.0 阶段 5 概述 | ⏳ 待开始 | [phase5/00_phase5_overview.md](phase5/00_phase5_overview.md) |
-| 5.1 core-module - 核心基础模块 | ⏳ 待开始 | [phase5/01_core_module.md](phase5/01_core_module.md) |
+| 5.0 阶段 5 概述 | ✅ 已完成 | [phase5/00_phase5_overview.md](phase5/00_phase5_overview.md) |
+| 5.1 core-module - 核心基础模块 | ✅ 已完成 | [phase5/01_core_module.md](phase5/01_core_module.md) |
 | 5.2 log-module - 日志业务模块 | ⏳ 待开始 | [phase5/02_log_module.md](phase5/02_log_module.md) |
 | 5.3 config-module - 配置业务模块 | ⏳ 待开始 | [phase5/03_config_module.md](phase5/03_config_module.md) |
 | 5.4 heartbeat - 心跳模块 | ⏳ 待开始 | [phase5/04_heartbeat.md](phase5/04_heartbeat.md) |
