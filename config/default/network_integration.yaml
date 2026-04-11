@@ -1,0 +1,40 @@
+# 网络集成配置
+network:
+  # 网络端点配置
+  endpoints:
+    - name: "default"
+      host: "0.0.0.0"
+      port: 8080
+      enabled: true
+      auto_reconnect: true
+
+  # 连接池配置
+  connection_pool:
+    max_connections: 100
+    idle_timeout: 300
+    connect_timeout: 5000
+
+  # HTTP 服务器配置
+  http_server:
+    enabled: true
+    host: "0.0.0.0"
+    port: 8080
+    max_connections: 1000
+
+  # HTTP 客户端配置
+  http_client:
+    timeout: 30000
+    max_redirects: 5
+    keep_alive: true
+
+  # 消息总线配置
+  msgbus:
+    enabled: true
+    topic_prefix: "idcu"
+
+  # 节点发现配置
+  discovery:
+    enabled: true
+    multicast_addr: "224.0.0.1"
+    port: 5353
+    interval: 5000
