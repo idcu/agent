@@ -40,21 +40,22 @@ static void msg_dtor(void* element) {
     }
 }
 
-static void sort_vector_by_priority(idcu_Vector* vec) {
+static void insert_sorted_by_priority(idcu_Vector* vec, idcu_Msg* msg) {
     size_t n = idcu_vector_size(vec);
-    if (n <= 1) return;
+    if (n == 0) {
+        idcu_vector_push_back(vec, &msg);
+        return;
+    }
 
-    for (size_t i = 0; i < n - 1; i++) {
-        for (size_t j = 0; j < n - i - 1; j++) {
-            idcu_Msg** a = (idcu_Msg**)idcu_vector_get(vec, j);
-            idcu_Msg** b = (idcu_Msg**)idcu_vector_get(vec, j + 1);
-            if (*a && *b && (*a)->priority < (*b)->priority) {
-                idcu_Msg* temp = *a;
-                *a = *b;
-                *b = temp;
-            }
+    size_t insert_pos = 0;
+    for (; insert_pos < n; insert_pos++) {
+        idcu_Msg** current = (idcu_Msg**)idcu_vector_get(vec, insert_pos);
+        if (*current && (*current)->priority < msg->priority) {
+            break;
         }
     }
+
+    idcu_vector_insert(vec, insert_pos, &msg);
 }
 
 int idcu_msgbus_init(idcu_MsgBus** bus) {
@@ -200,9 +201,7 @@ int idcu_msgbus_publish(idcu_MsgBus* bus,
         }
     }
 
-    idcu_vector_push_back(bus->topic_queues[topic], &msg);
-
-    sort_vector_by_priority(bus->topic_queues[topic]);
+    insert_sorted_by_priority(bus->topic_queues[topic], msg);
 
     idcu_mutex_unlock(&bus->mutex);
 

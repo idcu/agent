@@ -6,10 +6,10 @@
 
 static uint32_t idcu_hash_func(const char* key)
 {
-    uint32_t hash = 5381;
-    int c;
-    while ((c = *key++)) {
-        hash = ((hash << 5) + hash) + c;
+    uint32_t hash = 0x811c9dc5;
+    while (*key) {
+        hash ^= (uint8_t)(*key++);
+        hash *= 0x01000193;
     }
     return hash;
 }
