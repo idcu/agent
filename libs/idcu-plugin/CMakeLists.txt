@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(idcu-plugin C)
+project(idcu-plugin VERSION 1.0.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -13,12 +13,17 @@ target_include_directories(idcu-plugin PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(idcu-plugin PUBLIC idcu::common)
+target_link_libraries(idcu-plugin PRIVATE idcu::common)
+add_library(idcu::plugin ALIAS idcu-plugin)
 
 if(WIN32)
-    target_link_libraries(idcu-plugin PRIVATE)
-else()
-    target_link_libraries(idcu-plugin PRIVATE pthread)
+    target_link_libraries(idcu-plugin PRIVATE psapi)
 endif()
 
-add_library(idcu::plugin ALIAS idcu-plugin)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
