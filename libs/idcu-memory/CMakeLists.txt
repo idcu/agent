@@ -22,3 +22,7 @@ else()
 endif()
 
 add_library(idcu::memory ALIAS idcu-memory)
+
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

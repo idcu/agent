@@ -22,3 +22,7 @@ else()
 endif()
 
 add_library(idcu::config ALIAS idcu-config)
+
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
