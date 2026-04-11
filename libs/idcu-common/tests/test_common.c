@@ -5,8 +5,158 @@
 #include <idcu/common/lock.h>
 #include <idcu/common/linked_list.h>
 #include <idcu/common/option.h>
+#include <idcu/common/deadlock_detector.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#define THREAD_HANDLE HANDLE
+#define THREAD_RET DWORD WINAPI
+#define THREAD_FUNC_ARG LPVOID
+#else
+#include <pthread.h>
+#include <unistd.h>
+#define THREAD_HANDLE pthread_t
+#define THREAD_RET void*
+#define THREAD_FUNC_ARG void*
+#endif
+
+static int g_counter = 0;
+static idcu_Mutex g_test_mutex;
+static volatile int g_thread_done = 0;
+
+THREAD_RET thread_increment_counter(THREAD_FUNC_ARG arg)
+{
+    (void)arg;
+    for (int i = 0; i < 10000; i++) {
+        idcu_mutex_lock(&g_test_mutex);
+        g_counter++;
+        idcu_mutex_unlock(&g_test_mutex);
+    }
+    g_thread_done = 1;
+#ifdef _WIN32
+    return 0;
+#else
+    return NULL;
+#endif
+}
+
+IDCU_TEST_CASE(mutex, concurrent_access) {
+    g_counter = 0;
+    g_thread_done = 0;
+    int ret = idcu_mutex_init(&g_test_mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+#ifdef _WIN32
+    HANDLE thread = CreateThread(NULL, 0, thread_increment_counter, NULL, 0, NULL);
+    IDCU_TEST_ASSERT(thread != NULL);
+    
+    for (int i = 0; i < 10000; i++) {
+        idcu_mutex_lock(&g_test_mutex);
+        g_counter++;
+        idcu_mutex_unlock(&g_test_mutex);
+    }
+    
+    WaitForSingleObject(thread, INFINITE);
+    CloseHandle(thread);
+#else
+    pthread_t thread;
+    pthread_create(&thread, NULL, thread_increment_counter, NULL);
+    
+    for (int i = 0; i < 10000; i++) {
+        idcu_mutex_lock(&g_test_mutex);
+        g_counter++;
+        idcu_mutex_unlock(&g_test_mutex);
+    }
+    
+    pthread_join(thread, NULL);
+#endif
+    
+    IDCU_TEST_ASSERT_EQUAL(20000, g_counter);
+    
+    idcu_mutex_destroy(&g_test_mutex);
+}
+
+IDCU_TEST_CASE(mutex, timedlock) {
+    idcu_Mutex mutex;
+    int ret = idcu_mutex_init(&mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    ret = idcu_mutex_lock(&mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    ret = idcu_mutex_timedlock(&mutex, 100);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_TIMEOUT, ret);
+    
+    idcu_mutex_unlock(&mutex);
+    
+    ret = idcu_mutex_timedlock(&mutex, 100);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    idcu_mutex_unlock(&mutex);
+    idcu_mutex_destroy(&mutex);
+}
+
+#ifdef IDCU_DEBUG
+IDCU_TEST_CASE(mutex, hold_time_stats) {
+    idcu_Mutex mutex;
+    int ret = idcu_mutex_init(&mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    ret = idcu_mutex_lock(&mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+#ifdef _WIN32
+    Sleep(10);
+#else
+    usleep(10000);
+#endif
+    
+    ret = idcu_mutex_unlock(&mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    uint64_t total_hold = idcu_mutex_get_total_hold_time(&mutex);
+    uint64_t max_hold = idcu_mutex_get_max_hold_time(&mutex);
+    
+    IDCU_TEST_ASSERT(total_hold >= 10);
+    IDCU_TEST_ASSERT(max_hold >= 10);
+    
+    idcu_mutex_destroy(&mutex);
+}
+#endif
+
+IDCU_TEST_CASE(deadlock_detector, init_destroy) {
+    idcu_DeadlockDetector* detector = NULL;
+    int ret = idcu_deadlock_detector_init(&detector);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    IDCU_TEST_ASSERT(detector != NULL);
+    
+    idcu_deadlock_detector_destroy(detector);
+}
+
+IDCU_TEST_CASE(deadlock_detector, register_mutex) {
+    idcu_DeadlockDetector* detector = NULL;
+    int ret = idcu_deadlock_detector_init(&detector);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    idcu_Mutex mutex1, mutex2;
+    idcu_mutex_init(&mutex1);
+    idcu_mutex_init(&mutex2);
+    
+    ret = idcu_deadlock_detector_register_mutex(detector, &mutex1, "mutex1");
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    ret = idcu_deadlock_detector_register_mutex(detector, &mutex2, "mutex2");
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    idcu_deadlock_detector_unregister_mutex(detector, &mutex1);
+    idcu_deadlock_detector_unregister_mutex(detector, &mutex2);
+    
+    idcu_mutex_destroy(&mutex1);
+    idcu_mutex_destroy(&mutex2);
+    idcu_deadlock_detector_destroy(detector);
+}
 
 IDCU_TEST_CASE(error_code, to_str) {
     const char* str = idcu_err_to_str(IDCU_ERR_OK);

@@ -14,6 +14,7 @@ add_library(idcu-common STATIC
     src/idcu/common/linked_list.c
     src/idcu/common/security.c
     src/idcu/common/option.c
+    src/idcu/common/deadlock_detector.c
 )
 
 target_include_directories(idcu-common PUBLIC
