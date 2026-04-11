@@ -1,0 +1,10 @@
+module:
+  name: idcu-storage-module
+  version: 1.0.0
+  description: Storage business module for IDCU Agent
+  author: IDCU Team
+  license: MIT
+  dependencies:
+    - idcu-common
+    - idcu-storage
+    - idcu-core-module
