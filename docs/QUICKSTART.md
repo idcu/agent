@@ -1,30 +1,30 @@
-# IDCU Agent Quick Start Guide
+# IDCU Agent 快速入门指南
 
-This guide will help you get started with the IDCU Agent project quickly.
+本指南将帮助您快速开始使用 IDCU Agent 项目。
 
-## Prerequisites
+## 前提条件
 
-- CMake 3.15 or higher
-- A C compiler (GCC, Clang, or MSVC)
-- Git (optional, for cloning the repository)
+- CMake 3.15 或更高版本
+- 一个 C 编译器（GCC、Clang 或 MSVC）
+- Git（可选，用于克隆仓库）
 
-## Building the Project
+## 构建项目
 
-### Step 1: Clone or Download the Project
+### 步骤 1：克隆或下载项目
 
 ```bash
 git clone <repository-url>
 cd idcu-agent
 ```
 
-### Step 2: Create Build Directory
+### 步骤 2：创建构建目录
 
 ```bash
 mkdir build
 cd build
 ```
 
-### Step 3: Configure with CMake
+### 步骤 3：使用 CMake 配置
 
 #### Windows (MSVC)
 ```bash
@@ -46,7 +46,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Release
 ```
 
-### Step 4: Build
+### 步骤 4：构建
 
 ```bash
 # Windows (Visual Studio)
@@ -56,73 +56,73 @@ cmake --build . --config Release
 make -j4
 ```
 
-### Step 5: Run the Application
+### 步骤 5：运行应用程序
 
 ```bash
-# After successful build
+# 构建成功后
 ./app/idcu-agent --version
 ```
 
-## Project Structure
+## 项目结构
 
 ```
 idcu-agent/
-├── app/                    # Main application
-├── libs/                   # Core libraries
-│   ├── idcu-common/       # Common utilities
-│   ├── idcu-log/          # Logging system
-│   ├── idcu-module-system/# Module system
-│   ├── idcu-coroutine/    # Coroutine scheduler
-│   ├── idcu-msgbus/       # Message bus
-│   ├── idcu-microkernel/  # Microkernel
-│   ├── idcu-network/      # Network library
-│   ├── idcu-http-server/  # HTTP server
-│   ├── idcu-http-client/  # HTTP client
-│   ├── idcu-config/       # Configuration
-│   ├── idcu-metrics/      # Metrics
-│   ├── idcu-healthcheck/  # Health checks
-│   └── ...                # More libraries
-├── modules/                # Business modules
-├── tests/                  # Tests
-├── docs/                   # Documentation
-└── CMakeLists.txt          # Main build file
+├── app/                    # 主应用程序
+├── libs/                   # 核心库
+│   ├── idcu-common/       # 通用工具
+│   ├── idcu-log/          # 日志系统
+│   ├── idcu-module-system/# 模块系统
+│   ├── idcu-coroutine/    # 协程调度器
+│   ├── idcu-msgbus/       # 消息总线
+│   ├── idcu-microkernel/  # 微内核
+│   ├── idcu-network/      # 网络库
+│   ├── idcu-http-server/  # HTTP 服务器
+│   ├── idcu-http-client/  # HTTP 客户端
+│   ├── idcu-config/       # 配置
+│   ├── idcu-metrics/      # 指标
+│   ├── idcu-healthcheck/  # 健康检查
+│   └── ...                # 更多库
+├── modules/                # 业务模块
+├── tests/                  # 测试
+├── docs/                   # 文档
+└── CMakeLists.txt          # 主构建文件
 ```
 
-## First Program: Using the Logging Library
+## 第一个程序：使用日志库
 
-Create a file `hello_log.c`:
+创建文件 `hello_log.c`：
 
 ```c
 #include <idcu/log/log.h>
 
 int main() {
-    // Initialize logging
+    // 初始化日志
     idcu_log_init(NULL, IDCU_LOG_INFO);
     
-    IDCU_LOG_INFO("Hello, IDCU Agent!");
-    IDCU_LOG_WARN("This is a warning");
+    IDCU_LOG_INFO("你好, IDCU Agent!");
+    IDCU_LOG_WARN("这是一个警告");
     
-    // Cleanup
+    // 清理
     idcu_log_shutdown();
     
     return 0;
 }
 ```
 
-## Building Your Own Program
+## 构建您自己的程序
 
-Create a `CMakeLists.txt`:
+创建 `CMakeLists.txt`：
 
 ```cmake
 cmake_minimum_required(VERSION 3.15)
 project(my_program)
 
-# Find or include IDCU libraries
+# 查找或包含 IDCU 库
 add_executable(my_program hello_log.c)
 target_link_libraries(my_program PRIVATE idcu::log)
 ```
 
-## Using Configuration
+## 使用配置
 
 ```c
 #include <idcu/config/config.h>
@@ -134,14 +134,14 @@ int main() {
     const char* host = idcu_config_get_string(config, "database", "host", "localhost");
     int port = idcu_config_get_int(config, "database", "port", 5432);
     
-    printf("Connecting to %s:%d\n", host, port);
+    printf("连接到 %s:%d\n", host, port);
     
     idcu_config_destroy(config);
     return 0;
 }
 ```
 
-## Using Metrics
+## 使用指标
 
 ```c
 #include <idcu/metrics/metrics.h>
@@ -150,14 +150,14 @@ int main() {
     idcu_MetricsRegistry* registry = NULL;
     idcu_metrics_registry_init(&registry);
     
-    // Create a counter
+    // 创建一个计数器
     idcu_Metric* requests = idcu_metrics_counter_create(
-        registry, "http_requests_total", "Total HTTP requests"
+        registry, "http_requests_total", "总 HTTP 请求数"
     );
     
     idcu_metrics_counter_inc(requests);
     
-    // Export to Prometheus format
+    // 导出为 Prometheus 格式
     char* prom = idcu_metrics_export_prometheus(registry);
     printf("%s", prom);
     free(prom);
@@ -167,9 +167,9 @@ int main() {
 }
 ```
 
-## Running Tests
+## 运行测试
 
-To build and run tests:
+构建和运行测试：
 
 ```bash
 cd build
@@ -178,19 +178,19 @@ cmake --build .
 ctest --output-on-failure
 ```
 
-## Next Steps
+## 下一步
 
-- Read the [API Documentation](api/README.md) for detailed library usage
-- Check the [examples](examples/) directory for more code examples
-- See the [Development Plan](DEVELOPMENT_PLAN.md) for project roadmap
-- Review the [Tasks](tasks/README.md) for contribution guidelines
+- 阅读 [API 文档](api/README.md) 了解详细的库使用方法
+- 查看 [examples](examples/) 目录获取更多代码示例
+- 查看 [开发计划](DEVELOPMENT_PLAN.md) 了解项目路线图
+- 查看 [任务](tasks/README.md) 了解贡献指南
 
-## Getting Help
+## 获取帮助
 
-- Check the documentation in the `docs/` directory
-- Look at the header files in `libs/*/include/` for API definitions
-- Review the source code in `libs/*/src/` for implementation details
+- 查看 `docs/` 目录中的文档
+- 查看 `libs/*/include/` 中的头文件了解 API 定义
+- 查看 `libs/*/src/` 中的源代码了解实现细节
 
-## License
+## 许可证
 
-IDCU Agent is released under the MIT License.
+IDCU Agent 采用 MIT 许可证发布。
