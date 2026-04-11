@@ -1,26 +1,26 @@
-# Message Bus Design
+# 消息总线设计
 
-This document describes the design of the IDCU Agent message bus.
+本文档描述了 IDCU Agent 消息总线的设计。
 
-## Overview
+## 概述
 
-The message bus provides a publish-subscribe communication system for inter-module communication.
+消息总线为模块间通信提供了一个发布-订阅通信系统。
 
-## Core Concepts
+## 核心概念
 
-### Topics
+### 主题
 
-Messages are organized by topics. Topics are 32-bit integers:
+消息按主题组织。主题是 32 位整数：
 
 ```c
 typedef uint32_t idcu_MsgTopic;
 ```
 
-Topic conventions:
-- Use higher bits for category
-- Use lower bits for specific message types
+主题约定：
+- 使用高位表示类别
+- 使用低位表示特定消息类型
 
-Example topic definitions:
+示例主题定义：
 
 ```c
 #define TOPIC_SYSTEM_BASE     0x00010000
@@ -34,22 +34,22 @@ Example topic definitions:
 #define TOPIC_LOG_ENTRY       (TOPIC_LOG_BASE | 0x0001)
 ```
 
-### Message Priorities
+### 消息优先级
 
-Messages can have priority levels:
+消息可以有优先级级别：
 
 ```c
 typedef enum {
-    IDCU_MSG_PRIORITY_LOW,      // Low priority (batch processing)
-    IDCU_MSG_PRIORITY_NORMAL,    // Normal priority (default)
-    IDCU_MSG_PRIORITY_HIGH,      // High priority (time-sensitive)
-    IDCU_MSG_PRIORITY_CRITICAL   // Critical priority (urgent)
+    IDCU_MSG_PRIORITY_LOW,      // 低优先级（批处理）
+    IDCU_MSG_PRIORITY_NORMAL,    // 正常优先级（默认）
+    IDCU_MSG_PRIORITY_HIGH,      // 高优先级（时间敏感）
+    IDCU_MSG_PRIORITY_CRITICAL   // 关键优先级（紧急）
 } idcu_MsgPriority;
 ```
 
-Higher priority messages are delivered before lower priority ones.
+更高优先级的消息在较低优先级消息之前被传递。
 
-### Message Handler
+### 消息处理器
 
 ```c
 typedef void (*idcu_MsgHandler)(idcu_MsgTopic topic,
@@ -58,22 +58,22 @@ typedef void (*idcu_MsgHandler)(idcu_MsgTopic topic,
                                  void* user_data);
 ```
 
-## Message Bus API
+## 消息总线 API
 
-### Initialization
+### 初始化
 
 ```c
-// Create message bus
+// 创建消息总线
 int idcu_msgbus_init(idcu_MsgBus** out_bus);
 
-// Destroy message bus
+// 销毁消息总线
 void idcu_msgbus_destroy(idcu_MsgBus* bus);
 ```
 
-### Publish
+### 发布
 
 ```c
-// Publish a message
+// 发布一条消息
 int idcu_msgbus_publish(idcu_MsgBus* bus,
                          idcu_MsgTopic topic,
                          const void* data,
@@ -81,110 +81,110 @@ int idcu_msgbus_publish(idcu_MsgBus* bus,
                          idcu_MsgPriority priority);
 ```
 
-### Subscribe
+### 订阅
 
 ```c
-// Subscribe to a topic
+// 订阅一个主题
 int idcu_msgbus_subscribe(idcu_MsgBus* bus,
                            idcu_MsgTopic topic,
                            idcu_MsgHandler handler,
                            void* user_data,
                            idcu_MsgSubscriber** out_subscriber);
 
-// Subscribe with pattern matching
+// 使用模式匹配订阅
 int idcu_msgbus_subscribe_pattern(idcu_MsgBus* bus,
                                     const char* pattern,
                                     idcu_MsgHandler handler,
                                     void* user_data,
                                     idcu_MsgSubscriber** out_subscriber);
 
-// Unsubscribe
+// 取消订阅
 int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
                              idcu_MsgSubscriber* subscriber);
 ```
 
-### Message Processing
+### 消息处理
 
 ```c
-// Process all pending messages
+// 处理所有待处理消息
 int idcu_msgbus_process(idcu_MsgBus* bus);
 
-// Process one message
+// 处理一条消息
 int idcu_msgbus_process_one(idcu_MsgBus* bus);
 
-// Get pending count
+// 获取待处理消息数量
 int idcu_msgbus_get_pending_count(idcu_MsgBus* bus);
 
-// Clear all messages
+// 清除所有消息
 void idcu_msgbus_clear(idcu_MsgBus* bus);
 ```
 
-## Architecture
+## 架构
 
-### Message Flow
+### 消息流程
 
 ```
-Publisher
+发布者
     ↓
-[Message Queue (priority sorted)]
+[消息队列（按优先级排序）]
     ↓
-[Dispatch]
+[分发]
     ↓
-Subscriber 1 ── Handler 1
+订阅者 1 ── 处理器 1
     ↓
-Subscriber 2 ── Handler 2
+订阅者 2 ── 处理器 2
     ↓
     ...
 ```
 
-### Thread Safety
+### 线程安全
 
-The message bus is thread-safe:
-- Multiple threads can publish concurrently
-- Multiple threads can subscribe concurrently
-- Message dispatch is single-threaded (process() must be called)
+消息总线是线程安全的：
+- 多个线程可以并发发布
+- 多个线程可以并发订阅
+- 消息分发是单线程的（必须调用 process()）
 
-## Usage Patterns
+## 使用模式
 
-### Basic Publish-Subscribe
+### 基本发布-订阅
 
 ```c
 #include <idcu/msgbus/msgbus.h>
 
 #define TOPIC_EXAMPLE 0x1000
 
-void my_handler(idcu_MsgTopic topic, const void* data, 
+void my_handler(idcu_MsgTopic topic, const void* data,
                 size_t data_size, void* user_data) {
-    printf("Received message on topic %u\n", topic);
+    printf("在主题 %u 上收到消息\n", topic);
     if (data && data_size > 0) {
-        printf("Data: %s\n", (const char*)data);
+        printf("数据：%s\n", (const char*)data);
     }
 }
 
 int main(void) {
     idcu_MsgBus* bus = NULL;
     idcu_msgbus_init(&bus);
-    
-    // Subscribe
+
+    // 订阅
     idcu_MsgSubscriber* sub = NULL;
     idcu_msgbus_subscribe(bus, TOPIC_EXAMPLE, my_handler, NULL, &sub);
-    
-    // Publish
-    const char* msg = "Hello, Bus!";
-    idcu_msgbus_publish(bus, TOPIC_EXAMPLE, msg, strlen(msg) + 1, 
+
+    // 发布
+    const char* msg = "你好，总线！";
+    idcu_msgbus_publish(bus, TOPIC_EXAMPLE, msg, strlen(msg) + 1,
                          IDCU_MSG_PRIORITY_NORMAL);
-    
-    // Process
+
+    // 处理
     idcu_msgbus_process(bus);
-    
-    // Cleanup
+
+    // 清理
     idcu_msgbus_unsubscribe(bus, sub);
     idcu_msgbus_destroy(bus);
     return 0;
 }
 ```
 
-### Request-Response Pattern
+### 请求-响应模式
 
 ```c
 typedef struct {
@@ -200,38 +200,38 @@ typedef struct {
 #define TOPIC_REQUEST  0x2000
 #define TOPIC_RESPONSE 0x2001
 
-void request_handler(idcu_MsgTopic topic, const void* data, 
+void request_handler(idcu_MsgTopic topic, const void* data,
                      size_t data_size, void* user_data) {
     idcu_MsgBus* bus = (idcu_MsgBus*)user_data;
     const RequestHeader* header = (const RequestHeader*)data;
-    
-    // Process request...
+
+    // 处理请求...
     ResponseHeader resp = {
         .request_id = header->request_id,
         .result = 42
     };
-    
-    // Send response
-    idcu_msgbus_publish(bus, header->reply_topic, &resp, 
+
+    // 发送响应
+    idcu_msgbus_publish(bus, header->reply_topic, &resp,
                          sizeof(resp), IDCU_MSG_PRIORITY_HIGH);
 }
 ```
 
-### Pattern Matching
+### 模式匹配
 
-Pattern matching allows subscribing to multiple topics:
+模式匹配允许订阅多个主题：
 
 ```c
-// Subscribe to all topics in 0x1000-0x1FFF range
+// 订阅 0x1000-0x1FFF 范围内的所有主题
 idcu_msgbus_subscribe_pattern(bus, "0x1*", handler, NULL, &sub);
 ```
 
-## Best Practices
+## 最佳实践
 
-1. **Define clear topic conventions** - Document topic ranges and meanings
-2. **Keep messages small** - Avoid large payloads
-3. **Use priorities appropriately** - Reserve CRITICAL for emergencies
-4. **Process regularly** - Call process() from main loop
-5. **Handle NULL data** - Check data and data_size
-6. **Don't block in handlers** - Keep handlers fast and async
-7. **Use user_data for context** - Pass necessary state
+1. **定义清晰的主题约定** - 记录主题范围和含义
+2. **保持消息小** - 避免大的有效载荷
+3. **适当使用优先级** - 为紧急情况保留 CRITICAL
+4. **定期处理** - 从主循环调用 process()
+5. **处理 NULL 数据** - 检查 data 和 data_size
+6. **不要在处理器中阻塞** - 保持处理器快速和异步
+7. **使用 user_data 传递上下文** - 传递必要的状态

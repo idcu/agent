@@ -1,13 +1,13 @@
 # idcu-alert-module
 
-Alert business module for IDCU Agent, providing:
-- Alert rule configuration
-- Alert triggering and deduplication
-- Multi-channel alert notifications (message bus, HTTP, etc.)
-- Alert history records
-- Alert queries and management
+IDCU Agent 的告警业务模块，提供：
+- 告警规则配置
+- 告警触发和去重
+- 多渠道告警通知（消息总线、HTTP 等）
+- 告警历史记录
+- 告警查询和管理
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/alert_module/alert_module.h>
@@ -33,3 +33,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

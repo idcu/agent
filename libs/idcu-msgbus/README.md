@@ -1,21 +1,21 @@
 # idcu-msgbus
 
-Message bus library for IDCU Agent, providing publish-subscribe messaging pattern with priority queues.
+IDCU Agent 的消息总线库，提供带优先级队列的发布-订阅消息模式。
 
-## Features
+## 功能特性
 
-- Publish-Subscribe messaging pattern
-- Priority-based message queuing (LOW, NORMAL, HIGH, CRITICAL)
-- Topic-based message routing (up to 64 topics)
-- Thread-safe operations
+- 发布-订阅消息模式
+- 基于优先级的消息队列（LOW、NORMAL、HIGH、CRITICAL）
+- 基于主题的消息路由（最多 64 个主题）
+- 线程安全操作
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/msgbus/msgbus.h>
 
 void my_handler(idcu_MsgTopic topic, const void* data, size_t data_size, void* user_data) {
-    // Handle message
+    // 处理消息
 }
 
 int main() {
@@ -25,7 +25,7 @@ int main() {
     idcu_MsgSubscriber* sub = NULL;
     idcu_msgbus_subscribe(bus, 1, my_handler, NULL, &sub);
 
-    const char* msg = "Hello!";
+    const char* msg = "你好!";
     idcu_msgbus_publish(bus, 1, msg, strlen(msg), IDCU_MSG_PRIORITY_NORMAL);
 
     idcu_msgbus_process(bus);
@@ -36,6 +36,6 @@ int main() {
 }
 ```
 
-## License
+## 许可证
 
-MIT
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

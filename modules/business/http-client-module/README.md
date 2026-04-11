@@ -1,13 +1,13 @@
 # idcu-http-client-module
 
-HTTP client business module for IDCU Agent, providing:
-- HTTP GET requests
-- HTTP POST requests
-- Connection pooling
-- Timeout handling
-- SSL/TLS support
+IDCU Agent 的 HTTP 客户端业务模块，提供：
+- HTTP GET 请求
+- HTTP POST 请求
+- 连接池
+- 超时处理
+- SSL/TLS 支持
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/http_client_module/http_client_module.h>
@@ -35,3 +35,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

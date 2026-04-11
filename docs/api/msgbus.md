@@ -1,14 +1,14 @@
-# idcu-msgbus API Documentation
+# idcu-msgbus API 文档
 
-Message bus for publish-subscribe communication.
+用于发布-订阅通信的消息总线。
 
-## Message Bus
+## 消息总线
 
 ```c
 typedef struct idcu_MsgBus idcu_MsgBus;
 ```
 
-### Message Bus Functions
+### 消息总线函数
 
 ```c
 int idcu_msgbus_init(idcu_MsgBus** out_bus);
@@ -22,13 +22,13 @@ int idcu_msgbus_get_pending_count(idcu_MsgBus* bus);
 void idcu_msgbus_clear(idcu_MsgBus* bus);
 ```
 
-## Subscriber
+## 订阅者
 
 ```c
 typedef struct idcu_MsgSubscriber idcu_MsgSubscriber;
 ```
 
-### Subscription Functions
+### 订阅函数
 
 ```c
 typedef void (*idcu_MsgHandler)(idcu_MsgTopic topic, const void* data, size_t data_size, void* user_data);
@@ -39,13 +39,13 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus, idcu_MsgSubscriber* subscriber);
 int idcu_msgbus_subscribe_pattern(idcu_MsgBus* bus, const char* pattern, idcu_MsgHandler handler, void* user_data, idcu_MsgSubscriber** out_subscriber);
 ```
 
-## Message Topics
+## 消息主题
 
 ```c
 typedef uint32_t idcu_MsgTopic;
 ```
 
-## Message Priorities
+## 消息优先级
 
 ```c
 typedef enum {
@@ -56,7 +56,7 @@ typedef enum {
 } idcu_MsgPriority;
 ```
 
-## Example
+## 示例
 
 ```c
 #include <idcu/msgbus/msgbus.h>
@@ -66,31 +66,5 @@ typedef enum {
 #define TOPIC_TEST 100
 
 static void message_handler(idcu_MsgTopic topic, const void* data, size_t data_size, void* user_data) {
-    printf("Received message on topic %u\n", topic);
-    if (data && data_size > 0) {
-        printf("Data: %s\n", (const char*)data);
-    }
-}
-
-int main(void) {
-    idcu_MsgBus* bus = NULL;
-    idcu_msgbus_init(&bus);
-    
-    // Subscribe
-    idcu_MsgSubscriber* subscriber = NULL;
-    idcu_msgbus_subscribe(bus, TOPIC_TEST, message_handler, NULL, &subscriber);
-    
-    // Publish a message
-    const char* message = "Hello, Message Bus!";
-    idcu_msgbus_publish(bus, TOPIC_TEST, message, strlen(message) + 1, IDCU_MSG_PRIORITY_NORMAL);
-    
-    // Process messages
-    idcu_msgbus_process(bus);
-    
-    // Unsubscribe
-    idcu_msgbus_unsubscribe(bus, subscriber);
-    
-    idcu_msgbus_destroy(bus);
-    return 0;
-}
-```
+    printf("在主题 %u 上收到消息\n", topic);
+    if (data

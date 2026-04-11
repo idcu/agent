@@ -1,26 +1,26 @@
-# idcu-log API Documentation
+# idcu-log API 文档
 
-Logging system library.
+日志系统库。
 
-## Quick Start
+## 快速开始
 
 ```c
 #include <idcu/log/log.h>
 
 int main() {
-    // Initialize logging to console with INFO level
+    // 初始化日志到控制台，级别为 INFO
     idcu_log_init(NULL, IDCU_LOG_INFO);
     
     IDCU_LOG_INFO("Hello, world!");
-    IDCU_LOG_WARN("Warning message");
-    IDCU_LOG_ERROR("Error occurred");
+    IDCU_LOG_WARN("警告消息");
+    IDCU_LOG_ERROR("发生错误");
     
     idcu_log_shutdown();
     return 0;
 }
 ```
 
-## Log Levels
+## 日志级别
 
 ```c
 typedef enum {
@@ -32,7 +32,7 @@ typedef enum {
 } idcu_LogLevel;
 ```
 
-## Log Output
+## 日志输出
 
 ```c
 typedef enum {
@@ -41,9 +41,9 @@ typedef enum {
 } idcu_LogOutput;
 ```
 
-## Configuration
+## 配置
 
-### Log Configuration Structure
+### 日志配置结构
 
 ```c
 typedef struct {
@@ -56,107 +56,107 @@ typedef struct {
 } idcu_LogConfig;
 ```
 
-## Initialization
+## 初始化
 
-### Simple Initialization
+### 简单初始化
 
 ```c
 idcu_ErrorCode idcu_log_init(const char* file_path, idcu_LogLevel level);
 ```
 
-Initialize the logging system.
+初始化日志系统。
 
-- `file_path`: Path to log file (NULL for console only)
-- `level`: Minimum log level to output
+- `file_path`: 日志文件路径（NULL 表示仅控制台输出）
+- `level`: 输出的最低日志级别
 
-### Config Initialization
+### 配置初始化
 
 ```c
 idcu_ErrorCode idcu_log_init_with_config(const idcu_LogConfig* config);
 ```
 
-Initialize with full configuration.
+使用完整配置初始化。
 
-### Shutdown
+### 关闭
 
 ```c
 void idcu_log_shutdown(void);
 ```
 
-Shutdown the logging system.
+关闭日志系统。
 
-## Log Macros
+## 日志宏
 
-### Debug
+### 调试
 
 ```c
 IDCU_LOG_DEBUG(format, ...)
 ```
 
-Log a debug message.
+记录一条调试消息。
 
-### Info
+### 信息
 
 ```c
 IDCU_LOG_INFO(format, ...)
 ```
 
-Log an info message.
+记录一条信息消息。
 
-### Warn
+### 警告
 
 ```c
 IDCU_LOG_WARN(format, ...)
 ```
 
-Log a warning message.
+记录一条警告消息。
 
-### Error
+### 错误
 
 ```c
 IDCU_LOG_ERROR(format, ...)
 ```
 
-Log an error message.
+记录一条错误消息。
 
-### Fatal
+### 致命
 
 ```c
 IDCU_LOG_FATAL(format, ...)
 ```
 
-Log a fatal message.
+记录一条致命消息。
 
-## Dynamic Level Control
+## 动态级别控制
 
-### Set Log Level
+### 设置日志级别
 
 ```c
 void idcu_log_set_level(idcu_LogLevel level);
 ```
 
-Change the minimum log level at runtime.
+在运行时更改最低日志级别。
 
-## Examples
+## 示例
 
-### Console Only
+### 仅控制台
 
 ```c
 idcu_log_init(NULL, IDCU_LOG_DEBUG);
-IDCU_LOG_DEBUG("Debug message");
-IDCU_LOG_INFO("Info message");
+IDCU_LOG_DEBUG("调试消息");
+IDCU_LOG_INFO("信息消息");
 idcu_log_shutdown();
 ```
 
-### File Output
+### 文件输出
 
 ```c
 idcu_log_init("app.log", IDCU_LOG_INFO);
-IDCU_LOG_INFO("Application started");
+IDCU_LOG_INFO("应用程序已启动");
 idcu_log_shutdown();
 ```
 
-### Custom Configuration
+### 自定义配置
 
 ```c
 idcu_LogConfig config = {
@@ -173,15 +173,15 @@ idcu_log_init_with_config(&config);
 idcu_log_shutdown();
 ```
 
-### Dynamic Level Change
+### 动态级别更改
 
 ```c
 idcu_log_init(NULL, IDCU_LOG_INFO);
-IDCU_LOG_INFO("Current level: INFO");
-IDCU_LOG_DEBUG("This won't be logged");
+IDCU_LOG_INFO("当前级别: INFO");
+IDCU_LOG_DEBUG("这不会被记录");
 
 idcu_log_set_level(IDCU_LOG_DEBUG);
-IDCU_LOG_DEBUG("Now this will be logged");
+IDCU_LOG_DEBUG("现在这会被记录");
 
 idcu_log_shutdown();
 ```

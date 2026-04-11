@@ -1,121 +1,120 @@
-# Architecture Guide
+# 架构指南
 
-This document describes the architecture of IDCU Agent.
+本文档描述了 IDCU Agent 的架构。
 
-## Overview
+## 概述
 
-IDCU Agent is built using a **microkernel architecture** with modular design. The system consists of:
+IDCU Agent 采用**微内核架构**和模块化设计构建。系统由以下部分组成：
 
-1. **Core Infrastructure** - foundational libraries
-2. **Microkernel** - module lifecycle management
-3. **Business Modules** - feature implementations
+1. **核心基础设施** - 基础库
+2. **微内核** - 模块生命周期管理
+3. **业务模块** - 功能实现
 
-## System Architecture Diagram
+## 系统架构图
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                     Business Modules                     │
+│                     业务模块                               │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────┐ │
-│  │ Core     │  │ HTTP     │  │ Metrics  │  │ ...   │ │
-│  │ Module   │  │ API      │  │ Module   │  │       │ │
+│  │ 核心模块  │  │ HTTP API  │  │ 指标模块  │  │ ...   │ │
 │  └──────────┘  └──────────┘  └──────────┘  └───────┘ │
 └─────────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────────┐
-│                     Microkernel                          │
+│                     微内核                                │
 │  ┌─────────────────────────────────────────────────┐  │
-│  │  Module Lifecycle  |  Message Bus  |  Config   │  │
+│  │  模块生命周期  |  消息总线  |  配置管理        │  │
 │  └─────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────────┐
-│                  Core Infrastructure                    │
+│                  核心基础设施                              │
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐ │
-│  | Common  | |  Log    | |  JSON   | |  Network  | │
+│  | 通用工具 | |  日志   | |  JSON   | |  网络     | │
 │  └─────────┘ └─────────┘ └─────────┘ └───────────┘ │
 │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌───────────┐ │
-│  |  YAML   | |  Config | | Storage | | Coroutine | │
+│  |  YAML   | |  配置   | |  存储   | |  协程     | │
 │  └─────────┘ └─────────┘ └─────────┘ └───────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Core Components
+## 核心组件
 
-### 1. Microkernel Architecture
+### 1. 微内核架构
 
-The microkernel is responsible for:
+微内核负责：
 
-- **Module Lifecycle Management**: Loading, initializing, starting, stopping, and unloading modules
-- **Dependency Resolution**: Managing module dependencies and ensuring correct startup order
-- **Message Routing**: Facilitating communication between modules via the message bus
-- **Configuration Management**: Providing centralized configuration access
+- **模块生命周期管理**：加载、初始化、启动、停止和卸载模块
+- **依赖解析**：管理模块依赖并确保正确的启动顺序
+- **消息路由**：通过消息总线促进模块间通信
+- **配置管理**：提供集中式配置访问
 
-### 2. Module System
+### 2. 模块系统
 
 ```c
-// Module definition
+// 模块定义
 typedef struct idcu_ModuleDef {
     const char* name;
     const char* version;
-    
-    // Lifecycle callbacks
+
+    // 生命周期回调
     idcu_ErrorCode (*init)(void);
     idcu_ErrorCode (*start)(void);
     idcu_ErrorCode (*stop)(void);
     idcu_ErrorCode (*destroy)(void);
-    
-    // Dependencies
+
+    // 依赖项
     const char** dependencies;
     size_t dependency_count;
 } idcu_ModuleDef;
 ```
 
-### 3. Message Bus
+### 3. 消息总线
 
-Publish-subscribe system for inter-module communication:
+用于模块间通信的发布-订阅系统：
 
-- **Topics**: Message categorization
-- **Subscribers**: Message consumers
-- **Publishers**: Message producers
-- **Priorities**: Message priority levels (LOW, NORMAL, HIGH, CRITICAL)
+- **主题**：消息分类
+- **订阅者**：消息消费者
+- **发布者**：消息生产者
+- **优先级**：消息优先级级别（低、正常、高、关键）
 
-## Library Architecture
+## 库架构
 
-### Library Organization
+### 库组织
 
 ```
 libs/
-├── idcu-common/          # Common utilities and data structures
-├── idcu-log/             # Logging system
-├── idcu-json/            # JSON parser/serializer
-├── idcu-yaml/            # YAML parser/serializer
-├── idcu-network/         # TCP/UDP network library
-├── idcu-http-server/     # HTTP server framework
-├── idcu-http-client/     # HTTP client library
-├── idcu-config/          # Configuration management
-├── idcu-storage/         # Key-value storage
-├── idcu-metrics/         # Metrics collection
-├── idcu-healthcheck/     # Health checking
-├── idcu-module-system/   # Module system
-├── idcu-coroutine/       # Coroutine scheduler
-├── idcu-msgbus/          # Message bus
-└── idcu-microkernel/     # Microkernel
+├── idcu-common/          # 通用工具和数据结构
+├── idcu-log/             # 日志系统
+├── idcu-json/            # JSON 解析/序列化
+├── idcu-yaml/            # YAML 解析/序列化
+├── idcu-network/         # TCP/UDP 网络库
+├── idcu-http-server/     # HTTP 服务器框架
+├── idcu-http-client/     # HTTP 客户端库
+├── idcu-config/          # 配置管理
+├── idcu-storage/         # 键值存储
+├── idcu-metrics/         # 指标收集
+├── idcu-healthcheck/     # 健康检查
+├── idcu-module-system/   # 模块系统
+├── idcu-coroutine/       # 协程调度器
+├── idcu-msgbus/          # 消息总线
+└── idcu-microkernel/     # 微内核
 ```
 
-### Key Design Principles
+### 关键设计原则
 
-1. **Modularity**: Each library is independent with clear interfaces
-2. **Minimal Dependencies**: Libraries depend only on lower-level libraries
-3. **Thread Safety**: All public APIs are thread-safe
-4. **Error Handling**: Consistent error code system
-5. **Performance**: Optimized for both speed and memory
+1. **模块化**：每个库都是独立的，具有清晰的接口
+2. **最小依赖**：库仅依赖于较低级别的库
+3. **线程安全**：所有公共 API 都是线程安全的
+4. **错误处理**：统一的错误码系统
+5. **性能**：针对速度和内存进行了优化
 
-## Data Flow
+## 数据流
 
-### Module Communication Flow
+### 模块通信流程
 
 ```
-Module A                     Message Bus                   Module B
+模块 A                        消息总线                        模块 B
    |                              |                              |
    |-- publish(topic, data) ---->|                              |
    |                              |-- dispatch() -------------->|
@@ -123,94 +122,94 @@ Module A                     Message Bus                   Module B
    |                              |                              |
 ```
 
-### Request-Response Pattern
+### 请求-响应模式
 
-While the message bus is primarily publish-subscribe, request-response can be implemented using:
+虽然消息总线主要是发布-订阅模式，但可以使用以下方式实现请求-响应：
 
-1. Correlation IDs
-2. Reply-to topics
-3. Async patterns with callbacks
+1. 关联 ID
+2. 回复主题
+3. 带回调的异步模式
 
-## Concurrency Model
+## 并发模型
 
-The system uses a hybrid concurrency approach:
+系统采用混合并发方式：
 
-1. **Coroutines**: For cooperative multitasking within modules
-2. **Threads**: For module isolation and I/O operations
-3. **Message Passing**: For safe inter-thread communication
+1. **协程**：用于模块内的协作式多任务
+2. **线程**：用于模块隔离和 I/O 操作
+3. **消息传递**：用于安全的线程间通信
 
-### Thread Safety Guarantees
+### 线程安全保证
 
-- All public APIs are thread-safe
-- Internal state is protected by mutexes
-- Message passing is lock-free where possible
+- 所有公共 API 都是线程安全的
+- 内部状态由互斥锁保护
+- 消息传递在可能的情况下是无锁的
 
-## Configuration
+## 配置
 
-Configuration is managed through `idcu-config` library with support for:
+通过 `idcu-config` 库管理配置，支持：
 
-- INI format (default)
-- JSON format
-- YAML format
-- Environment variable overrides
-- Command-line overrides
-- Hot reloading
-- Change notifications
+- INI 格式（默认）
+- JSON 格式
+- YAML 格式
+- 环境变量覆盖
+- 命令行覆盖
+- 热重载
+- 变更通知
 
-## Monitoring & Observability
+## 监控与可观测性
 
-### Metrics (idcu-metrics)
+### 指标 (idcu-metrics)
 
-- Counter: Incrementing values
-- Gauge: Snapshot values
-- Histogram: Distribution statistics
-- Prometheus export support
+- 计数器：递增值
+- 仪表盘：快照值
+- 直方图：分布统计
+- Prometheus 导出支持
 
-### Health Checks (idcu-healthcheck)
+### 健康检查 (idcu-healthcheck)
 
-- HTTP endpoint checks
-- TCP port checks
-- Disk space checks
-- Memory usage checks
-- Custom checkers
+- HTTP 端点检查
+- TCP 端口检查
+- 磁盘空间检查
+- 内存使用检查
+- 自定义检查器
 
-### Logging (idcu-log)
+### 日志 (idcu-log)
 
-- Multiple log levels (DEBUG, INFO, WARN, ERROR, FATAL)
-- Console and file output
-- Color support
-- Structured logging
+- 多个日志级别（DEBUG、INFO、WARN、ERROR、FATAL）
+- 控制台和文件输出
+- 颜色支持
+- 结构化日志
 
-## Extension Points
+## 扩展点
 
-The system is designed for extensibility:
+系统设计为可扩展：
 
-1. **Custom Modules**: Implement `idcu_ModuleDef` interface
-2. **Custom Metrics**: Extend metrics registry
-3. **Custom Health Checks**: Implement custom checkers
-4. **Custom Storage Backends**: Implement storage interface
-5. **Custom Serialization**: Add new config format parsers
+1. **自定义模块**：实现 `idcu_ModuleDef` 接口
+2. **自定义指标**：扩展指标注册表
+3. **自定义健康检查**：实现自定义检查器
+4. **自定义存储后端**：实现存储接口
+5. **自定义序列化**：添加新的配置格式解析器
 
-## Deployment Architecture
+## 部署架构
 
-### Process Model
+### 进程模型
 
 ```
-idcu-agent (main process)
-├── Thread: Microkernel (main loop)
-├── Thread: Module A (worker)
-├── Thread: Module B (worker)
-├── Thread: HTTP Server
-└── Thread: Metrics Collector
+idcu-agent (主进程)
+├── 线程：微内核 (主循环)
+├── 线程：模块 A (工作线程)
+├── 线程：模块 B (工作线程)
+├── 线程：HTTP 服务器
+└── 线程：指标收集器
 ```
 
-### Container Deployment
+### 容器部署
 
-See [Dockerfile](../../Dockerfile) for containerization setup.
+有关容器化设置，请参阅 [Dockerfile](../../Dockerfile)。
 
-## Security Considerations
+## 安全考虑
 
-1. **Input Validation**: All inputs are validated
-2. **Memory Safety**: No buffer overflows, proper bounds checking
-3. **Authentication/Authorization**: Pluggable auth system
-4. **Audit Logging**: Critical operations are logged
+1. **输入验证**：所有输入都经过验证
+2. **内存安全**：无缓冲区溢出，适当的边界检查
+3. **身份验证/授权**：可插拔的认证系统
+4. **审计日志**：关键操作被记录

@@ -1,13 +1,13 @@
 # idcu-collect-module
 
-Collect business module for IDCU Agent, providing:
-- Data collection from various sources
-- Device data collection
-- Network data collection
-- Data aggregation
-- Data filtering
+IDCU Agent 的采集业务模块，提供：
+- 从各种来源采集数据
+- 设备数据采集
+- 网络数据采集
+- 数据聚合
+- 数据过滤
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/collect_module/collect_module.h>
@@ -31,3 +31,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

@@ -1,16 +1,16 @@
 # idcu-core-module
 
-Core foundation module for IDCU Agent, providing:
-- Module initialization and cleanup
-- Config loading and management
-- Logging initialization
-- Module lifecycle management
-- Health check integration
-- Metrics collection integration
-- Graceful shutdown
-- Signal handling
+IDCU Agent 的核心基础模块，提供：
+- 模块初始化和清理
+- 配置加载和管理
+- 日志初始化
+- 模块生命周期管理
+- 健康检查集成
+- 指标收集集成
+- 优雅关闭
+- 信号处理
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/core_module/core_module.h>
@@ -41,9 +41,9 @@ int main() {
 }
 ```
 
-## Configuration
+## 配置
 
-The module can be configured via `config/app.yaml`:
+可以通过 `config/app.yaml` 配置模块：
 
 ```yaml
 core:
@@ -58,3 +58,7 @@ core:
     enabled: true
   graceful_shutdown_timeout: 30000
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

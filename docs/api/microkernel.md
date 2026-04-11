@@ -1,14 +1,14 @@
-# idcu-microkernel API Documentation
+# idcu-microkernel API 文档
 
-Microkernel for managing modules and the application lifecycle.
+用于管理模块和应用程序生命周期的微内核。
 
-## Microkernel
+## 微内核
 
 ```c
 typedef struct idcu_MicroKernel idcu_MicroKernel;
 ```
 
-## Kernel Configuration
+## 内核配置
 
 ```c
 typedef struct {
@@ -19,7 +19,7 @@ typedef struct {
 } idcu_KernelConfig;
 ```
 
-### Kernel Functions
+### 内核函数
 
 ```c
 int idcu_kernel_init(idcu_MicroKernel** out_kernel, const idcu_KernelConfig* config);
@@ -32,7 +32,7 @@ int idcu_kernel_run(idcu_MicroKernel* kernel);
 idcu_KernelState idcu_kernel_get_state(const idcu_MicroKernel* kernel);
 ```
 
-## Kernel States
+## 内核状态
 
 ```c
 typedef enum {
@@ -44,7 +44,7 @@ typedef enum {
 } idcu_KernelState;
 ```
 
-## Module Management
+## 模块管理
 
 ```c
 int idcu_kernel_load_module(idcu_MicroKernel* kernel, const char* module_path);
@@ -54,14 +54,14 @@ int idcu_kernel_get_module_count(idcu_MicroKernel* kernel);
 int idcu_kernel_get_module_info(idcu_MicroKernel* kernel, size_t index, idcu_ModuleInfo* out_info);
 ```
 
-## Configuration
+## 配置
 
 ```c
 int idcu_kernel_reload_config(idcu_MicroKernel* kernel);
 int idcu_kernel_get_config(idcu_MicroKernel* kernel, idcu_KernelConfig* out_config);
 ```
 
-## Example
+## 示例
 
 ```c
 #include <idcu/microkernel/kernel.h>
@@ -77,33 +77,33 @@ int main(void) {
         .max_modules = 32
     };
     
-    // Initialize the kernel
+    // 初始化内核
     int ret = idcu_kernel_init(&kernel, &config);
     if (ret != IDCU_ERR_OK) {
-        fprintf(stderr, "Failed to initialize kernel\n");
+        fprintf(stderr, "初始化内核失败\n");
         return 1;
     }
     
-    printf("Kernel initialized, state: %d\n", idcu_kernel_get_state(kernel));
+    printf("内核已初始化，状态: %d\n", idcu_kernel_get_state(kernel));
     
-    // Start the kernel
+    // 启动内核
     ret = idcu_kernel_start(kernel);
     if (ret != IDCU_ERR_OK) {
-        fprintf(stderr, "Failed to start kernel\n");
+        fprintf(stderr, "启动内核失败\n");
         idcu_kernel_destroy(kernel);
         return 1;
     }
     
-    printf("Kernel started\n");
+    printf("内核已启动\n");
     
-    // Run the main loop
+    // 运行主循环
     ret = idcu_kernel_run(kernel);
     
-    // Stop and cleanup
+    // 停止并清理
     idcu_kernel_stop(kernel);
     idcu_kernel_destroy(kernel);
     
-    printf("Kernel shutdown complete\n");
+    printf("内核关闭完成\n");
     return 0;
 }
 ```

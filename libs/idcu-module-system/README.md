@@ -145,3 +145,7 @@ cmake --build .
 ## 依赖
 
 - idcu-common
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

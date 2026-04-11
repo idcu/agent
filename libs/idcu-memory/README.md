@@ -78,4 +78,4 @@ ctest --verbose
 
 ## 许可证
 
-MIT
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

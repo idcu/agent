@@ -1,15 +1,15 @@
 # idcu-microkernel
 
-Microkernel core library for IDCU Agent, integrating all core components including module system, coroutine scheduler, and message bus.
+IDCU Agent 的微内核核心库，集成了所有核心组件，包括模块系统、协程调度器和消息总线。
 
-## Features
+## 功能特性
 
-- Kernel lifecycle management (init, start, run, stop, destroy)
-- Integration of module system, coroutine scheduler, and message bus
-- Main event loop
-- Thread-safe operations
+- 内核生命周期管理（init、start、run、stop、destroy）
+- 集成模块系统、协程调度器和消息总线
+- 主事件循环
+- 线程安全操作
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/microkernel/kernel.h>
@@ -33,6 +33,6 @@ int main() {
 }
 ```
 
-## License
+## 许可证
 
-MIT
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

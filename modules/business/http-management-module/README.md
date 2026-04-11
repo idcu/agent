@@ -1,13 +1,13 @@
 # idcu-http-management-module
 
-HTTP management business module for IDCU Agent, providing:
-- HTTP server for management APIs
-- RESTful API endpoints
-- System health monitoring API
-- Configuration management API
-- Module management API
+IDCU Agent 的 HTTP 管理业务模块，提供：
+- 用于管理 API 的 HTTP 服务器
+- RESTful API 端点
+- 系统健康监控 API
+- 配置管理 API
+- 模块管理 API
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/http_management_module/http_management_module.h>
@@ -31,3 +31,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

@@ -1,13 +1,13 @@
 # idcu-security-module
 
-Security business module for IDCU Agent, providing:
-- Sandbox security
-- Permission management
-- Data encryption and decryption
-- Access control
-- Security audit
+IDCU Agent 的安全业务模块，提供：
+- 沙箱安全
+- 权限管理
+- 数据加密和解密
+- 访问控制
+- 安全审计
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/security_module/security_module.h>
@@ -27,7 +27,7 @@ int main() {
     
     idcu_security_module_check_permission(&sm, "read_file");
     
-    char data[] = "secret data";
+    char data[] = "秘密数据";
     char encrypted[1024];
     size_t encrypted_size;
     idcu_security_module_encrypt(&sm, data, strlen(data), encrypted, &encrypted_size);
@@ -38,3 +38,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

@@ -21,3 +21,7 @@ metrics:
 - 指标收集、导出、聚合
 - 指标告警和持久化
 - Prometheus 格式支持
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

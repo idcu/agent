@@ -19,3 +19,7 @@ json:
 - JSONPath 查询
 - JSON Schema 验证
 - 与配置系统、存储系统、网络系统集成
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

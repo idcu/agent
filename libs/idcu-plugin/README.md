@@ -1,67 +1,68 @@
 # idcu-plugin
 
-Plugin system library for IDCU Agent.
+IDCU Agent 的插件系统库。
 
-## Features
-- Cross-platform dynamic plugin loading (Windows/Linux/macOS)
-- Plugin information query
-- Plugin symbol resolution
-- Plugin directory scanning
-- Batch plugin operations
-- Thread-safe implementation
-- CMake build configuration
+## 功能特性
+- 跨平台动态插件加载（Windows/Linux/macOS）
+- 插件信息查询
+- 插件符号解析
+- 插件目录扫描
+- 批量插件操作
+- 线程安全实现
+- CMake 构建配置
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/plugin/plugin.h>
 
-idcu_Plugin_Context* ctx;
+idcu_PluginSystem* ctx;
 int ret = idcu_plugin_system_init(&ctx);
 if (ret == IDCU_ERR_OK) {
-    // Load plugin
+    // 加载插件
     idcu_PluginHandle* plugin;
     ret = idcu_plugin_load(ctx, "myplugin.dll", &plugin);
     if (ret == IDCU_ERR_OK) {
-        // Get plugin info
+        // 获取插件信息
         idcu_PluginInfo info;
         idcu_plugin_get_info(plugin, &info);
         
-        // Get symbol
+        // 获取符号
         void (*func)(void);
         if (idcu_plugin_get_symbol(plugin, "my_function", (void**)&func) == IDCU_ERR_OK) {
             func();
         }
         
-        // Unload plugin
+        // 卸载插件
         idcu_plugin_unload(ctx, plugin);
     }
     
-    // Shutdown
+    // 关闭
     idcu_plugin_system_shutdown(ctx);
 }
 ```
 
-## API Reference
-- `idcu_plugin_system_init()` - Initialize plugin system
-- `idcu_plugin_system_shutdown()` - Shutdown plugin system
-- `idcu_plugin_load()` - Load a plugin from file
-- `idcu_plugin_unload()` - Unload a plugin
-- `idcu_plugin_get_info()` - Get plugin information
-- `idcu_plugin_get_name()` - Get plugin name
-- `idcu_plugin_is_loaded()` - Check if plugin is loaded
-- `idcu_plugin_scan_directory()` - Scan directory for plugins
-- `idcu_plugin_load_all()` - Load all scanned plugins
-- `idcu_plugin_unload_all()` - Unload all plugins
-- `idcu_plugin_get_count()` - Get loaded plugin count
-- `idcu_plugin_get_all_names()` - Get all loaded plugin names
-- `idcu_plugin_get_symbol()` - Get symbol from plugin
+## API 参考
+- `idcu_plugin_system_init()` - 初始化插件系统
+- `idcu_plugin_system_shutdown()` - 关闭插件系统
+- `idcu_plugin_load()` - 从文件加载插件
+- `idcu_plugin_unload()` - 卸载插件
+- `idcu_plugin_get_info()` - 获取插件信息
+- `idcu_plugin_get_name()` - 获取插件名称
+- `idcu_plugin_is_loaded()` - 检查插件是否已加载
+- `idcu_plugin_scan_directory()` - 扫描目录查找插件
+- `idcu_plugin_load_all()` - 加载所有扫描到的插件
+- `idcu_plugin_unload_all()` - 卸载所有插件
+- `idcu_plugin_get_count()` - 获取已加载插件数量
+- `idcu_plugin_get_all_names()` - 获取所有已加载插件名称
+- `idcu_plugin_get_symbol()` - 从插件获取符号
 
-## Building
+## 构建
 
 ```bash
 cmake -B build && cmake --build build
 ```
 
-## License
-MIT
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

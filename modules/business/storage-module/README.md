@@ -1,13 +1,13 @@
 # idcu-storage-module
 
-Storage business module for IDCU Agent, providing:
-- Persistent storage
-- Key-value storage
-- Data serialization
-- Data backup and restore
-- Storage encryption
+IDCU Agent 的存储业务模块，提供：
+- 持久化存储
+- 键值存储
+- 数据序列化
+- 数据备份和恢复
+- 存储加密
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/storage_module/storage_module.h>
@@ -25,7 +25,7 @@ int main() {
         return 1;
     }
     
-    const char* value = "persistent data";
+    const char* value = "持久化数据";
     idcu_storage_module_put(&sm, "key1", value, strlen(value));
     
     void* out_value;
@@ -40,3 +40,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

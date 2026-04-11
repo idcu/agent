@@ -20,3 +20,7 @@ log:
 idcu_sdk_log_info(ctx, "Hello, World!");
 idcu_sdk_log_error(ctx, "Error occurred");
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

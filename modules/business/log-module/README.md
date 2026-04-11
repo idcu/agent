@@ -1,16 +1,16 @@
 # idcu-log-module
 
-Log business module for IDCU Agent, providing:
-- Unified log interface
-- Multi-level logging (DEBUG, INFO, WARN, ERROR, FATAL)
-- Multiple output targets (console, file, message bus)
-- Log rotation
-- Log filtering
-- Log query
-- Log stats
-- Log alert
+IDCU Agent 的日志业务模块，提供：
+- 统一日志接口
+- 多级日志（DEBUG、INFO、WARN、ERROR、FATAL）
+- 多个输出目标（控制台、文件、消息总线）
+- 日志轮转
+- 日志过滤
+- 日志查询
+- 日志统计
+- 日志告警
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/log_module/log_module.h>
@@ -33,10 +33,10 @@ int main() {
         return 1;
     }
     
-    idcu_log_module_info(&lm, "Application started");
-    idcu_log_module_debug(&lm, "Debug message");
-    idcu_log_module_warn(&lm, "Warning message");
-    idcu_log_module_error(&lm, "Error message");
+    idcu_log_module_info(&lm, "应用程序已启动");
+    idcu_log_module_debug(&lm, "调试消息");
+    idcu_log_module_warn(&lm, "警告消息");
+    idcu_log_module_error(&lm, "错误消息");
     
     idcu_log_module_stop(&lm);
     idcu_log_module_destroy(&lm);
@@ -45,9 +45,9 @@ int main() {
 }
 ```
 
-## Configuration
+## 配置
 
-The module can be configured via `config/log.yaml`:
+可以通过 `config/log.yaml` 配置模块：
 
 ```yaml
 log:
@@ -67,3 +67,7 @@ log:
     max_file_size: 104857600
     max_file_count: 10
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

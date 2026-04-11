@@ -1,16 +1,16 @@
 # idcu-json
 
-JSON parsing and serialization library.
+JSON 解析和序列化库。
 
-## Features
+## 功能特性
 
-- Parse JSON from string
-- Serialize JSON to string
-- Support all JSON types
-- Type-safe accessor functions
-- Automatic memory management
+- 从字符串解析 JSON
+- 将 JSON 序列化为字符串
+- 支持所有 JSON 类型
+- 类型安全的访问函数
+- 自动内存管理
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/json/json.h>
@@ -19,16 +19,20 @@ int main() {
     idcu_JsonValue value;
     int ret = idcu_json_parse("{\"name\": \"test\", \"value\": 123}", &value);
     if (ret == IDCU_ERR_OK) {
-        // Use the JSON value
+        // 使用 JSON 值
         idcu_json_free(&value);
     }
     return 0;
 }
 ```
 
-## Build
+## 构建
 
 ```bash
 cmake -B build
 cmake --build build
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

@@ -1,15 +1,15 @@
-# idcu-network API Documentation
+# idcu-network API 文档
 
-Network programming library for TCP and UDP sockets.
+用于 TCP 和 UDP 套接字的网络编程库。
 
-## Library Initialization
+## 库初始化
 
 ```c
 int idcu_network_init(void);
 void idcu_network_cleanup(void);
 ```
 
-## Network Address
+## 网络地址
 
 ```c
 typedef struct {
@@ -19,7 +19,7 @@ typedef struct {
 } idcu_NetAddress;
 ```
 
-### Address Functions
+### 地址函数
 
 ```c
 int idcu_net_address_init(idcu_NetAddress* addr, idcu_NetAddrType type, const char* ip, uint16_t port);
@@ -27,13 +27,13 @@ int idcu_net_address_resolve(idcu_NetAddress* addr, const char* hostname, uint16
 int idcu_net_address_to_string(const idcu_NetAddress* addr, char* buffer, size_t buffer_size);
 ```
 
-## TCP Socket
+## TCP 套接字
 
 ```c
 typedef struct idcu_TcpSocket idcu_TcpSocket;
 ```
 
-### TCP Socket Functions
+### TCP 套接字函数
 
 ```c
 int idcu_tcp_socket_init(idcu_TcpSocket* sock);
@@ -52,13 +52,13 @@ int idcu_tcp_socket_set_timeout(idcu_TcpSocket* sock, int timeout_ms);
 int idcu_tcp_socket_set_blocking(idcu_TcpSocket* sock, int blocking);
 ```
 
-## TCP Server
+## TCP 服务器
 
 ```c
 typedef struct idcu_TcpServer idcu_TcpServer;
 ```
 
-### TCP Server Functions
+### TCP 服务器函数
 
 ```c
 int idcu_tcp_server_init(idcu_TcpServer* server);
@@ -71,13 +71,13 @@ int idcu_tcp_server_accept(idcu_TcpServer* server, idcu_TcpSocket* out_client);
 int idcu_tcp_server_accept_timeout(idcu_TcpServer* server, idcu_TcpSocket* out_client, int timeout_ms);
 ```
 
-## UDP Socket
+## UDP 套接字
 
 ```c
 typedef struct idcu_UdpSocket idcu_UdpSocket;
 ```
 
-### UDP Socket Functions
+### UDP 套接字函数
 
 ```c
 int idcu_udp_socket_init(idcu_UdpSocket* sock);
@@ -91,7 +91,7 @@ int idcu_udp_socket_recv(idcu_UdpSocket* sock, idcu_NetAddress* out_from, void* 
 int idcu_udp_socket_set_timeout(idcu_UdpSocket* sock, int timeout_ms);
 ```
 
-## TCP Client Example
+## TCP 客户端示例
 
 ```c
 #include <idcu/network/network.h>

@@ -1,64 +1,65 @@
 # idcu-distributed
 
-Distributed node support library for IDCU Agent.
+IDCU Agent 的分布式节点支持库。
 
-## Features
-- Node discovery and registration
-- Inter-node communication
-- Leader election (Raft-like)
-- Data consistency with multiple levels
-- Failure detection and recovery
-- Message broadcast and multicast
-- Thread-safe implementation
-- CMake build configuration
+## 功能特性
+- 节点发现和注册
+- 节点间通信
+- 领导者选举（类 Raft）
+- 多级数据一致性
+- 故障检测和恢复
+- 消息广播和组播
+- 线程安全实现
+- CMake 构建配置
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/distributed/distributed.h>
 
-idcu_Distributed_Context* ctx;
+idcu_DistributedNode* ctx;
 int ret = idcu_distributed_node_init(&ctx);
 if (ret == IDCU_ERR_OK) {
-    // Start node
+    // 启动节点
     ret = idcu_distributed_node_start(ctx);
     if (ret == IDCU_ERR_OK) {
-        // Send message to node
-        const char* msg = "Hello";
+        // 向节点发送消息
+        const char* msg = "你好";
         idcu_distributed_send_to(ctx, 1, msg, strlen(msg));
         
-        // Broadcast message
+        // 广播消息
         idcu_distributed_broadcast(ctx, msg, strlen(msg));
         
-        // Get leader
+        // 获取领导者
         idcu_NodeId leader;
         idcu_distributed_get_leader(ctx, &leader);
         
-        // Stop node
+        // 停止节点
         idcu_distributed_node_stop(ctx);
     }
     
-    // Destroy
+    // 销毁
     idcu_distributed_node_destroy(ctx);
 }
 ```
 
-## API Reference
-- `idcu_distributed_node_init()` - Initialize distributed node
-- `idcu_distributed_node_start()` - Start distributed node
-- `idcu_distributed_node_stop()` - Stop distributed node
-- `idcu_distributed_node_destroy()` - Destroy distributed node
-- `idcu_distributed_send_to()` - Send message to specific node
-- `idcu_distributed_broadcast()` - Broadcast message to all nodes
-- `idcu_distributed_get_leader()` - Get current leader node ID
-- `idcu_distributed_get_node_info()` - Get node information
-- `idcu_distributed_list_nodes()` - List all nodes
+## API 参考
+- `idcu_distributed_node_init()` - 初始化分布式节点
+- `idcu_distributed_node_start()` - 启动分布式节点
+- `idcu_distributed_node_stop()` - 停止分布式节点
+- `idcu_distributed_node_destroy()` - 销毁分布式节点
+- `idcu_distributed_send_to()` - 向特定节点发送消息
+- `idcu_distributed_broadcast()` - 向所有节点广播消息
+- `idcu_distributed_get_leader()` - 获取当前领导者节点 ID
+- `idcu_distributed_get_node_info()` - 获取节点信息
+- `idcu_distributed_list_nodes()` - 列出所有节点
 
-## Building
+## 构建
 
 ```bash
 cmake -B build && cmake --build build
 ```
 
-## License
-MIT
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

@@ -85,3 +85,7 @@ cd build
 cmake ..
 cmake --build .
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

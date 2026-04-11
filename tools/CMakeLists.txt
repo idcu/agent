@@ -33,3 +33,29 @@ target_include_directories(idcu-performance-profiler PUBLIC
 target_link_libraries(idcu-performance-profiler
     idcu-common::idcu-common
 )
+
+# Log Analyzer Library
+add_library(idcu-log-analyzer STATIC
+    log_analyzer.c
+)
+
+target_include_directories(idcu-log-analyzer PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(idcu-log-analyzer
+    idcu-common::idcu-common
+)
+
+# Module Inspector Library
+add_library(idcu-module-inspector STATIC
+    module_inspector.c
+)
+
+target_include_directories(idcu-module-inspector PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(idcu-module-inspector
+    idcu-common::idcu-common
+)

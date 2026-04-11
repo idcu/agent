@@ -52,3 +52,7 @@ make
 ## API 文档
 
 详见 [include/idcu/common/](include/idcu/common/)
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

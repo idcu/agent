@@ -1,8 +1,8 @@
-# idcu-module-system API Documentation
+# idcu-module-system API 文档
 
-Module system for dynamic module loading and management.
+用于动态模块加载和管理的模块系统。
 
-## Module Definition
+## 模块定义
 
 ```c
 typedef struct idcu_ModuleDef {
@@ -21,13 +21,13 @@ typedef struct idcu_ModuleDef {
 } idcu_ModuleDef;
 ```
 
-## Module System
+## 模块系统
 
 ```c
 typedef struct idcu_ModuleSystem idcu_ModuleSystem;
 ```
 
-### Module System Functions
+### 模块系统函数
 
 ```c
 int idcu_module_system_init(idcu_ModuleSystem* system);
@@ -51,7 +51,7 @@ int idcu_module_system_stop_all(idcu_ModuleSystem* system);
 int idcu_module_system_destroy_all(idcu_ModuleSystem* system);
 ```
 
-## Module Info
+## 模块信息
 
 ```c
 typedef struct {
@@ -63,7 +63,7 @@ typedef struct {
 } idcu_ModuleInfo;
 ```
 
-## Module States
+## 模块状态
 
 ```c
 typedef enum {
@@ -76,37 +76,37 @@ typedef enum {
 } idcu_ModuleState;
 ```
 
-## Example
+## 示例
 
 ```c
 #include <idcu/module/module.h>
 #include <stdio.h>
 
-// Define a module
+// 定义一个模块
 static idcu_ErrorCode my_module_init(void) {
-    printf("My module initialized\n");
+    printf("我的模块已初始化\n");
     return IDCU_ERR_OK;
 }
 
 static idcu_ErrorCode my_module_start(void) {
-    printf("My module started\n");
+    printf("我的模块已启动\n");
     return IDCU_ERR_OK;
 }
 
 static idcu_ErrorCode my_module_stop(void) {
-    printf("My module stopped\n");
+    printf("我的模块已停止\n");
     return IDCU_ERR_OK;
 }
 
 static idcu_ErrorCode my_module_destroy(void) {
-    printf("My module destroyed\n");
+    printf("我的模块已销毁\n");
     return IDCU_ERR_OK;
 }
 
 static const idcu_ModuleDef my_module = {
     .name = "my-module",
     .version_str = "1.0.0",
-    .description = "My example module",
+    .description = "我的示例模块",
     .category = "example",
     .init = my_module_init,
     .start = my_module_start,
@@ -120,14 +120,14 @@ int main(void) {
     idcu_ModuleSystem system;
     idcu_module_system_init(&system);
     
-    // Register the module
+    // 注册模块
     idcu_module_system_register(&system, &my_module);
     
-    // Initialize and start
+    // 初始化和启动
     idcu_module_system_init_module(&system, "my-module");
     idcu_module_system_start_module(&system, "my-module");
     
-    // Stop and destroy
+    // 停止和销毁
     idcu_module_system_stop_module(&system, "my-module");
     idcu_module_system_destroy_module(&system, "my-module");
     

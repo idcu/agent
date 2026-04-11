@@ -1,13 +1,13 @@
 # idcu-cache-module
 
-Cache business module for IDCU Agent, providing:
-- In-memory cache
-- Cache expiration (TTL)
-- Cache eviction policies
-- Cache statistics
-- Cache persistence
+IDCU Agent 的缓存业务模块，提供：
+- 内存缓存
+- 缓存过期（TTL）
+- 缓存淘汰策略
+- 缓存统计
+- 缓存持久化
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/cache_module/cache_module.h>
@@ -25,7 +25,7 @@ int main() {
         return 1;
     }
     
-    const char* value = "test data";
+    const char* value = "测试数据";
     idcu_cache_module_set(&cm, "key1", value, strlen(value), 3600000);
     
     void* out_value;
@@ -40,3 +40,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

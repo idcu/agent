@@ -1,24 +1,24 @@
 # idcu-heartbeat
 
-Heartbeat module for IDCU Agent, providing:
-- Periodic heartbeat sending
-- Heartbeat receiving and validation
-- Node status monitoring
-- Heartbeat timeout detection
-- Auto reconnect
-- Heartbeat history
-- Heartbeat statistics
-- Multi-protocol support
-- Custom heartbeat data
+IDCU Agent 的心跳模块，提供：
+- 周期性心跳发送
+- 心跳接收和验证
+- 节点状态监控
+- 心跳超时检测
+- 自动重连
+- 心跳历史
+- 心跳统计
+- 多协议支持
+- 自定义心跳数据
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/heartbeat/heartbeat.h>
 
 int main() {
     idcu_HeartbeatModule hb;
-    int ret = idcu_heartbeat_module_init(&hb, "node-001", "Main Node");
+    int ret = idcu_heartbeat_module_init(&hb, "node-001", "主节点");
     if (ret != IDCU_ERR_OK) {
         return 1;
     }
@@ -32,7 +32,7 @@ int main() {
     idcu_heartbeat_module_send(&hb);
     
     idcu_HeartbeatStatus status = idcu_heartbeat_module_get_status(&hb);
-    printf("Status: %d\n", status);
+    printf("状态: %d\n", status);
     
     idcu_heartbeat_module_stop(&hb);
     idcu_heartbeat_module_destroy(&hb);
@@ -40,3 +40,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

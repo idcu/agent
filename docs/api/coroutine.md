@@ -1,14 +1,14 @@
-# idcu-coroutine API Documentation
+# idcu-coroutine API 文档
 
-Coroutine scheduler for cooperative multitasking.
+用于协作式多任务的协程调度器。
 
-## Coroutine Scheduler
+## 协程调度器
 
 ```c
 typedef struct idcu_CoroutineScheduler idcu_CoroutineScheduler;
 ```
 
-### Scheduler Functions
+### 调度器函数
 
 ```c
 int idcu_coro_scheduler_init(idcu_CoroutineScheduler** out_scheduler);
@@ -20,13 +20,13 @@ void idcu_coro_scheduler_stop(idcu_CoroutineScheduler* scheduler);
 int idcu_coro_scheduler_get_coroutine_count(idcu_CoroutineScheduler* scheduler);
 ```
 
-## Coroutine
+## 协程
 
 ```c
 typedef struct idcu_Coroutine idcu_Coroutine;
 ```
 
-### Coroutine Configuration
+### 协程配置
 
 ```c
 typedef struct {
@@ -35,7 +35,7 @@ typedef struct {
 } idcu_CoroutineConfig;
 ```
 
-### Coroutine Functions
+### 协程函数
 
 ```c
 int idcu_coro_create(idcu_CoroutineScheduler* scheduler, idcu_Coroutine** out_coro,
@@ -49,7 +49,7 @@ const char* idcu_coro_get_name(const idcu_Coroutine* coro);
 idcu_CoroutineState idcu_coro_get_state(const idcu_Coroutine* coro);
 ```
 
-## Coroutine States
+## 协程状态
 
 ```c
 typedef enum {
@@ -61,13 +61,13 @@ typedef enum {
 } idcu_CoroutineState;
 ```
 
-## Default Configuration
+## 默认配置
 
 ```c
 #define IDCU_COROUTINE_DEFAULT_STACK_SIZE (64 * 1024)
 ```
 
-## Example
+## 示例
 
 ```c
 #include <idcu/coroutine/coroutine.h>
@@ -75,39 +75,9 @@ typedef enum {
 
 static void coroutine_func(void* arg) {
     int* counter = (int*)arg;
-    printf("Coroutine started, counter: %d\n", *counter);
+    printf("协程已启动，计数器: %d\n", *counter);
     
     for (int i = 0; i < 3; i++) {
         (*counter)++;
-        printf("Coroutine: %d\n", *counter);
-        idcu_coro_yield(idcu_coro_get_current_scheduler());
-    }
-    
-    printf("Coroutine finished\n");
-}
-
-int main(void) {
-    idcu_CoroutineScheduler* scheduler = NULL;
-    idcu_coro_scheduler_init(&scheduler);
-    
-    int counter = 0;
-    idcu_CoroutineConfig config = {
-        .stack_size = IDCU_COROUTINE_DEFAULT_STACK_SIZE,
-        .name = "example-coro"
-    };
-    
-    idcu_Coroutine* coro = NULL;
-    idcu_coro_create(scheduler, &coro, coroutine_func, &counter, &config);
-    
-    // Run the scheduler
-    while (idcu_coro_get_state(coro) != IDCU_CORO_COMPLETED) {
-        idcu_coro_resume(coro);
-    }
-    
-    printf("Final counter: %d\n", counter);
-    
-    idcu_coro_destroy(coro);
-    idcu_coro_scheduler_destroy(scheduler);
-    return 0;
-}
-```
+        printf("协程: %d\n", *counter);
+        idcu_coro_y

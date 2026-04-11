@@ -1,18 +1,18 @@
 # idcu-config-module
 
-Config business module for IDCU Agent, providing:
-- Config loading and management
-- Config hot reload
-- Multi-environment config
-- Config validation
-- Config defaults
-- Config backup
-- Config rollback
-- Config history
-- Config change notification
-- Config encryption
+IDCU Agent 的配置业务模块，提供：
+- 配置加载和管理
+- 配置热重载
+- 多环境配置
+- 配置验证
+- 配置默认值
+- 配置备份
+- 配置回滚
+- 配置历史
+- 配置变更通知
+- 配置加密
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/config_module/config_module.h>
@@ -35,7 +35,7 @@ int main() {
     
     const char* value;
     idcu_config_module_get_string(&cm, "app.name", &value);
-    printf("App name: %s\n", value);
+    printf("应用名称: %s\n", value);
     
     idcu_config_module_set_int(&cm, "app.port", 8080);
     idcu_config_module_save(&cm);
@@ -47,9 +47,9 @@ int main() {
 }
 ```
 
-## Configuration
+## 配置
 
-The module can be configured via `config/app.yaml`:
+可以通过 `config/app.yaml` 配置模块：
 
 ```yaml
 app:
@@ -63,3 +63,7 @@ config:
   encryption: false
   max_versions: 10
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

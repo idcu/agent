@@ -1,32 +1,32 @@
-# Quick Start Guide
+# 快速入门指南
 
-This guide will help you get started with IDCU Agent quickly.
+本指南将帮助你快速开始使用 IDCU Agent。
 
-## Prerequisites
+## 前置条件
 
-### For All Platforms
+### 适用于所有平台
 
-- CMake 3.15 or later
-- A C compiler:
-  - GCC 9+ or Clang 11+ (Linux/macOS)
-  - MSVC 2019+ (Windows)
+- CMake 3.15 或更高版本
+- 一个 C 编译器：
+  - GCC 9+ 或 Clang 11+（Linux/macOS）
+  - MSVC 2019+（Windows）
 - Git
 
-### Additional Requirements (Optional)
+### 额外要求（可选）
 
-- Docker (for containerized builds)
-- Python 3.7+ (for some build scripts)
+- Docker（用于容器化构建）
+- Python 3.7+（用于某些构建脚本）
 
-## Building the Project
+## 构建项目
 
-### Clone the Repository
+### 克隆仓库
 
 ```bash
 git clone <repository-url>
 cd idcu-agent
 ```
 
-### Linux/macOS Build
+### Linux/macOS 构建
 
 ```bash
 mkdir -p build && cd build
@@ -34,7 +34,7 @@ cmake ..
 make -j$(nproc)
 ```
 
-### Windows Build (PowerShell)
+### Windows 构建（PowerShell）
 
 ```powershell
 mkdir build ; cd build
@@ -42,58 +42,58 @@ cmake ..
 cmake --build . --config Release
 ```
 
-### Build Options
+### 构建选项
 
 ```bash
-# Build with tests
+# 构建测试
 cmake .. -DBUILD_TESTS=ON
 
-# Build with examples
+# 构建示例
 cmake .. -DBUILD_EXAMPLES=ON
 
-# Release build
+# 发布版本构建
 cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
 
-## Running Your First Program
+## 运行你的第一个程序
 
-### Hello World Example
+### Hello World 示例
 
-Create a file `hello.c`:
+创建一个文件 `hello.c`：
 
 ```c
 #include <idcu/log/log.h>
 #include <idcu/common/error_code.h>
 
 int main(void) {
-    // Initialize logging
+    // 初始化日志
     idcu_log_init(NULL, IDCU_LOG_INFO);
-    
-    IDCU_LOG_INFO("Hello, IDCU Agent!");
-    
+
+    IDCU_LOG_INFO("你好，IDCU Agent！");
+
     idcu_log_shutdown();
     return 0;
 }
 ```
 
-### Compile and Run
+### 编译和运行
 
 ```bash
-# Link with idcu-common and idcu-log
+# 链接 idcu-common 和 idcu-log
 gcc hello.c -o hello -lidcu-common -lidcu-log
 ./hello
 ```
 
-## Testing
+## 测试
 
-### Running All Tests
+### 运行所有测试
 
 ```bash
 cd build
 ctest -V
 ```
 
-### Running Specific Test
+### 运行特定测试
 
 ```bash
 cd build
@@ -101,19 +101,19 @@ cd build
 ./bin/test_yaml
 ```
 
-## Next Steps
+## 下一步
 
-- Read the [API Documentation](../api/README.md) for detailed library usage
-- Explore the [Examples](../examples/) directory
-- Check the [Architecture Guide](ARCHITECTURE.md) for system design
+- 阅读 [API 文档](../api/README.md) 了解详细的库用法
+- 探索 [示例](../examples/) 目录
+- 查看 [架构指南](ARCHITECTURE.md) 了解系统设计
 
-## Troubleshooting
+## 故障排除
 
-### Build Errors
+### 构建错误
 
-- Ensure CMake is in your PATH
-- Check compiler version requirements
-- Clean the build directory and retry:
+- 确保 CMake 在你的 PATH 中
+- 检查编译器版本要求
+- 清理构建目录并重试：
 
 ```bash
 rm -rf build
@@ -121,13 +121,13 @@ mkdir build && cd build
 cmake ..
 ```
 
-### Link Errors
+### 链接错误
 
-- Ensure library search path includes the build output
-- Specify libraries in correct order
+- 确保库搜索路径包含构建输出
+- 按正确顺序指定库
 
-## Getting Help
+## 获取帮助
 
-- Check the [README](../../README.md)
-- Review the [Development Plan](../DEVELOPMENT_PLAN.md)
-- Open an issue in the repository
+- 检查 [README](../../README.md)
+- 查看 [开发计划](../DEVELOPMENT_PLAN.md)
+- 在仓库中打开一个 issue

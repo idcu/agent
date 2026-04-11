@@ -1,70 +1,70 @@
-# IDCU Agent Core Library API Documentation
+# IDCU Agent 核心库 API 文档
 
-This directory contains API documentation for the core libraries of the IDCU Agent project.
+本目录包含 IDCU Agent 项目核心库的 API 文档。
 
-## Library Overview
+## 库概览
 
-### Core Infrastructure Libraries
+### 核心基础设施库
 
-- [idcu-common](common.md) - Common utilities and data structures
-- [idcu-log](log.md) - Logging system
-- [idcu-module-system](module-system.md) - Module system
-- [idcu-coroutine](coroutine.md) - Coroutine scheduler
-- [idcu-msgbus](msgbus.md) - Message bus
-- [idcu-microkernel](microkernel.md) - Microkernel
+- [idcu-common](common.md) - 通用工具和数据结构
+- [idcu-log](log.md) - 日志系统
+- [idcu-module-system](module-system.md) - 模块系统
+- [idcu-coroutine](coroutine.md) - 协程调度器
+- [idcu-msgbus](msgbus.md) - 消息总线
+- [idcu-microkernel](microkernel.md) - 微内核
 
-### Data Processing Libraries
+### 数据处理库
 
-- [idcu-json](json.md) - JSON parser and serializer
-- [idcu-yaml](yaml.md) - YAML parser and serializer
-- [idcu-config](config.md) - Configuration management
-- [idcu-storage](storage.md) - Key-value storage
+- [idcu-json](json.md) - JSON 解析器和序列化器
+- [idcu-yaml](yaml.md) - YAML 解析器和序列化器
+- [idcu-config](config.md) - 配置管理
+- [idcu-storage](storage.md) - 键值存储
 
-### Network Libraries
+### 网络库
 
-- [idcu-network](network.md) - Network programming (TCP/UDP)
-- [idcu-http-server](http-server.md) - HTTP server framework
-- [idcu-http-client](http-client.md) - HTTP client framework
+- [idcu-network](network.md) - 网络编程（TCP/UDP）
+- [idcu-http-server](http-server.md) - HTTP 服务器框架
+- [idcu-http-client](http-client.md) - HTTP 客户端框架
 
-### Monitoring Libraries
+### 监控库
 
-- [idcu-metrics](metrics.md) - Metrics collection
-- [idcu-healthcheck](healthcheck.md) - Health checking
+- [idcu-metrics](metrics.md) - 指标收集
+- [idcu-healthcheck](healthcheck.md) - 健康检查
 
-## Usage Patterns
+## 使用模式
 
-### Error Handling
+### 错误处理
 
-All functions return `idcu_ErrorCode` to indicate success or failure:
+所有函数返回 `idcu_ErrorCode` 来指示成功或失败：
 
 ```c
 int ret = some_function();
 if (ret != IDCU_ERR_OK) {
-    // Handle error
-    fprintf(stderr, "Error: %s\n", idcu_error_message(ret));
+    // 处理错误
+    fprintf(stderr, "错误: %s\n", idcu_error_message(ret));
     return ret;
 }
 ```
 
-### Resource Management
+### 资源管理
 
-Most components follow an init/destroy pattern:
+大多数组件遵循初始化/销毁模式：
 
 ```c
 SomeType* obj = NULL;
 ret = some_type_init(&obj, config);
 if (ret != IDCU_ERR_OK) {
-    // Handle error
+    // 处理错误
     return ret;
 }
 
-// Use the object
+// 使用对象
 some_type_operation(obj, ...);
 
-// Cleanup
+// 清理
 some_type_destroy(obj);
 ```
 
-## License
+## 许可证
 
-This project is licensed under the MIT License.
+本项目采用 MIT 许可证。

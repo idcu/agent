@@ -1,33 +1,33 @@
 # idcu-yaml
 
-Simplified YAML parsing and serialization library for IDCU Agent.
+IDCU Agent 的简化 YAML 解析和序列化库。
 
-## Features
+## 功能特性
 
-- Simplified YAML parser
-- YAML serializer
-- Support for key-value pairs, lists, and nested structures
-- Type-safe accessor functions
-- JSON conversion support
-- Automatic memory management
+- 简化的 YAML 解析器
+- YAML 序列化器
+- 支持键值对、列表和嵌套结构
+- 类型安全的访问函数
+- JSON 转换支持
+- 自动内存管理
 
-## Supported YAML Syntax
+## 支持的 YAML 语法
 
-This library supports a simplified subset of YAML:
+本库支持 YAML 的简化子集：
 
 ```yaml
-# Key-value pairs
+# 键值对
 key: value
 number: 123
 flag: true
 
-# Lists
+# 列表
 items:
   - item1
   - item2
   - item3
 
-# Nested structures
+# 嵌套结构
 config:
   host: localhost
   port: 8080
@@ -36,34 +36,34 @@ config:
     log_level: info
 ```
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/yaml/yaml.h>
 
-// Parse YAML
+// 解析 YAML
 idcu_YamlValue root;
 int ret = idcu_yaml_parse("key: value\nnumber: 123", &root);
 if (ret == IDCU_ERR_OK) {
-    // Use the parsed value
+    // 使用解析后的值
     idcu_yaml_free(&root);
 }
 
-// Serialize to YAML
+// 序列化为 YAML
 char buffer[1024];
 idcu_yaml_to_string(&value, buffer, sizeof(buffer));
 
-// Convert to JSON
+// 转换为 JSON
 char json_buffer[1024];
 idcu_yaml_to_json(&value, json_buffer, sizeof(json_buffer));
 ```
 
-## Build
+## 构建
 
 ```bash
 cmake -B build && cmake --build build
 ```
 
-## License
+## 许可证
 
-MIT
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。

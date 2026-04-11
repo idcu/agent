@@ -19,3 +19,7 @@ config:
 - 多格式配置支持（YAML/JSON）
 - 配置热重载
 - 多环境配置
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

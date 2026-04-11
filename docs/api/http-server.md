@@ -1,8 +1,8 @@
-# idcu-http-server API Documentation
+# idcu-http-server API 文档
 
-HTTP server framework library.
+HTTP 服务器框架库。
 
-## Quick Start
+## 快速开始
 
 ```c
 #include <idcu/http_server/http_server.h>
@@ -25,9 +25,9 @@ int main() {
     idcu_http_server_add_route(server, IDCU_HTTP_GET, "/", hello_handler, NULL);
     
     idcu_http_server_start(server);
-    printf("Server running on http://localhost:8080\n");
+    printf("服务器运行在 http://localhost:8080\n");
     
-    // Wait for shutdown...
+    // 等待关闭...
     
     idcu_http_server_stop(server);
     idcu_http_server_destroy(server);
@@ -35,9 +35,9 @@ int main() {
 }
 ```
 
-## Server Configuration
+## 服务器配置
 
-### Server Config Structure
+### 服务器配置结构
 
 ```c
 typedef struct {
@@ -49,51 +49,51 @@ typedef struct {
 } idcu_HttpServerConfig;
 ```
 
-## Server Lifecycle
+## 服务器生命周期
 
-### Initialize Server
+### 初始化服务器
 
 ```c
 idcu_ErrorCode idcu_http_server_init(idcu_HttpServer** server, const idcu_HttpServerConfig* config);
 ```
 
-Initialize an HTTP server.
+初始化 HTTP 服务器。
 
-### Start Server
+### 启动服务器
 
 ```c
 idcu_ErrorCode idcu_http_server_start(idcu_HttpServer* server);
 ```
 
-Start the HTTP server.
+启动 HTTP 服务器。
 
-### Stop Server
+### 停止服务器
 
 ```c
 idcu_ErrorCode idcu_http_server_stop(idcu_HttpServer* server);
 ```
 
-Stop the HTTP server.
+停止 HTTP 服务器。
 
-### Destroy Server
+### 销毁服务器
 
 ```c
 void idcu_http_server_destroy(idcu_HttpServer* server);
 ```
 
-Destroy the HTTP server.
+销毁 HTTP 服务器。
 
-## Routing
+## 路由
 
-### Add Route
+### 添加路由
 
 ```c
 idcu_ErrorCode idcu_http_server_add_route(idcu_HttpServer* server, idcu_HttpMethod method, const char* path, idcu_HttpHandler handler, void* user_data);
 ```
 
-Add a route handler.
+添加路由处理程序。
 
-### Convenience Methods
+### 便捷方法
 
 ```c
 idcu_ErrorCode idcu_http_server_get(idcu_HttpServer* server, const char* path, idcu_HttpHandler handler, void* user_data);
@@ -102,15 +102,15 @@ idcu_ErrorCode idcu_http_server_put(idcu_HttpServer* server, const char* path, i
 idcu_ErrorCode idcu_http_server_delete(idcu_HttpServer* server, const char* path, idcu_HttpHandler handler, void* user_data);
 ```
 
-## Request Handling
+## 请求处理
 
-### Request Type
+### 请求类型
 
 ```c
 typedef struct idcu_HttpRequest idcu_HttpRequest;
 ```
 
-### Request Methods
+### 请求方法
 
 ```c
 idcu_HttpMethod idcu_http_request_get_method(idcu_HttpRequest* req);
@@ -121,15 +121,15 @@ const void* idcu_http_request_get_body(idcu_HttpRequest* req, size_t* out_size);
 const char* idcu_http_request_get_query_param(idcu_HttpRequest* req, const char* name);
 ```
 
-## Response Handling
+## 响应处理
 
-### Response Type
+### 响应类型
 
 ```c
 typedef struct idcu_HttpResponse idcu_HttpResponse;
 ```
 
-### Response Methods
+### 响应方法
 
 ```c
 void idcu_http_response_set_status(idcu_HttpResponse* res, int status_code);
@@ -141,27 +141,27 @@ void idcu_http_response_send_file(idcu_HttpResponse* res, const char* file_path)
 void idcu_http_response_redirect(idcu_HttpResponse* res, const char* url, int status_code);
 ```
 
-## Error Responses
+## 错误响应
 
-### Send 404 Not Found
+### 发送 404 未找到
 
 ```c
 void idcu_http_response_not_found(idcu_HttpResponse* res);
 ```
 
-### Send 500 Internal Server Error
+### 发送 500 内部服务器错误
 
 ```c
 void idcu_http_response_internal_error(idcu_HttpResponse* res);
 ```
 
-### Send 400 Bad Request
+### 发送 400 错误请求
 
 ```c
 void idcu_http_response_bad_request(idcu_HttpResponse* res, const char* message);
 ```
 
-## HTTP Methods
+## HTTP 方法
 
 ```c
 typedef enum {
@@ -175,15 +175,15 @@ typedef enum {
 } idcu_HttpMethod;
 ```
 
-## Examples
+## 示例
 
-### Basic Server
+### 基本服务器
 
 ```c
 void home_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_data) {
     idcu_http_response_set_content_type(res, "text/html");
     idcu_http_response_write_string(res, 
-        "<html><body><h1>Welcome!</h1></body></html>");
+        "<html><body><h1>欢迎!</h1></body></html>");
 }
 
 idcu_HttpServer* server = NULL;
@@ -217,7 +217,7 @@ void api_user_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_
 }
 ```
 
-### Query Parameters
+### 查询参数
 
 ```c
 void search_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_data) {
@@ -226,15 +226,15 @@ void search_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_da
     
     char response[256];
     snprintf(response, sizeof(response), 
-        "Searching for: %s (page: %s)", 
-        query ? query : "none", 
+        "搜索内容: %s (页码: %s)", 
+        query ? query : "无", 
         page ? page : "1");
     
     idcu_http_response_write_string(res, response);
 }
 ```
 
-### POST Data
+### POST 数据
 
 ```c
 void submit_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_data) {
@@ -242,15 +242,15 @@ void submit_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_da
     const void* body = idcu_http_request_get_body(req, &body_size);
     
     if (body && body_size > 0) {
-        // Process body...
-        idcu_http_response_write_string(res, "Data received");
+        // 处理请求体...
+        idcu_http_response_write_string(res, "数据已接收");
     } else {
-        idcu_http_response_bad_request(res, "No data received");
+        idcu_http_response_bad_request(res, "未接收到数据");
     }
 }
 ```
 
-### Static Files
+### 静态文件
 
 ```c
 idcu_HttpServerConfig config = {
@@ -261,10 +261,10 @@ idcu_HttpServerConfig config = {
 };
 
 idcu_http_server_init(&server, &config);
-// Files in ./public will be served automatically
+// ./public 目录下的文件将被自动提供
 ```
 
-### Redirect
+### 重定向
 
 ```c
 void old_page_handler(idcu_HttpRequest* req, idcu_HttpResponse* res, void* user_data) {

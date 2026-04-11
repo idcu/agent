@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -587,8 +588,29 @@ int idcu_config_init_from_yaml(const char* file_path) {
         return IDCU_ERR_INVALID_ARG;
     }
     
+    FILE* fp = fopen(file_path, "r");
+    if (!fp) {
+        return IDCU_ERR_NOT_FOUND;
+    }
+    
+    fseek(fp, 0, SEEK_END);
+    long file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    
+    char* yaml_str = (char*)malloc(file_size + 1);
+    if (!yaml_str) {
+        fclose(fp);
+        return IDCU_ERR_MEMORY;
+    }
+    
+    size_t read = fread(yaml_str, 1, file_size, fp);
+    yaml_str[read] = '\0';
+    fclose(fp);
+    
     idcu_YamlValue root;
-    int ret = idcu_yaml_parse_file(file_path, &root);
+    int ret = idcu_yaml_parse(yaml_str, &root);
+    free(yaml_str);
+    
     if (ret != IDCU_ERR_OK) {
         return ret;
     }
@@ -604,10 +626,42 @@ int idcu_config_init_from_yaml(const char* file_path) {
     g_config_manager.file_path[IDCU_CONFIG_PATH_MAX - 1] = '\0';
     
     if (idcu_yaml_get_type(&root) == IDCU_YAML_TYPE_MAPPING) {
-        size_t map_size = idcu_yaml_mapping_size(&root);
-        for (size_t i = 0; i < map_size; i++) {
-            // Note: This is a simplified implementation
-            // For this example, we'll use a different approach
+        const idcu_YamlMapping* map = &root.data.mapping;
+        for (size_t i = 0; i < map->count; i++) {
+            const char* section_name = map->entries[i].key;
+            idcu_YamlValue* section_val = &map->entries[i].value;
+            
+            if (idcu_yaml_get_type(section_val) == IDCU_YAML_TYPE_MAPPING) {
+                idcu_ConfigSection* section = find_or_create_section(section_name);
+                if (section) {
+                    const idcu_YamlMapping* entry_map = &section_val->data.mapping;
+                    for (size_t j = 0; j < entry_map->count; j++) {
+                        const char* key = entry_map->entries[j].key;
+                        idcu_YamlValue* val = &entry_map->entries[j].value;
+                        
+                        idcu_ConfigEntry* entry = create_entry(section, key);
+                        if (entry) {
+                            if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_STRING) {
+                                const char* s = NULL;
+                                idcu_yaml_get_string(val, &s);
+                                strncpy(entry->value, s ? s : "", IDCU_CONFIG_VALUE_MAX - 1);
+                            } else if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_INT) {
+                                int64_t v;
+                                idcu_yaml_get_int(val, &v);
+                                snprintf(entry->value, sizeof(entry->value), "%" PRId64, v);
+                            } else if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_DOUBLE) {
+                                double v;
+                                idcu_yaml_get_double(val, &v);
+                                snprintf(entry->value, sizeof(entry->value), "%f", v);
+                            } else if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_BOOL) {
+                                int v;
+                                idcu_yaml_get_bool(val, &v);
+                                strncpy(entry->value, v ? "true" : "false", IDCU_CONFIG_VALUE_MAX - 1);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -652,7 +706,27 @@ int idcu_config_save_to_yaml(const char* file_path) {
         return IDCU_ERR_INVALID_STATE;
     }
     
-    // Simplified implementation
+    FILE* fp = fopen(file_path, "w");
+    if (!fp) {
+        return IDCU_ERR_UNKNOWN;
+    }
+    
+    idcu_mutex_lock(&g_config_manager.lock);
+    
+    for (uint32_t s = 0; s < g_config_manager.section_count; s++) {
+        idcu_ConfigSection* section = &g_config_manager.sections[s];
+        fprintf(fp, "%s:\n", section->name);
+        
+        for (uint32_t e = 0; e < section->entry_count; e++) {
+            fprintf(fp, "  %s: %s\n", section->entries[e].key, section->entries[e].value);
+        }
+        
+        fprintf(fp, "\n");
+    }
+    
+    idcu_mutex_unlock(&g_config_manager.lock);
+    
+    fclose(fp);
     return IDCU_ERR_OK;
 }
 
@@ -664,12 +738,106 @@ void idcu_config_set_env_prefix(const char* prefix) {
     }
 }
 
+static char* substitute_env_vars(const char* input) {
+    if (!input) {
+        return NULL;
+    }
+    
+    size_t result_capacity = 256;
+    char* result = (char*)malloc(result_capacity);
+    if (!result) {
+        return NULL;
+    }
+    result[0] = '\0';
+    size_t result_len = 0;
+    
+    const char* p = input;
+    while (*p) {
+        if (*p == '$' && *(p+1) == '{') {
+            // Found ${VAR} pattern
+            p += 2;
+            const char* var_start = p;
+            while (*p && *p != '}') p++;
+            
+            if (*p == '}') {
+                size_t var_len = p - var_start;
+                char var_name[256];
+                if (var_len < sizeof(var_name)) {
+                    strncpy(var_name, var_start, var_len);
+                    var_name[var_len] = '\0';
+                    
+                    char* env_val = getenv(var_name);
+                    if (env_val) {
+                        size_t env_len = strlen(env_val);
+                        if (result_len + env_len >= result_capacity) {
+                            result_capacity = result_len + env_len + 256;
+                            char* new_result = (char*)realloc(result, result_capacity);
+                            if (!new_result) {
+                                free(result);
+                                return NULL;
+                            }
+                            result = new_result;
+                        }
+                        strcat(result, env_val);
+                        result_len += env_len;
+                    }
+                }
+                p++;
+            }
+        } else {
+            if (result_len + 1 >= result_capacity) {
+                result_capacity += 256;
+                char* new_result = (char*)realloc(result, result_capacity);
+                if (!new_result) {
+                    free(result);
+                    return NULL;
+                }
+                result = new_result;
+            }
+            result[result_len++] = *p++;
+            result[result_len] = '\0';
+        }
+    }
+    
+    return result;
+}
+
 int idcu_config_apply_env_overrides(void) {
     if (!g_initialized) {
         return IDCU_ERR_INVALID_STATE;
     }
     
-    // Simplified implementation
+    idcu_mutex_lock(&g_config_manager.lock);
+    
+    for (uint32_t s = 0; s < g_config_manager.section_count; s++) {
+        idcu_ConfigSection* section = &g_config_manager.sections[s];
+        
+        for (uint32_t e = 0; e < section->entry_count; e++) {
+            idcu_ConfigEntry* entry = &section->entries[e];
+            
+            // Check for environment variables with prefix
+            char env_key[256];
+            snprintf(env_key, sizeof(env_key), "%s%s_%s", 
+                     g_env_prefix, section->name, entry->key);
+            char* env_val = getenv(env_key);
+            
+            if (env_val) {
+                strncpy(entry->value, env_val, IDCU_CONFIG_VALUE_MAX - 1);
+                entry->value[IDCU_CONFIG_VALUE_MAX - 1] = '\0';
+            } else {
+                // Substitute environment variables in the value
+                char* substituted = substitute_env_vars(entry->value);
+                if (substituted) {
+                    strncpy(entry->value, substituted, IDCU_CONFIG_VALUE_MAX - 1);
+                    entry->value[IDCU_CONFIG_VALUE_MAX - 1] = '\0';
+                    free(substituted);
+                }
+            }
+        }
+    }
+    
+    idcu_mutex_unlock(&g_config_manager.lock);
+    
     return IDCU_ERR_OK;
 }
 

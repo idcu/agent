@@ -1,14 +1,14 @@
-# idcu-healthcheck API Documentation
+# idcu-healthcheck API 文档
 
-Health checking library for monitoring system health.
+用于监控系统健康状态的健康检查库。
 
-## Health Checker
+## 健康检查器
 
 ```c
 typedef struct idcu_HealthChecker idcu_HealthChecker;
 ```
 
-### Health Checker Functions
+### 健康检查器函数
 
 ```c
 int idcu_healthchecker_init(idcu_HealthChecker* checker);
@@ -23,13 +23,13 @@ idcu_HealthStatus idcu_healthchecker_get_overall_status(idcu_HealthChecker* chec
 int idcu_healthchecker_to_json(idcu_HealthChecker* checker, char* buffer, size_t buffer_size);
 ```
 
-## Health Check
+## 健康检查
 
 ```c
 typedef struct idcu_HealthCheck idcu_HealthCheck;
 ```
 
-### Health Check Functions
+### 健康检查函数
 
 ```c
 int idcu_healthcheck_init(idcu_HealthCheck* check, const char* name, idcu_HealthCheckType type);
@@ -45,13 +45,13 @@ int idcu_healthcheck_set_interval(idcu_HealthCheck* check, uint64_t interval_ms)
 int idcu_healthcheck_set_timeout(idcu_HealthCheck* check, uint64_t timeout_ms);
 ```
 
-## Health Check Result
+## 健康检查结果
 
 ```c
 typedef struct idcu_HealthCheckResult idcu_HealthCheckResult;
 ```
 
-### Result Functions
+### 结果函数
 
 ```c
 int idcu_healthcheck_result_init(idcu_HealthCheckResult* result);
@@ -61,7 +61,7 @@ int idcu_healthcheck_result_set_status(idcu_HealthCheckResult* result, idcu_Heal
 int idcu_healthcheck_result_set_message(idcu_HealthCheckResult* result, const char* message);
 ```
 
-## Health Check Types
+## 健康检查类型
 
 ```c
 typedef enum {
@@ -75,7 +75,7 @@ typedef enum {
 } idcu_HealthCheckType;
 ```
 
-## Health Status
+## 健康状态
 
 ```c
 typedef enum {
@@ -86,7 +86,7 @@ typedef enum {
 } idcu_HealthStatus;
 ```
 
-## Built-in Checks
+## 内置检查
 
 ```c
 int idcu_disk_check(const char* path, idcu_HealthCheckResult* result);
@@ -94,19 +94,19 @@ int idcu_memory_check(idcu_HealthCheckResult* result);
 int idcu_cpu_check(idcu_HealthCheckResult* result);
 ```
 
-## Custom Check Function
+## 自定义检查函数
 
 ```c
 typedef void (*idcu_HealthCheckFunc)(void* user_data, idcu_HealthCheckResult* result);
 ```
 
-## Status String
+## 状态字符串
 
 ```c
 const char* idcu_health_status_to_string(idcu_HealthStatus status);
 ```
 
-## Example
+## 示例
 
 ```c
 #include <idcu/healthcheck/healthcheck.h>
@@ -116,26 +116,26 @@ int main(void) {
     idcu_HealthChecker checker;
     idcu_healthchecker_init(&checker);
     
-    // Add disk check
+    // 添加磁盘检查
     idcu_HealthCheck disk_check;
     idcu_healthcheck_init(&disk_check, "disk", IDCU_HEALTH_CHECK_TYPE_DISK);
     idcu_healthcheck_set_disk(&disk_check, "/", 1024 * 1024 * 1024, 10.0);
     idcu_healthchecker_add_check(&checker, &disk_check);
     
-    // Add memory check
+    // 添加内存检查
     idcu_HealthCheck memory_check;
     idcu_healthcheck_init(&memory_check, "memory", IDCU_HEALTH_CHECK_TYPE_MEMORY);
     idcu_healthcheck_set_memory(&memory_check, 512 * 1024 * 1024, 5.0);
     idcu_healthchecker_add_check(&checker, &memory_check);
     
-    // Run all checks
+    // 运行所有检查
     idcu_healthchecker_check_all(&checker);
     
-    // Get overall status
+    // 获取整体状态
     idcu_HealthStatus status = idcu_healthchecker_get_overall_status(&checker);
-    printf("Overall health: %s\n", idcu_health_status_to_string(status));
+    printf("整体健康状态: %s\n", idcu_health_status_to_string(status));
     
-    // Output as JSON
+    // 输出为 JSON
     char json_buffer[4096];
     idcu_healthchecker_to_json(&checker, json_buffer, sizeof(json_buffer));
     printf("JSON: %s\n", json_buffer);

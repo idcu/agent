@@ -1,14 +1,14 @@
-# idcu-storage API Documentation
+# idcu-storage API 文档
 
-Key-value storage library with multiple backend support.
+支持多种后端的键值存储库。
 
-## KV Store
+## KV 存储
 
 ```c
 typedef struct idcu_KVStore idcu_KVStore;
 ```
 
-### KV Store Functions
+### KV 存储函数
 
 ```c
 int idcu_kvstore_init(idcu_KVStore* store, const char* path);
@@ -31,13 +31,13 @@ int idcu_kvstore_sync(idcu_KVStore* store);
 uint32_t idcu_kvstore_count(idcu_KVStore* store);
 ```
 
-## SQLite Database
+## SQLite 数据库
 
 ```c
 typedef struct idcu_SQLiteDB idcu_SQLiteDB;
 ```
 
-### SQLite Functions
+### SQLite 函数
 
 ```c
 int idcu_sqlite_init(idcu_SQLiteDB* db, const char* path);
@@ -50,7 +50,7 @@ int idcu_sqlite_commit(idcu_SQLiteDB* db);
 int idcu_sqlite_rollback(idcu_SQLiteDB* db);
 ```
 
-## Constants
+## 常量
 
 ```c
 #define IDCU_STORAGE_PATH_MAX 1024
@@ -59,7 +59,7 @@ int idcu_sqlite_rollback(idcu_SQLiteDB* db);
 #define IDCU_STORAGE_MAX_ENTRIES 65536
 ```
 
-## Example - KV Store
+## 示例 - KV 存储
 
 ```c
 #include <idcu/storage/storage.h>
@@ -70,28 +70,28 @@ int main(void) {
     idcu_KVStore store;
     idcu_kvstore_init(&store, "mydb.json");
     
-    // Put values
+    // 放入值
     idcu_kvstore_put_string(&store, "name", "John Doe");
     idcu_kvstore_put_int(&store, "age", 30);
     idcu_kvstore_put_double(&store, "score", 95.5);
     
-    printf("Entry count: %u\n", idcu_kvstore_count(&store));
+    printf("条目数: %u\n", idcu_kvstore_count(&store));
     
-    // Get values
+    // 获取值
     char name[256];
     if (idcu_kvstore_get_string(&store, "name", name, sizeof(name)) == IDCU_ERR_OK) {
-        printf("Name: %s\n", name);
+        printf("名称: %s\n", name);
     }
     
     int64_t age;
     if (idcu_kvstore_get_int(&store, "age", &age) == IDCU_ERR_OK) {
-        printf("Age: %" PRId64 "\n", age);
+        printf("年龄: %" PRId64 "\n", age);
     }
     
-    // Remove a value
+    // 移除一个值
     idcu_kvstore_remove(&store, "score");
     
-    // Sync to disk
+    // 同步到磁盘
     idcu_kvstore_sync(&store);
     
     idcu_kvstore_destroy(&store);
@@ -99,7 +99,7 @@ int main(void) {
 }
 ```
 
-## Example - Binary Data
+## 示例 - 二进制数据
 
 ```c
 #include <idcu/storage/storage.h>
@@ -115,7 +115,7 @@ int main(void) {
     idcu_KVStore store;
     idcu_kvstore_init(&store, "binary_db.json");
     
-    // Store binary data
+    // 存储二进制数据
     MyData data = {
         .id = 123,
         .name = "Test Data",
@@ -124,13 +124,13 @@ int main(void) {
     
     idcu_kvstore_put(&store, "mydata", &data, sizeof(data));
     
-    // Retrieve binary data
+    // 检索二进制数据
     MyData retrieved;
     size_t actual_size;
     if (idcu_kvstore_get(&store, "mydata", &retrieved, sizeof(retrieved), &actual_size) == IDCU_ERR_OK) {
         printf("ID: %d\n", retrieved.id);
-        printf("Name: %s\n", retrieved.name);
-        printf("Value: %f\n", retrieved.value);
+        printf("名称: %s\n", retrieved.name);
+        printf("值: %f\n", retrieved.value);
     }
     
     idcu_kvstore_destroy(&store);

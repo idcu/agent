@@ -1,20 +1,20 @@
 # idcu-task-queue
 
-Task queue module for IDCU Agent, providing:
-- Task scheduling
-- Priority queue
-- Task execution
-- Task cancellation
-- Task statistics
+IDCU Agent 的任务队列模块，提供：
+- 任务调度
+- 优先级队列
+- 任务执行
+- 任务取消
+- 任务统计
 
-## Usage
+## 使用方法
 
 ```c
 #include <idcu/task_queue/task_queue.h>
 
 void my_task(void* user_data) {
     const char* msg = (const char*)user_data;
-    printf("Task executed: %s\n", msg);
+    printf("任务执行: %s\n", msg);
 }
 
 int main() {
@@ -40,3 +40,7 @@ int main() {
     return 0;
 }
 ```
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../../LICENSE) 许可证。

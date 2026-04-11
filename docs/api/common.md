@@ -1,10 +1,10 @@
-# idcu-common API Documentation
+# idcu-common API 文档
 
-Common utilities and data structures.
+通用工具和数据结构。
 
-## Error Code System
+## 错误码系统
 
-### Error Codes
+### 错误码
 
 ```c
 typedef enum {
@@ -28,17 +28,17 @@ typedef enum {
 } idcu_ErrorCode;
 ```
 
-### Error Message
+### 错误消息
 
 ```c
 const char* idcu_error_message(idcu_ErrorCode code);
 ```
 
-Returns a human-readable error message for the given error code.
+返回给定错误码的人类可读错误消息。
 
-## Vector (Dynamic Array)
+## 向量（动态数组）
 
-### Vector Type
+### 向量类型
 
 ```c
 typedef struct
@@ -51,7 +51,7 @@ typedef struct
 } idcu_Vector;
 ```
 
-### Vector Functions
+### 向量函数
 
 ```c
 int  idcu_vector_init(idcu_Vector* vec, size_t element_size, size_t initial_capacity);
@@ -76,7 +76,7 @@ int idcu_vector_reserve(idcu_Vector* vec, size_t new_capacity);
 int idcu_vector_resize(idcu_Vector* vec, size_t new_size, const void* default_value);
 ```
 
-### Vector Example
+### 向量示例
 
 ```c
 idcu_Vector vec;
@@ -89,12 +89,12 @@ value = 100;
 idcu_vector_push_back(&vec, &value);
 
 int* retrieved = (int*)idcu_vector_get(&vec, 0);
-printf("First element: %d\n", *retrieved);
+printf("第一个元素: %d\n", *retrieved);
 
 idcu_vector_destroy(&vec);
 ```
 
-### Vector For-Each Macro
+### 向量遍历宏
 
 ```c
 #define IDCU_VECTOR_FOR_EACH(vec, type, var, index)                \
@@ -102,15 +102,15 @@ idcu_vector_destroy(&vec);
         for (type* var = (type*)idcu_vector_get(vec, index); var; var = NULL)
 ```
 
-## Hash Map
+## 哈希表
 
-### Hash Map Type
+### 哈希表类型
 
 ```c
 typedef struct idcu_HashMap idcu_HashMap;
 ```
 
-### Hash Map Functions
+### 哈希表函数
 
 ```c
 idcu_ErrorCode idcu_hash_map_init(idcu_HashMap** map);
@@ -124,7 +124,7 @@ size_t idcu_hash_map_size(idcu_HashMap* map);
 void idcu_hash_map_clear(idcu_HashMap* map);
 ```
 
-### Hash Map Example
+### 哈希表示例
 
 ```c
 idcu_HashMap* map = NULL;
@@ -143,15 +143,15 @@ printf("key1: %d\n", *(int*)result);
 idcu_hash_map_destroy(map);
 ```
 
-## Mutex
+## 互斥锁
 
-### Mutex Type
+### 互斥锁类型
 
 ```c
 typedef struct idcu_Mutex idcu_Mutex;
 ```
 
-### Mutex Functions
+### 互斥锁函数
 
 ```c
 idcu_ErrorCode idcu_mutex_init(idcu_Mutex** mutex);
@@ -162,22 +162,22 @@ idcu_ErrorCode idcu_mutex_unlock(idcu_Mutex* mutex);
 idcu_ErrorCode idcu_mutex_trylock(idcu_Mutex* mutex, int* out_acquired);
 ```
 
-### Mutex Example
+### 互斥锁示例
 
 ```c
 idcu_Mutex* mutex = NULL;
 idcu_mutex_init(&mutex);
 
 idcu_mutex_lock(mutex);
-// Critical section
+// 临界区
 idcu_mutex_unlock(mutex);
 
 idcu_mutex_destroy(mutex);
 ```
 
-## Option Type
+## 可选类型
 
-### Option Type
+### 可选类型
 
 ```c
 typedef struct {
@@ -190,7 +190,7 @@ typedef struct {
 } idcu_Option;
 ```
 
-### Option Functions
+### 可选类型函数
 
 ```c
 idcu_Option idcu_option_none(void);
@@ -202,17 +202,17 @@ int idcu_option_is_some(idcu_Option option);
 int idcu_option_is_none(idcu_Option option);
 ```
 
-### Option Example
+### 可选类型示例
 
 ```c
 idcu_Option opt = idcu_option_some_int(42);
 
 if (idcu_option_is_some(opt)) {
-    printf("Value: %d\n", opt.value.int_value);
+    printf("值: %d\n", opt.value.int_value);
 }
 
 idcu_Option none = idcu_option_none();
 if (idcu_option_is_none(none)) {
-    printf("No value\n");
+    printf("无值\n");
 }
 ```

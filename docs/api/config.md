@@ -1,8 +1,8 @@
-# idcu-config API Documentation
+# idcu-config API 文档
 
-Configuration management library.
+配置管理库。
 
-## Quick Start
+## 快速开始
 
 ```c
 #include <idcu/config/config.h>
@@ -11,7 +11,7 @@ int main() {
     idcu_config_init("config.ini");
     
     const char* value = idcu_config_get_string("database", "host", "localhost");
-    printf("Database host: %s\n", value);
+    printf("数据库主机: %s\n", value);
     
     idcu_config_set_int("app", "port", 8080);
     idcu_config_save("config.ini");
@@ -21,238 +21,238 @@ int main() {
 }
 ```
 
-## Initialization
+## 初始化
 
-### Initialize Config
+### 初始化配置
 
 ```c
 int idcu_config_init(const char* file_path);
 ```
 
-Initialize a configuration manager, loading from a file.
+初始化配置管理器，从文件加载配置。
 
-- `file_path`: Path to config file
+- `file_path`: 配置文件路径
 
-### Shutdown
+### 关闭
 
 ```c
 void idcu_config_shutdown(void);
 ```
 
-Shutdown the configuration manager.
+关闭配置管理器。
 
-### Is Loaded
+### 是否已加载
 
 ```c
 int idcu_config_is_loaded(void);
 ```
 
-Check if config is loaded.
+检查配置是否已加载。
 
-### Reload
+### 重新加载
 
 ```c
 int idcu_config_reload(void);
 ```
 
-Reload the config file.
+重新加载配置文件。
 
-### Save
+### 保存
 
 ```c
 int idcu_config_save(const char* file_path);
 ```
 
-Save configuration to a file.
+将配置保存到文件。
 
-## Getting Values
+## 获取值
 
-### Get String
+### 获取字符串
 
 ```c
 const char* idcu_config_get_string(const char* section, const char* key, const char* default_value);
 ```
 
-Get a string value.
+获取字符串值。
 
-### Get Integer
+### 获取整数
 
 ```c
 int idcu_config_get_int(const char* section, const char* key, int default_value);
 ```
 
-Get an integer value.
+获取整数值。
 
-### Get Int64
+### 获取 64 位整数
 
 ```c
 int64_t idcu_config_get_int64(const char* section, const char* key, int64_t default_value);
 ```
 
-Get a 64-bit integer value.
+获取 64 位整数值。
 
-### Get Double
+### 获取双精度浮点数
 
 ```c
 double idcu_config_get_double(const char* section, const char* key, double default_value);
 ```
 
-Get a double value.
+获取双精度浮点数值。
 
-### Get Boolean
+### 获取布尔值
 
 ```c
 int idcu_config_get_bool(const char* section, const char* key, int default_value);
 ```
 
-Get a boolean value (0 = false, 1 = true).
+获取布尔值（0 = 假，1 = 真）。
 
-## Setting Values
+## 设置值
 
-### Set String
+### 设置字符串
 
 ```c
 int idcu_config_set_string(const char* section, const char* key, const char* value);
 ```
 
-Set a string value.
+设置字符串值。
 
-### Set Integer
+### 设置整数
 
 ```c
 int idcu_config_set_int(const char* section, const char* key, int value);
 ```
 
-Set an integer value.
+设置整数值。
 
-### Set Int64
+### 设置 64 位整数
 
 ```c
 int idcu_config_set_int64(const char* section, const char* key, int64_t value);
 ```
 
-Set a 64-bit integer value.
+设置 64 位整数值。
 
-### Set Double
+### 设置双精度浮点数
 
 ```c
 int idcu_config_set_double(const char* section, const char* key, double value);
 ```
 
-Set a double value.
+设置双精度浮点数值。
 
-### Set Boolean
+### 设置布尔值
 
 ```c
 int idcu_config_set_bool(const char* section, const char* key, int value);
 ```
 
-Set a boolean value.
+设置布尔值。
 
-## List Operations
+## 列表操作
 
-### Get List
+### 获取列表
 
 ```c
 int idcu_config_get_list(const char* section, const char* key, const char* delimiter, idcu_ConfigList* out_list);
 ```
 
-Get a list of strings.
+获取字符串列表。
 
-### Set List
+### 设置列表
 
 ```c
 int idcu_config_set_list(const char* section, const char* key, const char* delimiter, const idcu_ConfigList* list);
 ```
 
-Set a list of strings.
+设置字符串列表。
 
-## Change Notifications
+## 变更通知
 
-### Register Change Callback
+### 注册变更回调
 
 ```c
 int idcu_config_register_change_callback(idcu_ConfigChangeCallback callback, void* user_data);
 ```
 
-Register a callback to be notified when config changes.
+注册一个回调，当配置变更时会收到通知。
 
-### Unregister Change Callback
+### 注销变更回调
 
 ```c
 int idcu_config_unregister_change_callback(idcu_ConfigChangeCallback callback);
 ```
 
-Unregister a change callback.
+注销一个变更回调。
 
-## Environment Variables
+## 环境变量
 
-### Enable Environment Variables
+### 启用环境变量
 
 ```c
 void idcu_config_enable_env_var(int enable);
 ```
 
-Enable/disable environment variable support.
+启用/禁用环境变量支持。
 
-## File Watch
+## 文件监视
 
-### Start Watch
+### 开始监视
 
 ```c
 int idcu_config_watch_start(uint32_t interval_ms);
 ```
 
-Start watching the config file for changes.
+开始监视配置文件的变更。
 
-### Stop Watch
+### 停止监视
 
 ```c
 void idcu_config_watch_stop(void);
 ```
 
-Stop watching the config file.
+停止监视配置文件。
 
-### Is Watch Running
+### 监视是否正在运行
 
 ```c
 int idcu_config_watch_is_running(void);
 ```
 
-Check if file watch is running.
+检查文件监视是否正在运行。
 
-## Profile Loading
+## 配置文件加载
 
-### Load Profile
+### 加载配置文件
 
 ```c
 int idcu_config_load_profile(const char* profile_name);
 ```
 
-Load a configuration profile.
+加载一个配置文件。
 
-## Examples
+## 示例
 
-### Basic Usage
+### 基本用法
 
 ```c
 idcu_config_init("app.ini");
 
-// Get values with defaults
+// 获取带默认值的值
 const char* host = idcu_config_get_string("database", "host", "localhost");
 int port = idcu_config_get_int("database", "port", 5432);
 
-printf("Connecting to %s:%d\n", host, port);
+printf("连接到 %s:%d\n", host, port);
 
 idcu_config_shutdown();
 ```
 
-### Setting Values
+### 设置值
 
 ```c
 idcu_config_init("app.ini");
 
-idcu_config_set_string("app", "name", "MyApp");
+idcu_config_set_string("app", "name", "我的应用");
 idcu_config_set_int("app", "version", 1);
 idcu_config_set_bool("app", "debug", 1);
 

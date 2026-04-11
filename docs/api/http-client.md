@@ -1,14 +1,14 @@
-# idcu-http-client API Documentation
+# idcu-http-client API 文档
 
-HTTP client library for making HTTP requests.
+用于发起 HTTP 请求的 HTTP 客户端库。
 
-## HTTP Client
+## HTTP 客户端
 
 ```c
 typedef struct idcu_HttpClient idcu_HttpClient;
 ```
 
-### Client Functions
+### 客户端函数
 
 ```c
 int idcu_http_client_init(idcu_HttpClient* client);
@@ -21,13 +21,13 @@ void idcu_http_client_disconnect(idcu_HttpClient* client);
 int idcu_http_client_set_timeout(idcu_HttpClient* client, int timeout_ms);
 ```
 
-## HTTP Request
+## HTTP 请求
 
 ```c
 typedef struct idcu_HttpClientRequest idcu_HttpClientRequest;
 ```
 
-### Request Functions
+### 请求函数
 
 ```c
 int idcu_http_client_request_init(idcu_HttpClientRequest* request);
@@ -45,13 +45,13 @@ int idcu_http_client_request_set_follow_redirects(idcu_HttpClientRequest* reques
 int idcu_http_client_request_set_proxy(idcu_HttpClientRequest* request, const char* host, uint16_t port);
 ```
 
-## HTTP Response
+## HTTP 响应
 
 ```c
 typedef struct idcu_HttpClientResponse idcu_HttpClientResponse;
 ```
 
-### Response Functions
+### 响应函数
 
 ```c
 int idcu_http_client_response_init(idcu_HttpClientResponse* response);
@@ -63,7 +63,7 @@ const char* idcu_http_client_response_get_body(const idcu_HttpClientResponse* re
 size_t idcu_http_client_response_get_body_length(const idcu_HttpClientResponse* response);
 ```
 
-## HTTP Methods
+## HTTP 方法
 
 ```c
 typedef enum {
@@ -77,7 +77,7 @@ typedef enum {
 } idcu_HttpClientMethod;
 ```
 
-## Execute Request
+## 执行请求
 
 ```c
 int idcu_http_client_execute(idcu_HttpClient* client, const idcu_HttpClientRequest* request, idcu_HttpClientResponse* response);
@@ -89,13 +89,13 @@ int idcu_http_client_put(idcu_HttpClient* client, const char* url, const void* d
 int idcu_http_client_delete(idcu_HttpClient* client, const char* url, idcu_HttpClientResponse* response);
 ```
 
-## URL Parsing
+## URL 解析
 
 ```c
 int idcu_http_url_parse(const char* url, char* host, size_t host_size, uint16_t* port, char* path, size_t path_size, char* query, size_t query_size);
 ```
 
-## Example
+## 示例
 
 ```c
 #include <idcu/http_client/http_client.h>
@@ -106,24 +106,24 @@ int main(void) {
     idcu_HttpClient client;
     idcu_http_client_init(&client);
     
-    // Simple GET request
+    // 简单的 GET 请求
     idcu_HttpClientResponse response;
     idcu_http_client_response_init(&response);
     
     int ret = idcu_http_client_get(&client, "http://example.com", &response);
     if (ret == IDCU_ERR_OK) {
         int status = idcu_http_client_response_get_status_code(&response);
-        printf("Status: %d\n", status);
+        printf("状态: %d\n", status);
         
         const char* body = idcu_http_client_response_get_body(&response);
         if (body) {
-            printf("Body: %.*s\n", (int)idcu_http_client_response_get_body_length(&response), body);
+            printf("响应体: %.*s\n", (int)idcu_http_client_response_get_body_length(&response), body);
         }
     }
     
     idcu_http_client_response_destroy(&response);
     
-    // Custom POST request
+    // 自定义 POST 请求
     idcu_HttpClientRequest request;
     idcu_http_client_request_init(&request);
     

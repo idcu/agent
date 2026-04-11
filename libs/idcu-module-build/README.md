@@ -57,3 +57,7 @@ python3 scripts/build.py --root libs --build-type Release
 ## API 文档
 
 详见 [CMakeLists.txt](CMakeLists.txt) 中的辅助函数。
+
+## 许可证
+
+本库采用 [Apache License 2.0](../../LICENSE) 许可证。
