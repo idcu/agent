@@ -7,11 +7,7 @@ license: Apache-2.0
 dependencies:
   - idcu-sdk
   - idcu-yaml
-
-build:
-  type: cmake
-  targets:
-    - yaml_integration
+  - idcu-json
 
 features:
   - yaml_integration: YAML integration functionality

@@ -9,3 +9,4 @@ module:
     - idcu-metrics
     - idcu-alert
     - idcu-core-module
+    - idcu-sdk

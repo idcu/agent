@@ -11,3 +11,4 @@ module:
     - idcu-json
     - idcu-msgbus
     - idcu-core-module
+    - idcu-sdk

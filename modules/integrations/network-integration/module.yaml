@@ -7,11 +7,11 @@ license: Apache-2.0
 dependencies:
   - idcu-sdk
   - idcu-network
-
-build:
-  type: cmake
-  targets:
-    - network_integration
+  - idcu-conn-pool
+  - idcu-http-client
+  - idcu-http-server
+  - idcu-msgbus
+  - idcu-discovery
 
 features:
   - network_integration: Network integration functionality

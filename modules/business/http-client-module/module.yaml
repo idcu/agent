@@ -8,3 +8,4 @@ module:
     - idcu-common
     - idcu-http-client
     - idcu-core-module
+    - idcu-sdk

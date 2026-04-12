@@ -7,11 +7,8 @@ license: Apache-2.0
 dependencies:
   - idcu-sdk
   - idcu-metrics
-
-build:
-  type: cmake
-  targets:
-    - metrics_integration
+  - idcu-alert
+  - idcu-storage
 
 features:
   - metrics_integration: Metrics integration functionality

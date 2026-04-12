@@ -9,3 +9,4 @@ module:
     - idcu-network
     - idcu-metrics
     - idcu-core-module
+    - idcu-sdk

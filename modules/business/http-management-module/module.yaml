@@ -9,3 +9,4 @@ module:
     - idcu-http-server
     - idcu-management
     - idcu-core-module
+    - idcu-sdk

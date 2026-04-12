@@ -8,3 +8,4 @@ module:
     - idcu-common
     - idcu-storage
     - idcu-core-module
+    - idcu-sdk

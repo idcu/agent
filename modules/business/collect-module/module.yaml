@@ -9,3 +9,4 @@ module:
     - idcu-device-collector
     - idcu-network
     - idcu-core-module
+    - idcu-sdk
