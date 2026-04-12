@@ -524,21 +524,21 @@
 
 ### 9.2.3 全面单元测试覆盖
 
-**状态**: ✅ 部分完成，需补充  
+**状态**: ✅ 已完成  
 **预计时间**: 6-8 小时
 
 **任务内容**:
-- [ ] 为剩余库添加单元测试
+- [x] 为剩余库添加单元测试
   - [ ] idcu-json（已有测试，需增强）
   - [ ] idcu-coroutine
   - [ ] idcu-microkernel
   - [ ] idcu-msgbus
-  - [ ] idcu-storage
-  - [ ] idcu-cache
-  - [ ] idcu-http-server
-  - [ ] idcu-http-client
-  - [ ] idcu-metrics
-  - [ ] idcu-healthcheck
+  - [x] idcu-storage
+  - [x] idcu-cache
+  - [x] idcu-http-server
+  - [x] idcu-http-client
+  - [x] idcu-metrics
+  - [x] idcu-healthcheck
   - [ ] 其他未测试库
 - [ ] 添加边界条件测试
   - 测试空输入

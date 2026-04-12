@@ -23,3 +23,7 @@ endif()
 
 add_library(idcu::http-server ALIAS idcu-http-server)
 add_library(idcu::http_server ALIAS idcu-http-server)
+
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
