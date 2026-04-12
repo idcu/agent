@@ -1,8 +1,19 @@
-module:
-  name: idcu-config
-  version: 1.0.0
-  description: Config library for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
+name: idcu-config
+version: 1.0.0
+description: Config library for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+  - idcu-json
+  - idcu-yaml
+
+build:
+  type: cmake
+  targets:
+    - idcu-config
+
+testing:
+  enabled: true
+  framework: internal

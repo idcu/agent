@@ -10,14 +10,14 @@ dependencies:
   - idcu-coroutine
   - idcu-msgbus
 
+platform_link_libraries:
+  unix:
+    - pthread
+
 build:
   type: cmake
   targets:
     - idcu-microkernel
-
-headers:
-  - idcu/microkernel/types.h
-  - idcu/microkernel/kernel.h
 
 features:
   - lifecycle: Kernel lifecycle management

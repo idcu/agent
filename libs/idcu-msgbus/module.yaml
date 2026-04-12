@@ -7,14 +7,14 @@ license: Apache-2.0
 dependencies:
   - idcu-common
 
+platform_link_libraries:
+  unix:
+    - pthread
+
 build:
   type: cmake
   targets:
     - idcu-msgbus
-
-headers:
-  - idcu/msgbus/types.h
-  - idcu/msgbus/msgbus.h
 
 features:
   - publish_subscribe: Publish-Subscribe messaging pattern

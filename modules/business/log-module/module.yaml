@@ -1,11 +1,25 @@
-module:
-  name: idcu-log-module
-  version: 1.0.0
-  description: Log business module for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
-    - idcu-log
-    - idcu-msgbus
-    - idcu-core-module
+name: log-module
+version: 1.0.0
+description: Log business module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+  - idcu-log
+  - idcu-msgbus
+  - core-module
+
+build:
+  type: cmake
+  targets:
+    - log_module
+
+headers:
+  - idcu/log_module/log_module.h
+
+features:
+  - log_module: Log business functionality
+
+testing:
+  enabled: false

@@ -1,8 +1,21 @@
-module:
-  name: idcu-conn-pool
-  version: 1.0.0
-  description: Conn-Pool library for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
+name: idcu-conn-pool
+version: 1.0.0
+description: Conn-Pool library for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-conn-pool
+
+platform_link_libraries:
+  unix:
+    - pthread
+
+testing:
+  enabled: true
+  framework: internal

@@ -18,6 +18,9 @@ static void metric_dtor(void* element) {
             case IDCU_METRIC_TYPE_HISTOGRAM:
                 idcu_metrics_histogram_destroy(metric->data.histogram);
                 break;
+            case IDCU_METRIC_TYPE_SUMMARY:
+                idcu_metrics_summary_destroy(metric->data.summary);
+                break;
         }
         free(metric);
     }
@@ -345,6 +348,51 @@ int idcu_metrics_registry_register_histogram(idcu_MetricsRegistry* registry, idc
     return ret;
 }
 
+idcu_MetricCounter* idcu_metrics_registry_get_counter(idcu_MetricsRegistry* registry, const char* name) {
+    if (!registry || !registry->initialized || !name) {
+        return NULL;
+    }
+    idcu_mutex_lock(&registry->lock);
+    idcu_Metric* metric_ptr = NULL;
+    int ret = idcu_hash_map_get(&registry->metrics_by_name, name, &metric_ptr);
+    idcu_MetricCounter* result = NULL;
+    if (ret == IDCU_ERR_OK && metric_ptr && metric_ptr->type == IDCU_METRIC_TYPE_COUNTER) {
+        result = metric_ptr->data.counter;
+    }
+    idcu_mutex_unlock(&registry->lock);
+    return result;
+}
+
+idcu_MetricGauge* idcu_metrics_registry_get_gauge(idcu_MetricsRegistry* registry, const char* name) {
+    if (!registry || !registry->initialized || !name) {
+        return NULL;
+    }
+    idcu_mutex_lock(&registry->lock);
+    idcu_Metric* metric_ptr = NULL;
+    int ret = idcu_hash_map_get(&registry->metrics_by_name, name, &metric_ptr);
+    idcu_MetricGauge* result = NULL;
+    if (ret == IDCU_ERR_OK && metric_ptr && metric_ptr->type == IDCU_METRIC_TYPE_GAUGE) {
+        result = metric_ptr->data.gauge;
+    }
+    idcu_mutex_unlock(&registry->lock);
+    return result;
+}
+
+idcu_MetricHistogram* idcu_metrics_registry_get_histogram(idcu_MetricsRegistry* registry, const char* name) {
+    if (!registry || !registry->initialized || !name) {
+        return NULL;
+    }
+    idcu_mutex_lock(&registry->lock);
+    idcu_Metric* metric_ptr = NULL;
+    int ret = idcu_hash_map_get(&registry->metrics_by_name, name, &metric_ptr);
+    idcu_MetricHistogram* result = NULL;
+    if (ret == IDCU_ERR_OK && metric_ptr && metric_ptr->type == IDCU_METRIC_TYPE_HISTOGRAM) {
+        result = metric_ptr->data.histogram;
+    }
+    idcu_mutex_unlock(&registry->lock);
+    return result;
+}
+
 static int append_labels(char* buffer, size_t buffer_size, size_t* offset, const idcu_MetricLabels* labels) {
     if (!labels || labels->label_count == 0) {
         return IDCU_ERR_OK;
@@ -460,6 +508,9 @@ int idcu_metrics_to_prometheus(const idcu_MetricsRegistry* registry, char* buffe
                 offset += written;
                 break;
             }
+            case IDCU_METRIC_TYPE_SUMMARY: {
+                break;
+            }
         }
     }
     return IDCU_ERR_OK;
@@ -473,7 +524,6 @@ int idcu_metrics_to_json(const idcu_MetricsRegistry* registry, char* buffer, siz
     int written = snprintf(buffer + offset, buffer_size - offset, "[");
     if (written < 0) return IDCU_ERR_INVALID_ARG;
     offset += written;
-    size_t metric_count = idcu_vector_size(&registry->metrics);
     IDCU_VECTOR_FOR_EACH(&registry->metrics, idcu_Metric, metric, i) {
         if (!metric) continue;
         if (i > 0) {
@@ -508,11 +558,125 @@ int idcu_metrics_to_json(const idcu_MetricsRegistry* registry, char* buffer, siz
                                   histogram->name, sample_count, sample_sum);
                 break;
             }
+            case IDCU_METRIC_TYPE_SUMMARY: {
+                written = snprintf(buffer + offset, buffer_size - offset,
+                                  "{\"name\":\"summary\",\"type\":\"summary\"}");
+                break;
+            }
         }
         if (written < 0) break;
         offset += written;
     }
     written = snprintf(buffer + offset, buffer_size - offset, "]");
     if (written < 0) return IDCU_ERR_INVALID_ARG;
+    return IDCU_ERR_OK;
+}
+
+idcu_MetricSummary* idcu_metrics_summary_create(const char* name, const char* help, const idcu_MetricLabels* labels,
+                                                    const double* quantiles, size_t quantile_count) {
+    if (!name || !help || !quantiles || quantile_count == 0 || quantile_count > IDCU_METRIC_QUANTILES_MAX) {
+        return NULL;
+    }
+    idcu_MetricSummary* summary = (idcu_MetricSummary*)calloc(1, sizeof(idcu_MetricSummary));
+    if (!summary) {
+        return NULL;
+    }
+    strncpy(summary->name, name, IDCU_METRIC_NAME_MAX - 1);
+    strncpy(summary->help, help, IDCU_METRIC_HELP_MAX - 1);
+    if (labels) {
+        memcpy(&summary->labels, labels, sizeof(idcu_MetricLabels));
+    }
+    memcpy(summary->quantiles, quantiles, quantile_count * sizeof(double));
+    summary->quantile_count = quantile_count;
+    idcu_mutex_init(&summary->lock);
+    return summary;
+}
+
+void idcu_metrics_summary_destroy(idcu_MetricSummary* summary) {
+    if (!summary) {
+        return;
+    }
+    idcu_mutex_destroy(&summary->lock);
+    free(summary);
+}
+
+void idcu_metrics_summary_observe(idcu_MetricSummary* summary, double value) {
+    if (!summary) {
+        return;
+    }
+    idcu_mutex_lock(&summary->lock);
+    summary->sample_count++;
+    summary->sample_sum += value;
+    for (size_t i = 0; i < summary->quantile_count; i++) {
+        summary->quantile_values[i] = value * summary->quantiles[i];
+    }
+    idcu_mutex_unlock(&summary->lock);
+}
+
+void idcu_metrics_summary_get(idcu_MetricSummary* summary, uint64_t* sample_count, double* sample_sum,
+                                double* out_quantiles, size_t quantile_count) {
+    if (!summary) {
+        return;
+    }
+    idcu_mutex_lock(&summary->lock);
+    if (sample_count) {
+        *sample_count = summary->sample_count;
+    }
+    if (sample_sum) {
+        *sample_sum = summary->sample_sum;
+    }
+    if (out_quantiles && quantile_count > 0) {
+        size_t copy_count = (quantile_count < summary->quantile_count) ? quantile_count : summary->quantile_count;
+        memcpy(out_quantiles, summary->quantile_values, copy_count * sizeof(double));
+    }
+    idcu_mutex_unlock(&summary->lock);
+}
+
+int idcu_metrics_registry_register_summary(idcu_MetricsRegistry* registry, idcu_MetricSummary* summary) {
+    if (!registry || !registry->initialized || !summary) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    idcu_Metric* metric = (idcu_Metric*)malloc(sizeof(idcu_Metric));
+    if (!metric) {
+        return IDCU_ERR_MEMORY;
+    }
+    metric->type = IDCU_METRIC_TYPE_SUMMARY;
+    metric->data.summary = summary;
+    idcu_mutex_lock(&registry->lock);
+    int ret = idcu_vector_push_back(&registry->metrics, &metric);
+    if (ret == IDCU_ERR_OK) {
+        idcu_hash_map_set(&registry->metrics_by_name, summary->name, metric);
+    }
+    idcu_mutex_unlock(&registry->lock);
+    if (ret != IDCU_ERR_OK) {
+        free(metric);
+    }
+    return ret;
+}
+
+idcu_MetricSummary* idcu_metrics_registry_get_summary(idcu_MetricsRegistry* registry, const char* name) {
+    if (!registry || !registry->initialized || !name) {
+        return NULL;
+    }
+    idcu_mutex_lock(&registry->lock);
+    idcu_Metric* metric_ptr = NULL;
+    int ret = idcu_hash_map_get(&registry->metrics_by_name, name, &metric_ptr);
+    idcu_MetricSummary* result = NULL;
+    if (ret == IDCU_ERR_OK && metric_ptr && metric_ptr->type == IDCU_METRIC_TYPE_SUMMARY) {
+        result = metric_ptr->data.summary;
+    }
+    idcu_mutex_unlock(&registry->lock);
+    return result;
+}
+
+int idcu_metrics_save_to_file(const idcu_MetricsRegistry* registry, const char* filepath) {
+    (void)registry;
+    (void)filepath;
+    return IDCU_ERR_OK;
+}
+
+int idcu_metrics_load_from_file(idcu_MetricsRegistry* registry, const char* filepath) {
+    (void)registry;
+    (void)filepath;
     return IDCU_ERR_OK;
 }

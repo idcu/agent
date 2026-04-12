@@ -18,6 +18,7 @@ extern "C" {
 #define IDCU_METRIC_LABEL_VALUE_MAX  128
 #define IDCU_METRIC_LABELS_MAX  16
 #define IDCU_METRIC_BUCKETS_MAX  32
+#define IDCU_METRIC_QUANTILES_MAX  32
 
 typedef enum
 {
@@ -45,11 +46,9 @@ typedef struct idcu_MetricSummary
     char name[IDCU_METRIC_NAME_MAX];
     char help[IDCU_METRIC_HELP_MAX];
     idcu_MetricLabels labels;
-    double quantiles[IDCU_METRIC_BUCKETS_MAX];  // e.g., 0.5, 0.9, 0.99
+    double quantiles[IDCU_METRIC_QUANTILES_MAX];  // e.g., 0.5, 0.9, 0.99
     size_t quantile_count;
-    double* values;                               // For quantile calculation
-    size_t value_count;
-    size_t value_capacity;
+    double quantile_values[IDCU_METRIC_QUANTILES_MAX];
     uint64_t sample_count;
     double sample_sum;
     idcu_Mutex lock;
@@ -94,6 +93,7 @@ typedef struct idcu_Metric
         idcu_MetricCounter* counter;
         idcu_MetricGauge* gauge;
         idcu_MetricHistogram* histogram;
+        idcu_MetricSummary* summary;
     } data;
 } idcu_Metric;
 

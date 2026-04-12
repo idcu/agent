@@ -1,8 +1,27 @@
-module:
-  name: idcu-json
-  version: 1.0.0
-  description: JSON parsing and serialization library
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
+name: idcu-json
+version: 1.0.0
+description: JSON parsing and serialization library
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-json
+  cmake_args:
+    - "-DCMAKE_C_STANDARD=11"
+  compile_options:
+    - "-Wall"
+    - "-Wextra"
+
+testing:
+  enabled: true
+  framework: internal
+
+features:
+  - json_parse: JSON parsing
+  - json_serialize: JSON serialization
+  - json_utf8: UTF-8 support

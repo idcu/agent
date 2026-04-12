@@ -1,8 +1,17 @@
-module:
-  name: idcu-yaml
-  version: 1.0.0
-  description: Simplified YAML parsing and serialization library
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
+name: idcu-yaml
+version: 1.0.0
+description: Simplified YAML parsing and serialization library
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-yaml
+
+testing:
+  enabled: true
+  framework: internal

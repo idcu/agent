@@ -1,9 +1,22 @@
-module:
-  name: idcu-http-client
-  version: 1.0.0
-  description: HTTP Client library for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
-    - idcu-network
+name: idcu-http-client
+version: 1.0.0
+description: HTTP Client library for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+  - idcu-network
+
+build:
+  type: cmake
+  targets:
+    - idcu-http-client
+
+platform_link_libraries:
+  unix:
+    - pthread
+
+testing:
+  enabled: true
+  framework: internal

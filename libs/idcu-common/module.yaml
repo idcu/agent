@@ -11,6 +11,10 @@ build:
   targets:
     - idcu-common
 
+platform_link_libraries:
+  unix:
+    - pthread
+
 headers:
   - idcu/common/error_code.h
   - idcu/common/config.h

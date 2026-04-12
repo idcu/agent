@@ -8,14 +8,14 @@ dependencies:
   - idcu-common
   - idcu-microkernel
 
+platform_link_libraries:
+  unix:
+    - pthread
+
 build:
   type: cmake
   targets:
     - idcu-sdk
-
-headers:
-  - idcu/sdk/types.h
-  - idcu/sdk/sdk.h
 
 features:
   - lifecycle: Simplified module lifecycle management

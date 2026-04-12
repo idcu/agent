@@ -23,6 +23,15 @@ void idcu_test_register(const char* suite_name, const char* test_name, idcu_Test
         } \
     } while (0)
 
+#define IDCU_TEST_ASSERT_MSG(cond, msg, ...) \
+    do { \
+        if (!(cond)) { \
+            fprintf(stderr, "ASSERT FAILED: %s:%d - " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+            idcu_test_fail_current(); \
+            return; \
+        } \
+    } while (0)
+
 #define IDCU_TEST_ASSERT_EQUAL(expected, actual) \
     do { \
         if ((expected) != (actual)) { \

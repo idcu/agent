@@ -12,10 +12,10 @@ static void test_coroutine_func(void* arg) {
     }
 }
 
-TEST_CASE(coroutine_create) {
+IDCU_TEST_CASE(coroutine, create) {
     idcu_CoroutineScheduler* scheduler = NULL;
     int result = idcu_coro_scheduler_init(&scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to init scheduler");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to init scheduler");
     
     idcu_Coroutine* coro = NULL;
     int count = 3;
@@ -24,23 +24,21 @@ TEST_CASE(coroutine_create) {
     config.name = "test-coro";
     
     result = idcu_coro_create(scheduler, &coro, test_coroutine_func, &count, &config);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to create coroutine");
-    TEST_ASSERT(coro != NULL, "Coroutine is NULL");
-    TEST_ASSERT(idcu_coro_get_state(coro) == IDCU_CORO_READY, "Coroutine not in READY state");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to create coroutine");
+    IDCU_TEST_ASSERT_MSG(coro != NULL, "Coroutine is NULL");
+    IDCU_TEST_ASSERT_MSG(idcu_coro_get_state(coro) == IDCU_CORO_READY, "Coroutine not in READY state");
     
     result = idcu_coro_destroy(coro);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to destroy coroutine");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to destroy coroutine");
     
     result = idcu_coro_scheduler_destroy(scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to destroy scheduler");
-    
-    TEST_PASS();
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to destroy scheduler");
 }
 
-TEST_CASE(coroutine_scheduler_run) {
+IDCU_TEST_CASE(coroutine, scheduler_run) {
     idcu_CoroutineScheduler* scheduler = NULL;
     int result = idcu_coro_scheduler_init(&scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to init scheduler");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to init scheduler");
     
     test_counter = 0;
     int count = 5;
@@ -49,23 +47,21 @@ TEST_CASE(coroutine_scheduler_run) {
     config.stack_size = IDCU_COROUTINE_DEFAULT_STACK_SIZE;
     
     result = idcu_coro_create(scheduler, &coro, test_coroutine_func, &count, &config);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to create coroutine");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to create coroutine");
     
     result = idcu_coro_scheduler_run(scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to run scheduler");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to run scheduler");
     
-    TEST_ASSERT(test_counter == 5, "Expected counter to be 5, got %d", test_counter);
+    IDCU_TEST_ASSERT_MSG(test_counter == 5, "Expected counter to be 5, got %d", test_counter);
     
     result = idcu_coro_scheduler_destroy(scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to destroy scheduler");
-    
-    TEST_PASS();
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to destroy scheduler");
 }
 
-TEST_CASE(coroutine_multiple) {
+IDCU_TEST_CASE(coroutine, multiple) {
     idcu_CoroutineScheduler* scheduler = NULL;
     int result = idcu_coro_scheduler_init(&scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to init scheduler");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to init scheduler");
     
     test_counter = 0;
     int count1 = 3;
@@ -76,27 +72,20 @@ TEST_CASE(coroutine_multiple) {
     config.stack_size = IDCU_COROUTINE_DEFAULT_STACK_SIZE;
     
     result = idcu_coro_create(scheduler, &coro1, test_coroutine_func, &count1, &config);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to create coroutine 1");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to create coroutine 1");
     
     result = idcu_coro_create(scheduler, &coro2, test_coroutine_func, &count2, &config);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to create coroutine 2");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to create coroutine 2");
     
     result = idcu_coro_scheduler_run(scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to run scheduler");
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to run scheduler");
     
-    TEST_ASSERT(test_counter == 7, "Expected counter to be 7, got %d", test_counter);
+    IDCU_TEST_ASSERT_MSG(test_counter == 7, "Expected counter to be 7, got %d", test_counter);
     
     result = idcu_coro_scheduler_destroy(scheduler);
-    TEST_ASSERT(result == IDCU_SUCCESS, "Failed to destroy scheduler");
-    
-    TEST_PASS();
+    IDCU_TEST_ASSERT_MSG(result == IDCU_SUCCESS, "Failed to destroy scheduler");
 }
 
-int main() {
-    RUN_TEST(coroutine_create);
-    RUN_TEST(coroutine_scheduler_run);
-    RUN_TEST(coroutine_multiple);
-    
-    PRINT_TEST_RESULTS();
-    return 0;
+int main(void) {
+    return idcu_test_run_all();
 }

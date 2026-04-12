@@ -1,8 +1,23 @@
-module:
-  name: idcu-network
-  version: 1.0.0
-  description: Network library for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
+name: idcu-network
+version: 1.0.0
+description: Network library for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-network
+
+platform_link_libraries:
+  windows:
+    - ws2_32
+  unix:
+    - pthread
+
+testing:
+  enabled: true
+  framework: internal

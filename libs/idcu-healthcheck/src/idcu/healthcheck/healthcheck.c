@@ -265,10 +265,10 @@ int idcu_memory_check(idcu_HealthCheckResult* result) {
         result->observed_value = (double)memStat.ullAvailPhys;
         snprintf(result->observed_unit, sizeof(result->observed_unit), "bytes");
         snprintf(result->message, sizeof(result->message), 
-                "Memory: %llu bytes free of %llu bytes (%.1f%% used)", 
+                "Memory: %llu bytes free of %llu bytes (%lu%% used)", 
                 (unsigned long long)memStat.ullAvailPhys, 
                 (unsigned long long)memStat.ullTotalPhys, 
-                memStat.dwMemoryLoad);
+                (unsigned long)memStat.dwMemoryLoad);
     } else {
         idcu_healthcheck_result_set_status(result, IDCU_HEALTH_STATUS_FAIL);
         snprintf(result->message, sizeof(result->message), "Failed to get memory info");
@@ -300,7 +300,7 @@ int idcu_cpu_check(idcu_HealthCheckResult* result) {
     idcu_healthcheck_result_init(result);
     idcu_healthcheck_result_set_status(result, IDCU_HEALTH_STATUS_PASS);
     result->observed_value = 50.0;
-    snprintf(result->observed_unit, sizeof(result->observed_unit), "%");
+    snprintf(result->observed_unit, sizeof(result->observed_unit), "%%");
     snprintf(result->message, sizeof(result->message), "CPU usage: 50.0%%");
     return IDCU_ERR_OK;
 }
@@ -411,8 +411,8 @@ int idcu_healthchecker_to_json(idcu_HealthChecker* checker, char* buffer, size_t
             offset += written;
         }
         written = snprintf(buffer + offset, buffer_size - offset,
-                          "{\"componentId\":\"%s\",\"componentType\":\"%s\",\"status\":\"%s\",\"output\":\"%s\"}",
-                          check->name, idcu_health_status_to_string(check->type),
+                          "{\"componentId\":\"%s\",\"componentType\":\"healthcheck\",\"status\":\"%s\",\"output\":\"%s\"}",
+                          check->name,
                           idcu_health_status_to_string(check->last_result.status),
                           check->last_result.message);
         if (written < 0) break;
@@ -427,4 +427,74 @@ int idcu_healthchecker_to_json(idcu_HealthChecker* checker, char* buffer, size_t
     
     idcu_mutex_unlock(&checker->lock);
     return IDCU_ERR_OK;
+}
+
+int idcu_healthcheck_set_tcp(idcu_HealthCheck* check, const char* host, uint16_t port, int timeout_ms) {
+    if (!check || !host) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    strncpy(check->config.tcp.host, host, sizeof(check->config.tcp.host) - 1);
+    check->config.tcp.port = port;
+    check->config.tcp.timeout_ms = timeout_ms;
+    return IDCU_ERR_OK;
+}
+
+int idcu_healthcheck_set_database(idcu_HealthCheck* check, const char* conn_str, const char* query, int timeout_ms) {
+    if (!check || !conn_str) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    strncpy(check->config.database.connection_string, conn_str, sizeof(check->config.database.connection_string) - 1);
+    if (query) {
+        strncpy(check->config.database.query, query, sizeof(check->config.database.query) - 1);
+    }
+    check->config.database.timeout_ms = timeout_ms;
+    return IDCU_ERR_OK;
+}
+
+int idcu_healthcheck_set_cache(idcu_HealthCheck* check, int enabled, uint64_t ttl_ms) {
+    if (!check) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    check->cache_enabled = enabled;
+    check->cache_ttl_ms = ttl_ms;
+    return IDCU_ERR_OK;
+}
+
+int idcu_healthchecker_register_status_callback(idcu_HealthChecker* checker, 
+                                                   idcu_HealthStatusChangeCallback callback, 
+                                                   void* user_data) {
+    if (!checker || !checker->initialized || !callback) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    idcu_mutex_lock(&checker->lock);
+    if (checker->callback_count >= 16) {
+        idcu_mutex_unlock(&checker->lock);
+        return IDCU_ERR_OUT_OF_RANGE;
+    }
+    checker->callbacks[checker->callback_count] = callback;
+    checker->callback_user_data[checker->callback_count] = user_data;
+    checker->callback_count++;
+    idcu_mutex_unlock(&checker->lock);
+    return IDCU_ERR_OK;
+}
+
+int idcu_healthchecker_unregister_status_callback(idcu_HealthChecker* checker, 
+                                                     idcu_HealthStatusChangeCallback callback) {
+    if (!checker || !checker->initialized || !callback) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    idcu_mutex_lock(&checker->lock);
+    for (size_t i = 0; i < checker->callback_count; i++) {
+        if (checker->callbacks[i] == callback) {
+            for (size_t j = i; j < checker->callback_count - 1; j++) {
+                checker->callbacks[j] = checker->callbacks[j + 1];
+                checker->callback_user_data[j] = checker->callback_user_data[j + 1];
+            }
+            checker->callback_count--;
+            idcu_mutex_unlock(&checker->lock);
+            return IDCU_ERR_OK;
+        }
+    }
+    idcu_mutex_unlock(&checker->lock);
+    return IDCU_ERR_NOT_FOUND;
 }

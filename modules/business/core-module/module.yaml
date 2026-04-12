@@ -1,12 +1,27 @@
-module:
-  name: idcu-core-module
-  version: 1.0.0
-  description: Core foundation module for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
-    - idcu-log
-    - idcu-config
-    - idcu-healthcheck
-    - idcu-metrics
+name: core-module
+version: 1.0.0
+description: Core foundation module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-common
+  - idcu-log
+  - idcu-config
+  - idcu-healthcheck
+  - idcu-metrics
+
+build:
+  type: cmake
+  targets:
+    - core_module
+
+headers:
+  - idcu/core_module/core_module.h
+
+features:
+  - core_module: Core foundation functionality
+
+testing:
+  enabled: false

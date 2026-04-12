@@ -1,9 +1,10 @@
 #include <idcu/testframework/testframework.h>
 #include <idcu/yaml/yaml.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-IDCU_TEST_CASE(yaml_parse_null) {
+IDCU_TEST_CASE(yaml, parse_null) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("null", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -11,7 +12,7 @@ IDCU_TEST_CASE(yaml_parse_null) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_null_tilde) {
+IDCU_TEST_CASE(yaml, parse_null_tilde) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("~", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -19,7 +20,7 @@ IDCU_TEST_CASE(yaml_parse_null_tilde) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_bool_true) {
+IDCU_TEST_CASE(yaml, parse_bool_true) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("true", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -31,7 +32,7 @@ IDCU_TEST_CASE(yaml_parse_bool_true) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_bool_false) {
+IDCU_TEST_CASE(yaml, parse_bool_false) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("false", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -43,7 +44,7 @@ IDCU_TEST_CASE(yaml_parse_bool_false) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_int) {
+IDCU_TEST_CASE(yaml, parse_int) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("12345", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -55,7 +56,7 @@ IDCU_TEST_CASE(yaml_parse_int) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_double) {
+IDCU_TEST_CASE(yaml, parse_double) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("123.45", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -67,7 +68,7 @@ IDCU_TEST_CASE(yaml_parse_double) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_string) {
+IDCU_TEST_CASE(yaml, parse_string) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("hello world", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -79,7 +80,7 @@ IDCU_TEST_CASE(yaml_parse_string) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_quoted_string) {
+IDCU_TEST_CASE(yaml, parse_quoted_string) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("\"quoted string\"", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);
@@ -91,7 +92,7 @@ IDCU_TEST_CASE(yaml_parse_quoted_string) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_simple_mapping) {
+IDCU_TEST_CASE(yaml, parse_simple_mapping) {
     const char* yaml_str = 
         "key: value\n"
         "number: 123\n";
@@ -112,7 +113,7 @@ IDCU_TEST_CASE(yaml_parse_simple_mapping) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_simple_sequence) {
+IDCU_TEST_CASE(yaml, parse_simple_sequence) {
     const char* yaml_str = 
         "- item1\n"
         "- item2\n"
@@ -133,7 +134,7 @@ IDCU_TEST_CASE(yaml_parse_simple_sequence) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_to_string) {
+IDCU_TEST_CASE(yaml, to_string) {
     const char* yaml_str = 
         "name: test\n"
         "value: 123\n";
@@ -149,7 +150,7 @@ IDCU_TEST_CASE(yaml_to_string) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_to_string_alloc) {
+IDCU_TEST_CASE(yaml, to_string_alloc) {
     const char* yaml_str = 
         "- 1\n"
         "- 2\n"
@@ -166,7 +167,7 @@ IDCU_TEST_CASE(yaml_to_string_alloc) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_to_json) {
+IDCU_TEST_CASE(yaml, to_json) {
     const char* yaml_str = 
         "name: test\n"
         "value: 123\n";
@@ -184,7 +185,7 @@ IDCU_TEST_CASE(yaml_to_json) {
     idcu_yaml_free(&value);
 }
 
-IDCU_TEST_CASE(yaml_parse_null_args) {
+IDCU_TEST_CASE(yaml, parse_null_args) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse(NULL, &value);
     IDCU_TEST_ASSERT(ret != IDCU_ERR_OK);
@@ -193,7 +194,7 @@ IDCU_TEST_CASE(yaml_parse_null_args) {
     IDCU_TEST_ASSERT(ret != IDCU_ERR_OK);
 }
 
-IDCU_TEST_CASE(yaml_parse_empty) {
+IDCU_TEST_CASE(yaml, parse_empty) {
     idcu_YamlValue value;
     int ret = idcu_yaml_parse("", &value);
     IDCU_TEST_ASSERT(ret == IDCU_ERR_OK);

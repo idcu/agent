@@ -1,8 +1,23 @@
-module:
-  name: idcu-module-isolation
-  version: 1.0.0
-  description: Module-Isolation library for IDCU Agent
-  author: IDCU Team
-  license: Apache-2.0
-  dependencies:
-    - idcu-common
+name: idcu-module-isolation
+version: 1.0.0
+description: Module-Isolation library for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+
+platform_link_libraries:
+  unix:
+    - pthread
+
+build:
+  type: cmake
+  targets:
+    - idcu-module-isolation
+
+features:
+  - module_isolation: Module isolation functionality
+
+testing:
+  enabled: false
