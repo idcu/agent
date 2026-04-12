@@ -197,6 +197,11 @@ endif()
   - ✅ 使用 _NSGetExecutablePath 实现 exe_path
   - ✅ 使用 NSHomeDirectory + Library/Application Support 实现 data_dir
   - ✅ 其余接口复用 Linux 实现
+- [x] idcu-os 模块构建成功 ✅ (Windows 平台验证通过)
+  - ✅ 完整的 Windows 平台实现 (lock, time, network, file, path, env, dl, sysinfo, signal, backtrace, coroutine)
+  - ✅ 完整的 Linux 平台实现
+  - ✅ macOS/FreeBSD/Android/HarmonyOS/Vector OS/RT-Thread 平台占位文件
+  - ✅ 模块被构建系统正确发现和编译
 - [ ] 在 macOS 上编译和测试通过
 - [ ] 在 FreeBSD 上编译和测试通过
 - [ ] 四个通用平台构建通过
