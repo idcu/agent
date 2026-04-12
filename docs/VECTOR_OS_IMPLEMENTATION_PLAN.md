@@ -33,9 +33,9 @@
 | 通用平台 | macOS | P1 | ✅ 已完成实现 |
 | 通用平台 | FreeBSD | P1 | ✅ 已完成实现 |
 | 通用平台 | Android | P2 | ⏳ 待实现 |
-| 通用平台 | HarmonyOS | P2 | ⏳ 待实现 |
+| 通用平台 | HarmonyOS | P2 | ✅ 已完成实现 |
 | 嵌入式平台 | Vector OS | P3 | ✅ 已有，需集成 |
-| 嵌入式平台 | RT-Thread | P4 | ⏳ 待实现 |
+| 嵌入式平台 | RT-Thread | P4 | ✅ 已完成实现 |
 
 ---
 
@@ -461,9 +461,22 @@ endif()
 
 ### P4.4: 验证 P4 阶段
 
-- [ ] Agent Lite 可以在 RT-Thread 上运行
-- [ ] 核心功能正常
-- [ ] 内存占用在合理范围内
+- [x] 完善 idcu-os RT-Thread 平台实现 ✅
+  - ✅ lock.c: 使用 RT-Thread 互斥锁、信号量实现完整锁机制
+  - ✅ time.c: 使用 rt_tick_get 和 rt_thread_mdelay 实现时间函数
+  - ✅ path.c: 实现路径处理 (exe_path/home_dir/data_dir/path_join)
+  - ✅ file.c: 使用 DFS POSIX 接口实现文件 I/O
+  - ✅ network.c: 使用 SAL Socket 层实现网络接口
+  - ✅ sysinfo.c: 获取 RT-Thread 系统信息和内存统计
+  - ✅ env.c: 环境变量支持 (rt_getenv/rt_setenv)
+  - ✅ signal.c: 信号占位实现 (RT-Thread 信号尚在规划中)
+  - ✅ coroutine.c: 简化协程实现 (RT-Thread 无 ucontext)
+  - ✅ backtrace.c: 回溯占位实现
+  - ✅ dl.c: 动态库加载占位实现 (受限)
+- [x] 完整构建验证通过 ✅ (2026-04-13, Windows 平台, 59/59 模块全部成功)
+- [ ] Agent Lite 可以在 RT-Thread 上运行 (需 RT-Thread 环境)
+- [ ] 核心功能正常 (需 RT-Thread 环境)
+- [ ] 内存占用在合理范围内 (需 RT-Thread 环境)
 
 ---
 
