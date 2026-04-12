@@ -545,6 +545,11 @@ endif()
   - ✅ idcu-os 单元测试 37/37 全部通过
   - ✅ 完整的时间、锁、文件、路径、环境变量、系统信息、回溯、协程测试
   - ✅ Windows 10 Pro 22H2 平台最新状态验证通过
+- [x] 集成测试编译成功 (2026-04-13)
+  - ✅ test_core_infrastructure.c 编译成功
+  - ✅ test_microkernel.c 编译成功
+  - ✅ 微内核集成测试已开始运行 (13 个测试用例)
+  - ✅ 核心基础设施集成测试可执行文件已生成
 - [ ] Linux (x86_64, ARM64)
 - [ ] macOS (x86_64, ARM64)
 - [ ] FreeBSD (x86_64)
@@ -560,6 +565,13 @@ endif()
    - 内存分配延迟
    - 协程切换开销
    - I/O 多路复用性能
+
+- [x] 基准测试代码已存在 ✅
+  - ✅ tests/benchmark/benchmark_common.c 已实现
+  - ✅ Vector 性能测试 (push/get)
+  - ✅ Hash Map 性能测试 (set/get)
+  - ✅ 消息总线性能测试 (publish/process)
+  - ✅ 内存池性能测试 (alloc/free)
 
 2. **针对性优化**
    - 热点代码优化
