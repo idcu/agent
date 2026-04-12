@@ -309,7 +309,7 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
     return IDCU_ERR_OK;
 }
 
-#define IDCU_MSGBUS_BATCH_SIZE 16
+#define IDCU_MSGBUS_BATCH_SIZE 32
 
 int idcu_msgbus_process(idcu_MsgBus* bus) {
     if (!bus) {
@@ -339,11 +339,16 @@ int idcu_msgbus_process(idcu_MsgBus* bus) {
 
                 idcu_Vector* subs = bus->topic_subscribers[topic].subscribers;
                 size_t sub_count = 0;
+                idcu_MsgSubscriber* local_subs_stack[IDCU_MSGBUS_BATCH_SIZE];
                 idcu_MsgSubscriber** local_subs = NULL;
 
                 if (subs) {
                     sub_count = idcu_vector_size(subs);
-                    local_subs = (idcu_MsgSubscriber**)malloc(sizeof(idcu_MsgSubscriber*) * sub_count);
+                    if (sub_count <= IDCU_MSGBUS_BATCH_SIZE) {
+                        local_subs = local_subs_stack;
+                    } else {
+                        local_subs = (idcu_MsgSubscriber**)malloc(sizeof(idcu_MsgSubscriber*) * sub_count);
+                    }
                     if (local_subs) {
                         for (size_t i = 0; i < sub_count; i++) {
                             idcu_MsgSubscriber** sub_ptr = (idcu_MsgSubscriber**)idcu_vector_get(subs, i);
@@ -371,7 +376,9 @@ int idcu_msgbus_process(idcu_MsgBus* bus) {
                     free(msg);
                 }
 
-                free(local_subs);
+                if (local_subs && local_subs != local_subs_stack) {
+                    free(local_subs);
+                }
                 idcu_mutex_lock(&bus->topic_mutexes[topic]);
             }
         }

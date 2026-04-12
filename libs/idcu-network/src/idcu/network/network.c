@@ -623,15 +623,22 @@ int idcu_udp_socket_set_timeout(idcu_UdpSocket* sock, int timeout_ms) {
     return IDCU_ERR_OK;
 }
 
+#define IDCU_NET_POLL_STACK_SIZE 32
+
 int idcu_net_poll(idcu_NetPollFd* fds, size_t nfds, int timeout_ms) {
     if (!fds || nfds == 0) {
         return IDCU_ERR_INVALID_ARG;
     }
 
 #ifdef _WIN32
-    WSAPOLLFD* wsa_fds = (WSAPOLLFD*)malloc(nfds * sizeof(WSAPOLLFD));
-    if (!wsa_fds) {
-        return IDCU_ERR_MEMORY;
+    WSAPOLLFD wsa_fds_stack[IDCU_NET_POLL_STACK_SIZE];
+    WSAPOLLFD* wsa_fds = wsa_fds_stack;
+    
+    if (nfds > IDCU_NET_POLL_STACK_SIZE) {
+        wsa_fds = (WSAPOLLFD*)malloc(nfds * sizeof(WSAPOLLFD));
+        if (!wsa_fds) {
+            return IDCU_ERR_MEMORY;
+        }
     }
 
     for (size_t i = 0; i < nfds; i++) {
@@ -652,16 +659,23 @@ int idcu_net_poll(idcu_NetPollFd* fds, size_t nfds, int timeout_ms) {
         if (wsa_fds[i].revents & POLLHUP) fds[i].revents |= IDCU_NET_POLL_HUP;
     }
 
-    free(wsa_fds);
+    if (wsa_fds != wsa_fds_stack) {
+        free(wsa_fds);
+    }
 
     if (result == SOCKET_ERROR) {
         return IDCU_ERR_UNKNOWN;
     }
     return result;
 #else
-    struct pollfd* poll_fds = (struct pollfd*)malloc(nfds * sizeof(struct pollfd));
-    if (!poll_fds) {
-        return IDCU_ERR_MEMORY;
+    struct pollfd poll_fds_stack[IDCU_NET_POLL_STACK_SIZE];
+    struct pollfd* poll_fds = poll_fds_stack;
+    
+    if (nfds > IDCU_NET_POLL_STACK_SIZE) {
+        poll_fds = (struct pollfd*)malloc(nfds * sizeof(struct pollfd));
+        if (!poll_fds) {
+            return IDCU_ERR_MEMORY;
+        }
     }
 
     for (size_t i = 0; i < nfds; i++) {
@@ -682,7 +696,9 @@ int idcu_net_poll(idcu_NetPollFd* fds, size_t nfds, int timeout_ms) {
         if (poll_fds[i].revents & POLLHUP) fds[i].revents |= IDCU_NET_POLL_HUP;
     }
 
-    free(poll_fds);
+    if (poll_fds != poll_fds_stack) {
+        free(poll_fds);
+    }
 
     if (result < 0) {
         return IDCU_ERR_UNKNOWN;

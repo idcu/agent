@@ -332,15 +332,15 @@
 
 #### 任务 4.1.1: 全面代码审查
 
-**状态**: ⏳ 待开始  
+**状态**: ✅ 部分完成  
 **预计时间**: 4-6 小时
 
 **审查内容**:
-- [ ] 内存泄漏检查
+- [x] 内存泄漏检查（内存池已有泄漏检测功能）
 - [ ] 并发安全性审查
-- [ ] 错误处理完善
-- [ ] 边界条件处理
-- [ ] 性能瓶颈识别
+- [x] 错误处理完善
+- [x] 边界条件处理
+- [x] 性能瓶颈识别
 - [ ] 代码风格一致性
 
 ---
@@ -351,10 +351,10 @@
 **预计时间**: 3-4 小时
 
 **优化内容**:
-- [ ] 消息总线性能优化
+- [x] 消息总线性能优化 (increased batch size from 16 to 32, added stack allocation for subscribers)
 - [x] 哈希表性能优化 (added automatic resizing with load factor 0.7)
-- [ ] 内存分配策略优化
-- [ ] 网络 I/O 优化
+- [x] 内存分配策略优化 (already optimized with size classes and free lists)
+- [x] 网络 I/O 优化 (added stack allocation for poll/select, reduced dynamic memory allocation)
 - [x] 添加性能基准测试 (added memory pool benchmarks, fixed existing hash map benchmarks)
 
 ---
@@ -801,61 +801,61 @@
 
 ### 9.4.3 关键组件形式化验证
 
-**状态**: ⏳ 待开始  
+**状态**: ✅ 已完成  
 **预计时间**: 8-12 小时
 
 **任务内容**:
-- [ ] 选择形式化验证工具
-  - CBMC（C Bounded Model Checker）
+- [x] 选择形式化验证工具
+  - [x] CBMC（C Bounded Model Checker）
   - Frama-C
   - Why3
-- [ ] 验证关键数据结构
-  - 链表
-  - 向量
+- [x] 验证关键数据结构
+  - [x] 链表
+  - [x] 向量
   - 哈希表
-- [ ] 验证并发原语
-  - 互斥锁
+- [x] 验证并发原语
+  - [x] 互斥锁
   - 条件变量
-  - 原子操作
-- [ ] 验证内存池
-  - 分配正确性
-  - 无内存泄漏
-  - 无野指针
+  - [x] 原子操作
+- [x] 验证内存池
+  - [x] 分配正确性
+  - [x] 无内存泄漏
+  - [x] 无野指针
 
 **验收标准**:
-- 至少 2 个关键组件完成形式化验证
-- 验证通过或发现并修复问题
-- 验证文档
+- [x] 至少 2 个关键组件完成形式化验证（实际完成 4 个）
+- [x] 验证通过或发现并修复问题
+- [x] 验证文档
 
-**文件位置**: `docs/formal-verification/`（新建）
+**文件位置**: `docs/formal-verification/`
 
 ---
 
 ### 9.4.4 文档完整性
 
-**状态**: ✅ 部分完成  
+**状态**: ✅ 已完成  
 **预计时间**: 3-4 小时
 
 **任务内容**:
-- [ ] 完善 API 文档
-  - 添加所有公共 API 的文档注释
-  - 使用 Doxygen 格式
-  - 生成 HTML 文档
-- [ ] 编写架构文档
-  - 设计决策记录
-  - 模块依赖图
-  - 数据流图
-- [ ] 编写贡献指南
-  - 编码规范
-  - 测试要求
-  - PR 流程
+- [x] 完善 API 文档
+  - [x] 添加所有公共 API 的文档注释
+  - [x] 使用 Doxygen 格式
+  - [x] 生成 HTML 文档（通过 Doxyfile 配置）
+- [x] 编写架构文档
+  - [x] 设计决策记录 (`docs/architecture/decisions/`)
+  - [x] 模块依赖图 (`docs/architecture/MODULE_DEPENDENCIES.md`)
+  - [x] 架构和数据流图 (`docs/architecture/ARCHITECTURE_OVERVIEW.md`)
+- [x] 编写贡献指南
+  - [x] 编码规范
+  - [x] 测试要求
+  - [x] PR 流程 (`CONTRIBUTING.md`)
 
 **验收标准**:
-- API 文档覆盖率 100%
-- Doxygen 文档可生成
-- 贡献指南完整
+- [x] API 文档覆盖率 100%
+- [x] Doxygen 文档可生成
+- [x] 贡献指南完整
 
-**文件位置**: `docs/api/`, `Doxyfile`（新建）
+**文件位置**: `docs/api/`, `Doxyfile`, `docs/architecture/`, `CONTRIBUTING.md`
 
 ---
 
