@@ -31,7 +31,7 @@
 | 通用平台 | Linux | P0 | ✅ 已有 |
 | 通用平台 | Windows | P0 | ✅ 已有 |
 | 通用平台 | macOS | P1 | ✅ 已完成实现 |
-| 通用平台 | FreeBSD | P1 | ⏳ 待实现 |
+| 通用平台 | FreeBSD | P1 | ✅ 已完成实现 |
 | 通用平台 | Android | P2 | ⏳ 待实现 |
 | 通用平台 | HarmonyOS | P2 | ⏳ 待实现 |
 | 嵌入式平台 | Vector OS | P3 | ✅ 已有，需集成 |
@@ -197,10 +197,17 @@ endif()
   - ✅ 使用 _NSGetExecutablePath 实现 exe_path
   - ✅ 使用 NSHomeDirectory + Library/Application Support 实现 data_dir
   - ✅ 其余接口复用 Linux 实现
+- [x] FreeBSD 平台实现已完成 ✅
+  - ✅ 使用 sysctl(KERN_PROC_PATHNAME) 实现 exe_path
+  - ✅ 使用 sysctl 替代 procfs 获取系统信息
+  - ✅ 使用 kqueue 实现高性能 I/O 多路复用
+  - ✅ 所有其他接口与 POSIX 兼容
 - [x] idcu-os 模块构建成功 ✅ (Windows 平台验证通过)
   - ✅ 完整的 Windows 平台实现 (lock, time, network, file, path, env, dl, sysinfo, signal, backtrace, coroutine)
   - ✅ 完整的 Linux 平台实现
-  - ✅ macOS/FreeBSD/Android/HarmonyOS/Vector OS/RT-Thread 平台占位文件
+  - ✅ 完整的 macOS 平台实现
+  - ✅ 完整的 FreeBSD 平台实现
+  - ✅ Android/HarmonyOS/Vector OS/RT-Thread 平台占位文件
   - ✅ 模块被构建系统正确发现和编译
 - [x] **所有模块构建成功！** ✅ (59/59 模块全部成功)
   - ✅ 修复了所有业务模块的依赖关系 (添加 idcu-sdk 依赖)
@@ -211,8 +218,10 @@ endif()
 - [x] Windows 平台完整验证通过 ✅ (所有模块构建成功)
 - [x] Linux 平台完整实现 ✅ (所有模块构建成功)
 - [x] macOS 平台完整实现 ✅ (所有代码已就绪，待验证)
+- [x] FreeBSD 平台完整实现 ✅ (所有代码已就绪，待验证)
 - [x] 所有任务文档已同步更新 ✅ (task_index.md 标记所有任务为已完成)
 - [x] 完整构建验证通过 ✅ (2026-04-12, 59/59 模块全部成功)
+- [x] P1 阶段 FreeBSD 实现完成 ✅ (path.c, sysinfo.c, network.c)
 - [ ] 在 macOS 上编译和测试通过 (需 macOS 环境)
 - [ ] 在 FreeBSD 上编译和测试通过
 - [ ] 四个通用平台构建通过
