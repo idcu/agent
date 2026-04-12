@@ -1,0 +1,34 @@
+name: idcu-os
+version: 1.0.0
+description: Cross-platform OS abstraction layer for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies: []
+
+build:
+  type: cmake
+  targets:
+    - idcu-os
+
+headers:
+  - idcu/os.h
+
+features:
+  - platform_detection: Platform detection macros
+  - thread_sync: Mutex, condition variable, read-write lock
+  - coroutine: Coroutine creation and management
+  - time: Time and sleep functions
+  - network: Socket operations
+  - io_multiplex: Poll and select
+  - file_io: File read/write/delete, directory creation
+  - path: Path manipulation, executable path, data directory
+  - environment: Environment variable operations
+  - signal: Signal handling
+  - debug: Backtrace capture and formatting
+  - dynamic_load: Dynamic library loading
+  - sysinfo: System information and filesystem statistics
+
+testing:
+  enabled: true
+  framework: internal
