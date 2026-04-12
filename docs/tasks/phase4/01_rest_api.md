@@ -184,14 +184,14 @@ mkdir -p modules/rest-api/examples
 
 ## 8. 验证检查清单
 
-- [ ] REST API 头文件已创建
-- [ ] REST API 实现文件已创建
-- [ ] CMakeLists.txt 已创建
-- [ ] module.yaml 配置文件已创建
-- [ ] README.md 已创建
-- [ ] 可以添加和访问 API 端点
-- [ ] JSON 响应正常工作
-- [ ] 认证可以正常工作
+- [x] REST API 头文件已创建
+- [x] REST API 实现文件已创建
+- [x] CMakeLists.txt 已创建
+- [x] module.yaml 配置文件已创建
+- [x] README.md 已创建
+- [x] 可以添加和访问 API 端点
+- [x] JSON 响应正常工作
+- [x] 认证可以正常工作
 
 ---
 
