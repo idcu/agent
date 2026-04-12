@@ -35,6 +35,8 @@ int idcu_mutex_init(idcu_Mutex* mutex)
     mutex->total_hold_time = 0;
     mutex->max_hold_time = 0;
     mutex->lock_wait_start = 0;
+    mutex->total_wait_time = 0;
+    mutex->max_wait_time = 0;
 #endif
     return IDCU_ERR_OK;
 #else
@@ -47,6 +49,8 @@ int idcu_mutex_init(idcu_Mutex* mutex)
     mutex->total_hold_time = 0;
     mutex->max_hold_time = 0;
     mutex->lock_wait_start = 0;
+    mutex->total_wait_time = 0;
+    mutex->max_wait_time = 0;
 #endif
     return ret == 0 ? IDCU_ERR_OK : IDCU_ERR_GENERAL;
 #endif
@@ -76,6 +80,11 @@ int idcu_mutex_lock(idcu_Mutex* mutex)
 #endif
     EnterCriticalSection(&mutex->cs);
 #ifdef IDCU_DEBUG
+    uint64_t wait_time = idcu_get_current_time_ms() - mutex->lock_wait_start;
+    mutex->total_wait_time += wait_time;
+    if (wait_time > mutex->max_wait_time) {
+        mutex->max_wait_time = wait_time;
+    }
     mutex->owner_thread = GetCurrentThreadId();
     mutex->lock_count++;
     mutex->total_locks++;
@@ -89,6 +98,11 @@ int idcu_mutex_lock(idcu_Mutex* mutex)
     int ret = pthread_mutex_lock(&mutex->pmutex);
 #ifdef IDCU_DEBUG
     if (ret == 0) {
+        uint64_t wait_time = idcu_get_current_time_ms() - mutex->lock_wait_start;
+        mutex->total_wait_time += wait_time;
+        if (wait_time > mutex->max_wait_time) {
+            mutex->max_wait_time = wait_time;
+        }
         mutex->owner_thread = pthread_self();
         mutex->lock_count++;
         mutex->total_locks++;
@@ -189,6 +203,11 @@ int idcu_mutex_timedlock(idcu_Mutex* mutex, uint32_t timeout_ms)
     while (elapsed < timeout_ms) {
         if (TryEnterCriticalSection(&mutex->cs)) {
 #ifdef IDCU_DEBUG
+            uint64_t wait_time = idcu_get_current_time_ms() - mutex->lock_wait_start;
+            mutex->total_wait_time += wait_time;
+            if (wait_time > mutex->max_wait_time) {
+                mutex->max_wait_time = wait_time;
+            }
             mutex->owner_thread = GetCurrentThreadId();
             mutex->lock_count++;
             mutex->total_locks++;
@@ -215,6 +234,11 @@ int idcu_mutex_timedlock(idcu_Mutex* mutex, uint32_t timeout_ms)
     int ret = pthread_mutex_timedlock(&mutex->pmutex, &ts);
 #ifdef IDCU_DEBUG
     if (ret == 0) {
+        uint64_t wait_time = idcu_get_current_time_ms() - mutex->lock_wait_start;
+        mutex->total_wait_time += wait_time;
+        if (wait_time > mutex->max_wait_time) {
+            mutex->max_wait_time = wait_time;
+        }
         mutex->owner_thread = pthread_self();
         mutex->lock_count++;
         mutex->total_locks++;
@@ -273,6 +297,45 @@ uint64_t idcu_mutex_get_max_hold_time(idcu_Mutex* mutex)
         return 0;
     }
     return mutex->max_hold_time;
+}
+
+uint64_t idcu_mutex_get_total_wait_time(idcu_Mutex* mutex)
+{
+    if (!mutex) {
+        return 0;
+    }
+    return mutex->total_wait_time;
+}
+
+uint64_t idcu_mutex_get_max_wait_time(idcu_Mutex* mutex)
+{
+    if (!mutex) {
+        return 0;
+    }
+    return mutex->max_wait_time;
+}
+
+uint64_t idcu_mutex_get_current_wait_time(idcu_Mutex* mutex)
+{
+    if (!mutex || mutex->lock_wait_start == 0) {
+        return 0;
+    }
+    return idcu_get_current_time_ms() - mutex->lock_wait_start;
+}
+
+void idcu_mutex_print_stats(idcu_Mutex* mutex, const char* name)
+{
+    if (!mutex) {
+        return;
+    }
+    printf("=== Mutex Statistics: %s ===\n", name ? name : "unnamed");
+    printf("  Total locks: %llu\n", (unsigned long long)mutex->total_locks);
+    printf("  Current lock count: %llu\n", (unsigned long long)mutex->lock_count);
+    printf("  Total hold time: %llu ms\n", (unsigned long long)mutex->total_hold_time);
+    printf("  Max hold time: %llu ms\n", (unsigned long long)mutex->max_hold_time);
+    printf("  Total wait time: %llu ms\n", (unsigned long long)mutex->total_wait_time);
+    printf("  Max wait time: %llu ms\n", (unsigned long long)mutex->max_wait_time);
+    printf("==============================\n");
 }
 #endif
 

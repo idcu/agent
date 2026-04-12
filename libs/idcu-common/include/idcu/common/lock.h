@@ -16,6 +16,8 @@ typedef struct {
     uint64_t total_hold_time;
     uint64_t max_hold_time;
     uint64_t lock_wait_start;
+    uint64_t total_wait_time;
+    uint64_t max_wait_time;
 #endif
 } idcu_Mutex;
 #else
@@ -30,6 +32,8 @@ typedef struct {
     uint64_t total_hold_time;
     uint64_t max_hold_time;
     uint64_t lock_wait_start;
+    uint64_t total_wait_time;
+    uint64_t max_wait_time;
 #endif
 } idcu_Mutex;
 #endif
@@ -51,6 +55,10 @@ uint64_t idcu_mutex_get_total_locks(idcu_Mutex* mutex);
 int idcu_mutex_is_held_by_current_thread(idcu_Mutex* mutex);
 uint64_t idcu_mutex_get_total_hold_time(idcu_Mutex* mutex);
 uint64_t idcu_mutex_get_max_hold_time(idcu_Mutex* mutex);
+uint64_t idcu_mutex_get_total_wait_time(idcu_Mutex* mutex);
+uint64_t idcu_mutex_get_max_wait_time(idcu_Mutex* mutex);
+uint64_t idcu_mutex_get_current_wait_time(idcu_Mutex* mutex);
+void idcu_mutex_print_stats(idcu_Mutex* mutex, const char* name);
 #endif
 
 typedef struct
