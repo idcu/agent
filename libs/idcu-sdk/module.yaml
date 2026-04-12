@@ -2,7 +2,7 @@ name: idcu-sdk
 version: 1.0.0
 description: SDK library for IDCU Agent module development
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies:
   - idcu-common

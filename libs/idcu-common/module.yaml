@@ -2,7 +2,7 @@ name: idcu-common
 version: 1.0.0
 description: Common utilities library for IDCU Agent
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies: []
 

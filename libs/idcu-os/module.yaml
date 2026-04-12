@@ -2,7 +2,7 @@ name: idcu-os
 version: 1.0.0
 description: Cross-platform OS abstraction layer for IDCU Agent
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies: []
 

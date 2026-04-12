@@ -89,7 +89,7 @@ name: module-name
 version: 1.0.0
 description: Module description
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 dependencies: []
 build:
   type: cmake
@@ -402,7 +402,7 @@ name: idcu-module-build
 version: 1.0.0
 description: Module build system for IDCU Agent
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies: []
 
@@ -556,7 +556,7 @@ name: my-module
 version: 1.0.0
 description: My module description
 author: My Name
-license: MIT
+license: Apache-2.0
 
 dependencies:
   - idcu-common

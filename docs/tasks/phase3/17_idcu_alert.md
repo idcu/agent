@@ -397,7 +397,7 @@ name: idcu-alert
 version: 1.0.0
 description: Alert management library for IDCU Agent
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies:
   - idcu-common

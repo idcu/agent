@@ -35,7 +35,7 @@ name: my-module
 version: 1.0.0
 description: My module description
 author: My Name
-license: MIT
+license: Apache-2.0
 
 dependencies:
   - idcu-common

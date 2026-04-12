@@ -287,7 +287,7 @@ name: idcu-management
 version: 1.0.0
 description: Management library with CLI and HTTP API
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies:
   - idcu-common

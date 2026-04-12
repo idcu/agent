@@ -473,7 +473,7 @@ name: idcu-watchdog
 version: 1.0.0
 description: Watchdog library for IDCU Agent
 author: IDCU Team
-license: MIT
+license: Apache-2.0
 
 dependencies:
   - idcu-common
