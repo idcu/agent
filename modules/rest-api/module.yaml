@@ -1,0 +1,31 @@
+name: idcu-rest-api
+version: 1.0.0
+description: REST API module for IDCU Agent
+author: IDCU Team
+license: MIT
+
+dependencies:
+  - idcu-common
+  - idcu-http-server
+  - idcu-json
+
+build:
+  type: cmake
+  targets:
+    - idcu-rest-api
+
+headers:
+  - idcu/rest_api/types.h
+  - idcu/rest_api/rest_api.h
+
+features:
+  - endpoints: HTTP API endpoints management
+  - routing: Request routing and dispatch
+  - auth: Multiple authentication methods (Basic, Bearer, API Key)
+  - rate-limiting: Token bucket rate limiting
+  - cors: CORS support
+  - openapi: OpenAPI documentation generation
+
+testing:
+  enabled: true
+  framework: internal

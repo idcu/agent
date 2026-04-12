@@ -16,7 +16,7 @@ target_include_directories(idcu-network PUBLIC
 target_link_libraries(idcu-network PUBLIC idcu::common)
 
 if(WIN32)
-    target_link_libraries(idcu-network PRIVATE)
+    target_link_libraries(idcu-network PRIVATE ws2_32)
 else()
     target_link_libraries(idcu-network PRIVATE pthread)
 endif()
