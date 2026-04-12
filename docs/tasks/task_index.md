@@ -126,7 +126,7 @@
 |-----|------|------|
 | 4.0 阶段 4 概述 | ✅ 已完成 | [phase4/00_phase4_overview.md](phase4/00_phase4_overview.md) |
 | 4.1 log-integration - 日志集成 | ✅ 已完成 | [phase4/01_log_integration.md](phase4/01_log_integration.md) |
-| 4.1 rest-api - REST API | ⏳ 待开始 | [phase4/01_rest_api.md](phase4/01_rest_api.md) |
+| 4.1 rest-api - REST API | ✅ 已完成 | [phase4/01_rest_api.md](phase4/01_rest_api.md) |
 | 4.2 config-integration - 配置集成 | ✅ 已完成 | [phase4/02_config_integration.md](phase4/02_config_integration.md) |
 | 4.3 json-integration - JSON 集成 | ✅ 已完成 | [phase4/03_json_integration.md](phase4/03_json_integration.md) |
 | 4.4 yaml-integration - YAML 集成 | ✅ 已完成 | [phase4/04_yaml_integration.md](phase4/04_yaml_integration.md) |
