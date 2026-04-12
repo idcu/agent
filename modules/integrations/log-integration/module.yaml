@@ -1,0 +1,21 @@
+name: log-integration
+version: 1.0.0
+description: Log integration module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-log
+  - idcu-config
+
+build:
+  type: cmake
+  targets:
+    - log_integration
+
+features:
+  - log_integration: Log integration functionality
+
+testing:
+  enabled: false

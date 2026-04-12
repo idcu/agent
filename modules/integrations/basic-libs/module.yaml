@@ -1,0 +1,25 @@
+name: basic-libs
+version: 1.0.0
+description: Basic libraries integration for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-log
+  - idcu-config
+  - idcu-json
+  - idcu-yaml
+  - idcu-network
+  - idcu-metrics
+
+build:
+  type: cmake
+  targets:
+    - basic_libs
+
+features:
+  - basic_libs: Basic libraries integration
+
+testing:
+  enabled: false

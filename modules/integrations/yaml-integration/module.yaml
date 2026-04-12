@@ -1,0 +1,20 @@
+name: yaml-integration
+version: 1.0.0
+description: YAML integration module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-yaml
+
+build:
+  type: cmake
+  targets:
+    - yaml_integration
+
+features:
+  - yaml_integration: YAML integration functionality
+
+testing:
+  enabled: false

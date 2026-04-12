@@ -1,0 +1,20 @@
+name: metrics-integration
+version: 1.0.0
+description: Metrics integration module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-metrics
+
+build:
+  type: cmake
+  targets:
+    - metrics_integration
+
+features:
+  - metrics_integration: Metrics integration functionality
+
+testing:
+  enabled: false

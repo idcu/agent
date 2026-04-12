@@ -1,0 +1,20 @@
+name: sdk-complete
+version: 1.0.0
+description: Complete SDK integration for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - basic-libs
+
+build:
+  type: cmake
+  targets:
+    - sdk_complete
+
+features:
+  - sdk_complete: Complete SDK integration
+
+testing:
+  enabled: false

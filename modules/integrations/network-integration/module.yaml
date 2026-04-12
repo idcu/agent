@@ -1,0 +1,20 @@
+name: network-integration
+version: 1.0.0
+description: Network integration module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-network
+
+build:
+  type: cmake
+  targets:
+    - network_integration
+
+features:
+  - network_integration: Network integration functionality
+
+testing:
+  enabled: false

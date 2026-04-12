@@ -1,0 +1,22 @@
+name: idcu-testframework
+version: 1.0.0
+description: Test framework library for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-common
+
+build:
+  type: cmake
+  targets:
+    - idcu-testframework
+
+headers:
+  - idcu/testframework/testframework.h
+
+features:
+  - testframework: Test framework for unit testing
+
+testing:
+  enabled: false

@@ -1,0 +1,20 @@
+name: config-integration
+version: 1.0.0
+description: Config integration module for IDCU Agent
+author: IDCU Team
+license: Apache-2.0
+
+dependencies:
+  - idcu-sdk
+  - idcu-config
+
+build:
+  type: cmake
+  targets:
+    - config_integration
+
+features:
+  - config_integration: Config integration functionality
+
+testing:
+  enabled: false
