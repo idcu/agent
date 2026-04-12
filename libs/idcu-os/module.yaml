@@ -6,10 +6,14 @@ license: Apache-2.0
 
 dependencies: []
 
-build:
-  type: cmake
-  targets:
-    - idcu-os
+platform_link_libraries:
+  unix:
+    - pthread
+    - dl
+  windows:
+    - ws2_32
+    - advapi32
+    - shlwapi
 
 headers:
   - idcu/os/os.h
