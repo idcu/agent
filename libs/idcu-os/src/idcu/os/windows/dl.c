@@ -20,7 +20,10 @@ void* idcu_dlsym(void* handle, const char* symbol)
         FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), 0,
                       g_last_dlerror, sizeof(g_last_dlerror), NULL);
     }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
     return (void*)sym;
+#pragma GCC diagnostic pop
 }
 
 int idcu_dlclose(void* handle)

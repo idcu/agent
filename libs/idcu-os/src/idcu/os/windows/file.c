@@ -47,5 +47,6 @@ int idcu_mkdir(const char* path)
 
 int idcu_mkdir_p(const char* path)
 {
+    (void)path;
     return 0;
 }

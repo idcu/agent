@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <wincrypt.h>
 #include <shlwapi.h>
+#include <shlobj.h>
 #include <direct.h>
 #include <process.h>
 #pragma comment(lib, "advapi32.lib")

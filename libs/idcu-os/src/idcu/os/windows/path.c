@@ -1,10 +1,9 @@
 #include "idcu/os/os.h"
 #include <windows.h>
 #include <shlwapi.h>
+#include <shlobj.h>
 #include <string.h>
 #include <stdlib.h>
-
-#pragma comment(lib, "shlwapi.lib")
 
 int idcu_path_join(char* buf, size_t buf_len, const char* path1, const char* path2)
 {
@@ -50,6 +49,7 @@ int idcu_data_dir(char* buf, size_t buf_len)
 
 int idcu_home_dir(char* buf, size_t buf_len)
 {
+    (void)buf_len;
     if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, buf) != S_OK) {
         return -1;
     }

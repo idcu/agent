@@ -1,6 +1,7 @@
 #include "idcu/os/os.h"
 #include <windows.h>
 #include <string.h>
+#include <stdio.h>
 
 int idcu_sysinfo_get(idcu_sysinfo_t* info)
 {
@@ -25,7 +26,7 @@ int idcu_sysinfo_get(idcu_sysinfo_t* info)
     ZeroMemory(&osvi, sizeof(OSVERSIONINFOEXA));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXA);
     if (GetVersionExA((OSVERSIONINFOA*)&osvi)) {
-        _snprintf(info->os_version, sizeof(info->os_version), "%lu.%lu.%lu",
+        snprintf(info->os_version, sizeof(info->os_version), "%lu.%lu.%lu",
                  osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
     } else {
         strncpy(info->os_version, "Unknown", sizeof(info->os_version) - 1);
