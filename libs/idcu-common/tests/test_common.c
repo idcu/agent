@@ -80,23 +80,90 @@ IDCU_TEST_CASE(mutex, concurrent_access) {
     idcu_mutex_destroy(&g_test_mutex);
 }
 
+static idcu_Mutex g_timedlock_mutex;
+static volatile int g_timedlock_thread_started = 0;
+static volatile int g_timedlock_result = 0;
+
+#ifdef _WIN32
+static DWORD WINAPI timedlock_thread_func(LPVOID param) {
+#else
+static void* timedlock_thread_func(void* param) {
+#endif
+    (void)param;
+    g_timedlock_thread_started = 1;
+    
+    // 尝试获取锁，应该超时
+    int ret = idcu_mutex_timedlock(&g_timedlock_mutex, 200);
+    g_timedlock_result = ret;
+    
+#ifdef _WIN32
+    return 0;
+#else
+    return NULL;
+#endif
+}
+
 IDCU_TEST_CASE(mutex, timedlock) {
     idcu_Mutex mutex;
     int ret = idcu_mutex_init(&mutex);
     IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
     
-    ret = idcu_mutex_lock(&mutex);
-    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
-    
-    ret = idcu_mutex_timedlock(&mutex, 100);
-    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_TIMEOUT, ret);
-    
-    idcu_mutex_unlock(&mutex);
-    
+    // 测试在没有锁的情况下，timedlock 应该成功
     ret = idcu_mutex_timedlock(&mutex, 100);
     IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
-    
     idcu_mutex_unlock(&mutex);
+    
+    // 使用两个线程测试超时行为
+    ret = idcu_mutex_init(&g_timedlock_mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    // 主线程获取锁
+    ret = idcu_mutex_lock(&g_timedlock_mutex);
+    IDCU_TEST_ASSERT_EQUAL(IDCU_SUCCESS, ret);
+    
+    g_timedlock_thread_started = 0;
+    g_timedlock_result = 0;
+    
+#ifdef _WIN32
+    HANDLE thread = CreateThread(NULL, 0, timedlock_thread_func, NULL, 0, NULL);
+    IDCU_TEST_ASSERT(thread != NULL);
+#else
+    pthread_t thread;
+    ret = pthread_create(&thread, NULL, timedlock_thread_func, NULL);
+    IDCU_TEST_ASSERT_EQUAL(0, ret);
+#endif
+    
+    // 等待子线程开始
+    while (!g_timedlock_thread_started) {
+#ifdef _WIN32
+        Sleep(10);
+#else
+        usleep(10000);
+#endif
+    }
+    
+    // 等待足够长的时间让子线程超时
+#ifdef _WIN32
+    Sleep(300);
+#else
+    usleep(300000);
+#endif
+    
+    // 主线程释放锁
+    idcu_mutex_unlock(&g_timedlock_mutex);
+    
+    // 等待子线程结束
+#ifdef _WIN32
+    WaitForSingleObject(thread, INFINITE);
+    CloseHandle(thread);
+#else
+    pthread_join(thread, NULL);
+#endif
+    
+    // 验证子线程确实超时了
+    IDCU_TEST_ASSERT_EQUAL(IDCU_ERR_TIMEOUT, g_timedlock_result);
+    
+    idcu_mutex_destroy(&g_timedlock_mutex);
     idcu_mutex_destroy(&mutex);
 }
 
