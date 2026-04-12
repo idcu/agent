@@ -33,7 +33,7 @@ A unified OS abstraction layer providing consistent APIs across multiple platfor
 Include the header:
 
 ```c
-#include <idcu/os.h>
+#include <idcu/os/os.h>
 ```
 
 Link against the library:

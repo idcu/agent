@@ -12,7 +12,7 @@ build:
     - idcu-os
 
 headers:
-  - idcu/os.h
+  - idcu/os/os.h
 
 features:
   - platform_detection: Platform detection macros
