@@ -82,3 +82,11 @@ target_link_libraries(example_http_server
     idcu-http-server::idcu-http-server
     idcu-log::idcu-log
 )
+
+# Example 10: Error Recovery
+add_executable(example_error_recovery example_error_recovery.c)
+target_link_libraries(example_error_recovery
+    idcu-common::idcu-common
+    idcu-log::idcu-log
+    idcu-json::idcu-json
+)

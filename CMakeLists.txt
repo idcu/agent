@@ -39,6 +39,7 @@ option(ENABLE_TSAN "Enable ThreadSanitizer" OFF)
 option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
 option(ENABLE_MSAN "Enable MemorySanitizer" OFF)
 option(ENABLE_CODE_COVERAGE "Enable code coverage instrumentation" OFF)
+option(ENABLE_CPPCHECK "Enable cppcheck static analysis" OFF)
 
 if(NOT MSVC)
     if(ENABLE_ASAN)
@@ -74,6 +75,26 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/libs/idcu-module-build/cmake")
 
+# Cppcheck static analysis configuration
+if(ENABLE_CPPCHECK)
+    find_program(CPPCHECK_EXECUTABLE cppcheck)
+    if(CPPCHECK_EXECUTABLE)
+        message(STATUS "Found cppcheck: ${CPPCHECK_EXECUTABLE}")
+        set(CMAKE_C_CPPCHECK "${CPPCHECK_EXECUTABLE}"
+            "--enable=all"
+            "--inconclusive"
+            "--force"
+            "--quiet"
+            "--suppress=missingIncludeSystem"
+            "--suppress=unmatchedSuppression"
+            "--suppress=unusedFunction"
+            "--std=c99"
+        )
+    else()
+        message(WARNING "cppcheck not found, static analysis will not be available")
+    endif()
+endif()
+
 add_subdirectory(libs)
 add_subdirectory(modules)
 add_subdirectory(app)
@@ -98,5 +119,6 @@ message(STATUS "    ThreadSanitizer (TSAN): ${ENABLE_TSAN}")
 message(STATUS "    UndefinedBehaviorSanitizer (UBSAN): ${ENABLE_UBSAN}")
 message(STATUS "    MemorySanitizer (MSAN): ${ENABLE_MSAN}")
 message(STATUS "  Code Coverage: ${ENABLE_CODE_COVERAGE}")
+message(STATUS "  Cppcheck: ${ENABLE_CPPCHECK}")
 message(STATUS "========================================")
 message(STATUS "")

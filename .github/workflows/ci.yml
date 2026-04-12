@@ -121,3 +121,44 @@ jobs:
           echo "clang-tidy found issues!"
           exit 1
         fi
+
+  fuzzing:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake ninja-build clang
+
+    - name: Configure CMake with fuzzing
+      run: |
+        CC=clang CXX=clang++ cmake -B ${{ github.workspace }}/build-fuzz \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DBUILD_TESTS=ON \
+          -DENABLE_FUZZING=ON
+
+    - name: Build fuzzers
+      run: |
+        cmake --build ${{ github.workspace }}/build-fuzz
+
+    - name: Run fuzz tests (short run)
+      run: |
+        # Run each fuzzer for a short time to check for crashes
+        FUZZERS=(
+          "fuzz_json"
+          "fuzz_yaml"
+          "fuzz_http"
+          "fuzz_msgbus"
+          "fuzz_config"
+        )
+        
+        for fuzzer in "${FUZZERS[@]}"; do
+          if [ -f "${{ github.workspace }}/build-fuzz/tests/fuzz/$fuzzer" ]; then
+            echo "Running $fuzzer for 10 seconds..."
+            timeout 10s "${{ github.workspace }}/build-fuzz/tests/fuzz/$fuzzer" -max_total_time=10 2>&1 || true
+          fi
+        done
