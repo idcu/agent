@@ -30,7 +30,7 @@
 |-----|-----|-------|------|
 | 通用平台 | Linux | P0 | ✅ 已有 |
 | 通用平台 | Windows | P0 | ✅ 已有 |
-| 通用平台 | macOS | P1 | ⏳ 待实现 |
+| 通用平台 | macOS | P1 | ✅ 已完成实现 |
 | 通用平台 | FreeBSD | P1 | ⏳ 待实现 |
 | 通用平台 | Android | P2 | ⏳ 待实现 |
 | 通用平台 | HarmonyOS | P2 | ⏳ 待实现 |
@@ -193,6 +193,10 @@ endif()
 
 ### P1.4: 验证 P1 阶段
 
+- [x] macOS 平台实现已完成 ✅
+  - ✅ 使用 _NSGetExecutablePath 实现 exe_path
+  - ✅ 使用 NSHomeDirectory + Library/Application Support 实现 data_dir
+  - ✅ 其余接口复用 Linux 实现
 - [ ] 在 macOS 上编译和测试通过
 - [ ] 在 FreeBSD 上编译和测试通过
 - [ ] 四个通用平台构建通过
