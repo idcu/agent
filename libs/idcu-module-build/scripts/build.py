@@ -173,10 +173,10 @@ def main():
     for module in sorted_modules:
         if build_module(module, args.build_type, not args.no_tests):
             success_count += 1
-            print(f"✓ {module.name} 构建成功\n")
+            print(f"[OK] {module.name} 构建成功\n")
         else:
             failed_modules.append(module.name)
-            print(f"✗ {module.name} 构建失败\n", file=sys.stderr)
+            print(f"[FAIL] {module.name} 构建失败\n", file=sys.stderr)
 
     print("=" * 50)
     print(f"构建完成: {success_count}/{len(sorted_modules)} 成功")

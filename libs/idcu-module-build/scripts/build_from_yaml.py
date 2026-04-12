@@ -253,7 +253,7 @@ def build_module(module: ModuleInfo, build_root: Path, all_modules: List[ModuleI
         
         result = subprocess.run(cmd, cwd=module_dir)
         if result.returncode != 0:
-            print(f"  ✗ 编译失败: {src_name}")
+            print(f"  [FAIL] 编译失败: {src_name}")
             success = False
         else:
             object_files.append(obj_file)
@@ -272,10 +272,10 @@ def build_module(module: ModuleInfo, build_root: Path, all_modules: List[ModuleI
         result = subprocess.run(ar_cmd, cwd=build_dir)
         
         if result.returncode != 0:
-            print(f"  ✗ 链接失败")
+            print(f"  [FAIL] 链接失败")
             return False
         
-        print(f"  ✓ 构建成功: {lib_path}")
+        print(f"  [OK] 构建成功: {lib_path}")
     
     return True
 
@@ -355,10 +355,10 @@ def main():
     for module in sorted_modules:
         if build_module(module, build_root, all_modules, args.build_type, not args.no_tests):
             success_count += 1
-            print(f"\n✓ {module.name} 构建成功\n")
+            print(f"\n[OK] {module.name} 构建成功\n")
         else:
             failed_modules.append(module.name)
-            print(f"\n✗ {module.name} 构建失败\n", file=sys.stderr)
+            print(f"\n[FAIL] {module.name} 构建失败\n", file=sys.stderr)
 
     print("=" * 60)
     print(f"构建完成: {success_count}/{len(sorted_modules)} 成功")
