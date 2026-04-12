@@ -36,6 +36,9 @@ int idcu_sdk_subscribe_message(idcu_SdkContext* ctx,
                                 void* user_data,
                                 idcu_MsgSubscriber** subscriber);
 
+int idcu_sdk_set_user_data(idcu_SdkContext* ctx, void* user_data);
+void* idcu_sdk_get_user_data(idcu_SdkContext* ctx);
+
 #define IDCU_SDK_MODULE_DEFINE(name_, ver_, desc_, init_fn_, start_fn_, stop_fn_, destroy_fn_, user_data_) \
     static const idcu_SdkModuleDef _idcu_sdk_module_##name_ = { \
         .name = #name_, \

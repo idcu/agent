@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(idcu-module-verifier STATIC
-    src/idcu/module-verifier/module-verifier.c
+    src/idcu/module_verifier/module_verifier.c
 )
 
 target_include_directories(idcu-module-verifier PUBLIC
@@ -22,3 +22,4 @@ else()
 endif()
 
 add_library(idcu::module-verifier ALIAS idcu-module-verifier)
+add_library(idcu::module_verifier ALIAS idcu-module-verifier)

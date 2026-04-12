@@ -1,70 +1,58 @@
-#include <idcu/healthcheck_module/healthcheck_module.h>
+#include "idcu/sdk/sdk.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int idcu_healthcheck_module_init(idcu_HealthCheckModule* hcm) {
-    if (!hcm) {
-        return IDCU_ERR_INVALID_ARG;
+typedef struct {
+    bool initialized;
+} HealthcheckModuleData;
+
+static int healthcheck_module_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Initializing healthcheck module");
+
+    HealthcheckModuleData* data = malloc(sizeof(HealthcheckModuleData));
+    if (!data) {
+        return IDCU_ERR_MEMORY;
     }
+    memset(data, 0, sizeof(HealthcheckModuleData));
 
-    memset(hcm, 0, sizeof(idcu_HealthCheckModule));
-    hcm->initialized = 0;
+    data->initialized = true;
+    idcu_sdk_set_user_data(ctx, data);
 
-    idcu_HealthCheckConfig config = {
-        .check_interval_ms = 5000,
-        .timeout_ms = 10000
-    };
-
-    int ret = idcu_healthcheck_create(&config, &hcm->health_check);
-    if (ret != IDCU_ERR_OK) {
-        return ret;
-    }
-
-    hcm->initialized = 1;
+    idcu_sdk_log_info(ctx, "Healthcheck module initialized");
     return IDCU_ERR_OK;
 }
 
-int idcu_healthcheck_module_start(idcu_HealthCheckModule* hcm) {
-    if (!hcm || !hcm->initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
+static int healthcheck_module_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Starting healthcheck module");
     return IDCU_ERR_OK;
 }
 
-int idcu_healthcheck_module_stop(idcu_HealthCheckModule* hcm) {
-    if (!hcm || !hcm->initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
+static int healthcheck_module_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Stopping healthcheck module");
     return IDCU_ERR_OK;
 }
 
-void idcu_healthcheck_module_destroy(idcu_HealthCheckModule* hcm) {
-    if (!hcm) {
-        return;
-    }
+static void healthcheck_module_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Destroying healthcheck module");
 
-    if (hcm->health_check) {
-        idcu_healthcheck_destroy(hcm->health_check);
-        hcm->health_check = NULL;
+    HealthcheckModuleData* data = idcu_sdk_get_user_data(ctx);
+    if (data) {
+        free(data);
     }
-
-    hcm->initialized = 0;
-    memset(hcm, 0, sizeof(idcu_HealthCheckModule));
 }
 
-int idcu_healthcheck_module_get_status(idcu_HealthCheckModule* hcm, idcu_HealthCheckResult* result) {
-    if (!hcm || !hcm->health_check || !result) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    result->status = IDCU_HEALTH_STATUS_HEALTHY;
-    result->response_time_ms = 1;
-    strncpy(result->message, "OK", sizeof(result->message) - 1);
-    return IDCU_ERR_OK;
-}
-
-idcu_HealthCheck* idcu_healthcheck_module_get_health_check(idcu_HealthCheckModule* hcm) {
-    if (!hcm) {
-        return NULL;
-    }
-    return hcm->health_check;
-}
+IDCU_SDK_MODULE_DEFINE(
+    healthcheck_module,
+    "1.0.0",
+    "Healthcheck module",
+    healthcheck_module_init,
+    healthcheck_module_start,
+    healthcheck_module_stop,
+    healthcheck_module_destroy,
+    NULL
+);

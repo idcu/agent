@@ -48,7 +48,7 @@ int idcu_discovery_init(idcu_Discovery* discovery, uint64_t discovery_interval_m
     if (ret != IDCU_ERR_OK) {
         return ret;
     }
-    ret = idcu_hash_map_init(&discovery->nodes_by_id, 64);
+    ret = idcu_hash_map_init(&discovery->nodes_by_id, 64, sizeof(idcu_Node*));
     if (ret != IDCU_ERR_OK) {
         idcu_vector_destroy(&discovery->nodes);
         return ret;
@@ -80,7 +80,7 @@ void idcu_discovery_destroy(idcu_Discovery* discovery) {
 }
 
 int idcu_discovery_register_node(idcu_Discovery* discovery, const idcu_Node* node) {
-    if (!discovery || !discovery->initialized || !node || !node->id) {
+    if (!discovery || !discovery->initialized || !node) {
         return IDCU_ERR_INVALID_ARG;
     }
     idcu_mutex_lock(&discovery->lock);
@@ -122,7 +122,7 @@ idcu_Node* idcu_discovery_get_node(idcu_Discovery* discovery, const char* node_i
         return NULL;
     }
     idcu_mutex_lock(&discovery->lock);
-    idcu_Node* node = (idcu_Node*)idcu_hash_map_get(&discovery->nodes_by_id, node_id);
+    idcu_Node* node = (idcu_Node*)idcu_hash_map_get_ptr(&discovery->nodes_by_id, node_id);
     idcu_mutex_unlock(&discovery->lock);
     return node;
 }
@@ -132,7 +132,7 @@ int idcu_discovery_heartbeat(idcu_Discovery* discovery, const char* node_id) {
         return IDCU_ERR_INVALID_ARG;
     }
     idcu_mutex_lock(&discovery->lock);
-    idcu_Node* node = (idcu_Node*)idcu_hash_map_get(&discovery->nodes_by_id, node_id);
+    idcu_Node* node = (idcu_Node*)idcu_hash_map_get_ptr(&discovery->nodes_by_id, node_id);
     if (node) {
         node->last_seen_ms = get_time_ms();
         node->status = IDCU_NODE_STATUS_ONLINE;
@@ -148,7 +148,7 @@ int idcu_discovery_update_node_status(idcu_Discovery* discovery, const char* nod
         return IDCU_ERR_INVALID_ARG;
     }
     idcu_mutex_lock(&discovery->lock);
-    idcu_Node* node = (idcu_Node*)idcu_hash_map_get(&discovery->nodes_by_id, node_id);
+    idcu_Node* node = (idcu_Node*)idcu_hash_map_get_ptr(&discovery->nodes_by_id, node_id);
     if (node) {
         node->status = status;
         idcu_mutex_unlock(&discovery->lock);

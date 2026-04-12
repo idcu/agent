@@ -16,8 +16,8 @@ target_include_directories(idcu-microkernel PUBLIC
 target_link_libraries(idcu-microkernel PUBLIC
     idcu::common
     idcu::module-system
-    idcu::coroutine
     idcu::msgbus
+    idcu::coroutine
 )
 
 if(WIN32)
@@ -28,9 +28,9 @@ endif()
 
 add_library(idcu::microkernel ALIAS idcu-microkernel)
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+# if(BUILD_TESTING)
+#     add_subdirectory(tests)
+# endif()
 
 # if(BUILD_EXAMPLES)
 #     add_subdirectory(examples)

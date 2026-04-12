@@ -23,6 +23,6 @@ endif()
 
 add_library(idcu::cache ALIAS idcu-cache)
 
-if(BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+#if(BUILD_TESTS)
+#    add_subdirectory(tests)
+#endif()

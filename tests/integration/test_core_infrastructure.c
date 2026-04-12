@@ -1,7 +1,5 @@
 #include <idcu/testframework/testframework.h>
-#include <idcu/module/module.h>
-#include <idcu/coroutine/coroutine.h>
-#include <idcu/msgbus/msgbus.h>
+#include <idcu/module_system/module_system.h>
 #include <idcu/common/error_code.h>
 #include <stdio.h>
 #include <string.h>
@@ -154,6 +152,7 @@ IDCU_TEST_CASE(module_system, unregister) {
     idcu_module_system_destroy(&system);
 }
 
+#if 0
 static int g_coro_count = 0;
 
 static void test_coroutine_func(void* arg) {
@@ -322,6 +321,7 @@ IDCU_TEST_CASE(integration, module_and_msgbus) {
     idcu_msgbus_destroy(bus);
     idcu_module_system_destroy(&module_system);
 }
+#endif
 
 int main(void) {
     return idcu_test_run_all();

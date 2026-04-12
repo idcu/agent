@@ -1,5 +1,4 @@
 #include <idcu/storage/storage.h>
-#include <idcu/json/json.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -469,7 +468,7 @@ int idcu_kvstore_get_int(idcu_KVStore* store, const char* key, int64_t* out_valu
     size_t value_size;
     int ret = idcu_kvstore_get(store, key, out_value, sizeof(*out_value), &value_size);
     if (ret == IDCU_ERR_OK && value_size != sizeof(*out_value)) {
-        return IDCU_ERR_INVALID_TYPE;
+        return IDCU_ERR_INVALID_ARG;
     }
     return ret;
 }
@@ -482,7 +481,7 @@ int idcu_kvstore_get_double(idcu_KVStore* store, const char* key, double* out_va
     size_t value_size;
     int ret = idcu_kvstore_get(store, key, out_value, sizeof(*out_value), &value_size);
     if (ret == IDCU_ERR_OK && value_size != sizeof(*out_value)) {
-        return IDCU_ERR_INVALID_TYPE;
+        return IDCU_ERR_INVALID_ARG;
     }
     return ret;
 }

@@ -12,6 +12,7 @@ struct idcu_SdkContext {
     idcu_MicroKernel* kernel;
     idcu_Vector* modules;
     idcu_Mutex mutex;
+    void* user_data;
 };
 
 static void sdk_log_vprintf(idcu_SdkContext* ctx, const char* level, const char* fmt, va_list args) {
@@ -186,4 +187,24 @@ int idcu_sdk_subscribe_message(idcu_SdkContext* ctx,
         return IDCU_ERR_INVALID_ARG;
     }
     return idcu_msgbus_subscribe(NULL, topic, handler, user_data, subscriber);
+}
+
+int idcu_sdk_set_user_data(idcu_SdkContext* ctx, void* user_data) {
+    if (!ctx) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    idcu_mutex_lock(&ctx->mutex);
+    ctx->user_data = user_data;
+    idcu_mutex_unlock(&ctx->mutex);
+    return IDCU_ERR_OK;
+}
+
+void* idcu_sdk_get_user_data(idcu_SdkContext* ctx) {
+    if (!ctx) {
+        return NULL;
+    }
+    idcu_mutex_lock(&ctx->mutex);
+    void* data = ctx->user_data;
+    idcu_mutex_unlock(&ctx->mutex);
+    return data;
 }

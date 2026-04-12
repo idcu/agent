@@ -625,7 +625,7 @@ static int do_execute(idcu_HttpClient* client, const idcu_HttpClientRequest* req
     }
     
     if (total_received == 0) {
-        return IDCU_ERR_NETWORK;
+        return IDCU_ERR_NETWORK_RECV;
     }
     
     ret = parse_http_response(response_buffer, total_received, response);

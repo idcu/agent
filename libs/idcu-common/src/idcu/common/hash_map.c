@@ -340,3 +340,23 @@ bool idcu_hash_map_iterator_next(idcu_HashMapIterator* iter, const char** out_ke
 
     return false;
 }
+
+void* idcu_hash_map_get_ptr(const idcu_HashMap* map, const char* key)
+{
+    if (!map || !key) {
+        return NULL;
+    }
+
+    uint32_t hash = idcu_hash_func(key);
+    size_t bucket_idx = hash % map->bucket_count;
+
+    idcu_HashMapEntry* entry = map->buckets[bucket_idx];
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            return entry->value;
+        }
+        entry = entry->next;
+    }
+
+    return NULL;
+}

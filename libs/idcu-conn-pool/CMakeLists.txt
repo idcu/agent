@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(idcu-conn-pool STATIC
-    src/idcu/conn-pool/conn-pool.c
+    src/idcu/conn_pool/conn_pool.c
 )
 
 target_include_directories(idcu-conn-pool PUBLIC

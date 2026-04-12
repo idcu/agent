@@ -7,7 +7,8 @@ typedef struct {
     bool initialized;
 } BasicLibsData;
 
-static int basic_libs_init(idcu_SdkContext* ctx) {
+static int basic_libs_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Initializing basic libs integration");
 
     BasicLibsData* data = malloc(sizeof(BasicLibsData));
@@ -23,16 +24,20 @@ static int basic_libs_init(idcu_SdkContext* ctx) {
     return IDCU_ERR_OK;
 }
 
-static int basic_libs_start(idcu_SdkContext* ctx) {
+static int basic_libs_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Starting basic libs integration");
     return IDCU_ERR_OK;
 }
 
-static void basic_libs_stop(idcu_SdkContext* ctx) {
+static int basic_libs_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Stopping basic libs integration");
+    return IDCU_ERR_OK;
 }
 
-static void basic_libs_destroy(idcu_SdkContext* ctx) {
+static void basic_libs_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Destroying basic libs integration");
 
     BasicLibsData* data = idcu_sdk_get_user_data(ctx);

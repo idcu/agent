@@ -354,3 +354,78 @@ void idcu_lock_guard_destroy(idcu_LockGuard* guard)
         return;
     idcu_mutex_unlock(guard->mutex);
 }
+
+int idcu_cond_init(idcu_Condition* cond)
+{
+    if (!cond) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+#ifdef _WIN32
+    InitializeConditionVariable(&cond->cv);
+    return IDCU_ERR_OK;
+#else
+    int ret = pthread_cond_init(&cond->pcond, NULL);
+    return ret == 0 ? IDCU_ERR_OK : IDCU_ERR_GENERAL;
+#endif
+}
+
+void idcu_cond_destroy(idcu_Condition* cond)
+{
+    if (!cond)
+        return;
+
+#ifdef _WIN32
+    // Windows CONDITION_VARIABLE doesn't need explicit destruction
+    (void)cond;
+#else
+    pthread_cond_destroy(&cond->pcond);
+#endif
+}
+
+int idcu_cond_wait(idcu_Condition* cond, idcu_Mutex* mutex)
+{
+    if (!cond || !mutex) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+#ifdef _WIN32
+    if (!SleepConditionVariableCS(&cond->cv, &mutex->cs, INFINITE)) {
+        return IDCU_ERR_GENERAL;
+    }
+    return IDCU_ERR_OK;
+#else
+    int ret = pthread_cond_wait(&cond->pcond, &mutex->pmutex);
+    return ret == 0 ? IDCU_ERR_OK : IDCU_ERR_GENERAL;
+#endif
+}
+
+int idcu_cond_signal(idcu_Condition* cond)
+{
+    if (!cond) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+#ifdef _WIN32
+    WakeConditionVariable(&cond->cv);
+    return IDCU_ERR_OK;
+#else
+    int ret = pthread_cond_signal(&cond->pcond);
+    return ret == 0 ? IDCU_ERR_OK : IDCU_ERR_GENERAL;
+#endif
+}
+
+int idcu_cond_broadcast(idcu_Condition* cond)
+{
+    if (!cond) {
+        return IDCU_ERR_INVALID_PARAM;
+    }
+
+#ifdef _WIN32
+    WakeAllConditionVariable(&cond->cv);
+    return IDCU_ERR_OK;
+#else
+    int ret = pthread_cond_broadcast(&cond->pcond);
+    return ret == 0 ? IDCU_ERR_OK : IDCU_ERR_GENERAL;
+#endif
+}

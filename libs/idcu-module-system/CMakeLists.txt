@@ -8,12 +8,12 @@ option(BUILD_TESTING "Build tests" ON)
 option(BUILD_EXAMPLES "Build examples" OFF)
 
 set(SOURCES
-    src/idcu/module/module.c
+    src/idcu/module_system/module_system.c
 )
 
 set(HEADERS
-    include/idcu/module/types.h
-    include/idcu/module/module.h
+    include/idcu/module_system/types.h
+    include/idcu/module_system/module_system.h
 )
 
 add_library(idcu-module-system STATIC ${SOURCES} ${HEADERS})

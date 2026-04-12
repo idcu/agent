@@ -111,6 +111,53 @@ uint32_t idcu_mem_pool_get_leak_count(idcu_MemoryPool* pool);
  */
 void idcu_mem_pool_report_leaks(idcu_MemoryPool* pool);
 
+/**
+ * @brief 调试模式分配内存
+ * @param pool 内存池指针
+ * @param size 分配大小（字节）
+ * @param file 源文件路径
+ * @param line 源文件行号
+ * @return 分配的内存指针，失败返回NULL
+ */
+void* idcu_mem_pool_alloc_debug(idcu_MemoryPool* pool, uint32_t size, const char* file, int line);
+
+/**
+ * @brief 设置调试模式
+ * @param pool 内存池指针
+ * @param enable 是否启用调试模式
+ */
+void idcu_mem_pool_set_debug(idcu_MemoryPool* pool, int enable);
+
+/**
+ * @brief 获取内存统计信息
+ * @param pool 内存池指针
+ * @param stats 输出统计信息
+ * @return IDCU_ERR_OK 成功，其他值表示错误
+ */
+int idcu_mem_pool_get_stats(idcu_MemoryPool* pool, idcu_MemoryStats* stats);
+
+/**
+ * @brief 获取内存使用快照
+ * @param pool 内存池指针
+ */
+void idcu_mem_pool_take_snapshot(idcu_MemoryPool* pool);
+
+/**
+ * @brief 获取快照数量
+ * @param pool 内存池指针
+ * @return 快照数量
+ */
+uint32_t idcu_mem_pool_get_snapshot_count(idcu_MemoryPool* pool);
+
+/**
+ * @brief 获取指定快照
+ * @param pool 内存池指针
+ * @param index 快照索引
+ * @param snapshot 输出快照数据
+ * @return IDCU_ERR_OK 成功，其他值表示错误
+ */
+int idcu_mem_pool_get_snapshot(idcu_MemoryPool* pool, uint32_t index, idcu_MemoryStatsSnapshot* snapshot);
+
 #ifdef __cplusplus
 }
 #endif

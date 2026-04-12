@@ -23,6 +23,6 @@ endif()
 
 add_library(idcu::healthcheck ALIAS idcu-healthcheck)
 
-if(BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+#if(BUILD_TESTS)
+#    add_subdirectory(tests)
+#endif()

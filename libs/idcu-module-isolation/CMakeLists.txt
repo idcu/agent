@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(idcu-module-isolation STATIC
-    src/idcu/module-isolation/module-isolation.c
+    src/idcu/module_isolation/module_isolation.c
 )
 
 target_include_directories(idcu-module-isolation PUBLIC
@@ -22,3 +22,4 @@ else()
 endif()
 
 add_library(idcu::module-isolation ALIAS idcu-module-isolation)
+add_library(idcu::module_isolation ALIAS idcu-module-isolation)

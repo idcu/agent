@@ -1,42 +1,58 @@
-#include <idcu/collect_module/collect_module.h>
+#include "idcu/sdk/sdk.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int idcu_collect_module_init(idcu_CollectModule* cm) {
-    if (!cm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
+typedef struct {
+    bool initialized;
+} CollectModuleData;
 
-    memset(cm, 0, sizeof(idcu_CollectModule));
-    cm->initialized = 0;
+static int collect_module_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Initializing collect module");
+
+    CollectModuleData* data = malloc(sizeof(CollectModuleData));
+    if (!data) {
+        return IDCU_ERR_MEMORY;
+    }
+    memset(data, 0, sizeof(CollectModuleData));
+
+    data->initialized = true;
+    idcu_sdk_set_user_data(ctx, data);
+
+    idcu_sdk_log_info(ctx, "Collect module initialized");
     return IDCU_ERR_OK;
 }
 
-int idcu_collect_module_start(idcu_CollectModule* cm) {
-    if (!cm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    cm->initialized = 1;
+static int collect_module_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Starting collect module");
     return IDCU_ERR_OK;
 }
 
-int idcu_collect_module_stop(idcu_CollectModule* cm) {
-    if (!cm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    cm->initialized = 0;
+static int collect_module_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Stopping collect module");
     return IDCU_ERR_OK;
 }
 
-void idcu_collect_module_destroy(idcu_CollectModule* cm) {
-    if (!cm) {
-        return;
-    }
+static void collect_module_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Destroying collect module");
 
-    if (cm->initialized) {
-        idcu_collect_module_stop(cm);
+    CollectModuleData* data = idcu_sdk_get_user_data(ctx);
+    if (data) {
+        free(data);
     }
-
-    memset(cm, 0, sizeof(idcu_CollectModule));
 }
+
+IDCU_SDK_MODULE_DEFINE(
+    collect_module,
+    "1.0.0",
+    "Collect module",
+    collect_module_init,
+    collect_module_start,
+    collect_module_stop,
+    collect_module_destroy,
+    NULL
+);

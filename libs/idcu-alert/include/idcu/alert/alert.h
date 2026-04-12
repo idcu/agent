@@ -73,10 +73,10 @@ typedef struct
 } idcu_AlertManager;
 
 int  idcu_alert_manager_init(idcu_AlertManager* manager);
-void idcu_alert_manager_destroy(idcu_alert_manager* manager);
+void idcu_alert_manager_destroy(idcu_AlertManager* manager);
 
 int  idcu_alert_create(idcu_Alert* alert, const char* name, idcu_AlertSeverity severity, const char* description);
-void idcu_alert_destroy(idcu_alert* alert);
+void idcu_alert_destroy(idcu_Alert* alert);
 
 int  idcu_alert_manager_add_alert(idcu_AlertManager* manager, const idcu_Alert* alert);
 int  idcu_alert_manager_remove_alert(idcu_AlertManager* manager, const char* id);

@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(idcu-server-monitor STATIC
-    src/idcu/server-monitor/server-monitor.c
+    src/idcu/server_monitor/server_monitor.c
 )
 
 target_include_directories(idcu-server-monitor PUBLIC
@@ -22,3 +22,4 @@ else()
 endif()
 
 add_library(idcu::server-monitor ALIAS idcu-server-monitor)
+add_library(idcu::server_monitor ALIAS idcu-server-monitor)

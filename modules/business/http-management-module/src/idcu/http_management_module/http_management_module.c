@@ -1,77 +1,58 @@
-#include <idcu/http_management_module/http_management_module.h>
+#include "idcu/sdk/sdk.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int idcu_http_management_module_init(idcu_HttpManagementModule* hmm) {
-    if (!hmm) {
-        return IDCU_ERR_INVALID_ARG;
+typedef struct {
+    bool initialized;
+} HttpManagementModuleData;
+
+static int http_management_module_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Initializing HTTP management module");
+
+    HttpManagementModuleData* data = malloc(sizeof(HttpManagementModuleData));
+    if (!data) {
+        return IDCU_ERR_MEMORY;
     }
+    memset(data, 0, sizeof(HttpManagementModuleData));
 
-    memset(hmm, 0, sizeof(idcu_HttpManagementModule));
-    hmm->initialized = 0;
+    data->initialized = true;
+    idcu_sdk_set_user_data(ctx, data);
 
-    idcu_HttpServerConfig server_config = {
-        .port = 8080,
-        .max_connections = 100
-    };
-
-    int ret = idcu_http_server_create(&server_config, &hmm->http_server);
-    if (ret != IDCU_ERR_OK) {
-        return ret;
-    }
-
-    ret = idcu_management_create(&hmm->management);
-    if (ret != IDCU_ERR_OK) {
-        idcu_http_server_destroy(hmm->http_server);
-        return ret;
-    }
-
-    hmm->initialized = 1;
+    idcu_sdk_log_info(ctx, "HTTP management module initialized");
     return IDCU_ERR_OK;
 }
 
-int idcu_http_management_module_start(idcu_HttpManagementModule* hmm) {
-    if (!hmm || !hmm->initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
+static int http_management_module_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Starting HTTP management module");
     return IDCU_ERR_OK;
 }
 
-int idcu_http_management_module_stop(idcu_HttpManagementModule* hmm) {
-    if (!hmm || !hmm->initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
+static int http_management_module_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Stopping HTTP management module");
     return IDCU_ERR_OK;
 }
 
-void idcu_http_management_module_destroy(idcu_HttpManagementModule* hmm) {
-    if (!hmm) {
-        return;
-    }
+static void http_management_module_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Destroying HTTP management module");
 
-    if (hmm->management) {
-        idcu_management_destroy(hmm->management);
-        hmm->management = NULL;
+    HttpManagementModuleData* data = idcu_sdk_get_user_data(ctx);
+    if (data) {
+        free(data);
     }
-
-    if (hmm->http_server) {
-        idcu_http_server_destroy(hmm->http_server);
-        hmm->http_server = NULL;
-    }
-
-    hmm->initialized = 0;
-    memset(hmm, 0, sizeof(idcu_HttpManagementModule));
 }
 
-idcu_HttpServer* idcu_http_management_module_get_server(idcu_HttpManagementModule* hmm) {
-    if (!hmm) {
-        return NULL;
-    }
-    return hmm->http_server;
-}
-
-idcu_Management* idcu_http_management_module_get_management(idcu_HttpManagementModule* hmm) {
-    if (!hmm) {
-        return NULL;
-    }
-    return hmm->management;
-}
+IDCU_SDK_MODULE_DEFINE(
+    http_management_module,
+    "1.0.0",
+    "HTTP management module",
+    http_management_module_init,
+    http_management_module_start,
+    http_management_module_stop,
+    http_management_module_destroy,
+    NULL
+);

@@ -13,7 +13,8 @@ typedef struct {
     bool initialized;
 } NetworkIntegrationData;
 
-static int network_integration_init(idcu_SdkContext* ctx) {
+static int network_integration_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Initializing network integration");
 
     NetworkIntegrationData* data = malloc(sizeof(NetworkIntegrationData));
@@ -29,16 +30,20 @@ static int network_integration_init(idcu_SdkContext* ctx) {
     return IDCU_ERR_OK;
 }
 
-static int network_integration_start(idcu_SdkContext* ctx) {
+static int network_integration_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Starting network integration");
     return IDCU_ERR_OK;
 }
 
-static void network_integration_stop(idcu_SdkContext* ctx) {
+static int network_integration_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Stopping network integration");
+    return IDCU_ERR_OK;
 }
 
-static void network_integration_destroy(idcu_SdkContext* ctx) {
+static void network_integration_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Destroying network integration");
 
     NetworkIntegrationData* data = idcu_sdk_get_user_data(ctx);

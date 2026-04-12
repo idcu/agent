@@ -47,6 +47,9 @@ size_t idcu_hash_map_size(const idcu_HashMap* map);
 bool   idcu_hash_map_empty(const idcu_HashMap* map);
 void   idcu_hash_map_clear(idcu_HashMap* map);
 
+#define idcu_hash_map_set idcu_hash_map_put
+void* idcu_hash_map_get_ptr(const idcu_HashMap* map, const char* key);
+
 void idcu_hash_map_iterator_init(idcu_HashMapIterator* iter, idcu_HashMap* map);
 bool idcu_hash_map_iterator_next(idcu_HashMapIterator* iter, const char** out_key, void** out_value);
 

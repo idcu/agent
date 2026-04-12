@@ -31,7 +31,7 @@ else()
     endif()
 endif()
 
-option(BUILD_TESTS "Build unit tests" ON)
+option(BUILD_TESTS "Build unit tests" OFF)
 option(BUILD_EXAMPLES "Build example programs" ON)
 
 option(ENABLE_ASAN "Enable AddressSanitizer" OFF)

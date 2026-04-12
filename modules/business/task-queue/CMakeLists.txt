@@ -1,28 +1,14 @@
-cmake_minimum_required(VERSION 3.15)
-project(idcu-task-queue C)
+include(idcu_module)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-
-add_library(idcu-task-queue STATIC
-    src/idcu/task_queue/task_queue.c
+idcu_add_library(task_queue
+    VERSION 1.0.0
+    SOURCES
+        src/idcu/task_queue/task_queue.c
+    HEADERS
+        include/idcu/task_queue/task_queue.h
+    DEPENDS
+        idcu::sdk
+        idcu::common
+        idcu::scheduler
+        idcu::core_module
 )
-
-target_include_directories(idcu-task-queue PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(idcu-task-queue PUBLIC
-    idcu::common
-    idcu::scheduler
-    idcu::core_module
-)
-
-if(WIN32)
-    target_link_libraries(idcu-task-queue PRIVATE)
-else()
-    target_link_libraries(idcu-task-queue PRIVATE pthread)
-endif()
-
-add_library(idcu::task_queue ALIAS idcu-task-queue)

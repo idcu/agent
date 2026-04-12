@@ -1,84 +1,58 @@
-#include <idcu/security_module/security_module.h>
+#include "idcu/sdk/sdk.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int idcu_security_module_init(idcu_SecurityModule* sm) {
-    if (!sm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
+typedef struct {
+    bool initialized;
+} SecurityModuleData;
 
-    memset(sm, 0, sizeof(idcu_SecurityModule));
-    sm->initialized = 0;
+static int security_module_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Initializing security module");
+
+    SecurityModuleData* data = malloc(sizeof(SecurityModuleData));
+    if (!data) {
+        return IDCU_ERR_MEMORY;
+    }
+    memset(data, 0, sizeof(SecurityModuleData));
+
+    data->initialized = true;
+    idcu_sdk_set_user_data(ctx, data);
+
+    idcu_sdk_log_info(ctx, "Security module initialized");
     return IDCU_ERR_OK;
 }
 
-int idcu_security_module_start(idcu_SecurityModule* sm) {
-    if (!sm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    sm->initialized = 1;
+static int security_module_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Starting security module");
     return IDCU_ERR_OK;
 }
 
-int idcu_security_module_stop(idcu_SecurityModule* sm) {
-    if (!sm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    sm->initialized = 0;
+static int security_module_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Stopping security module");
     return IDCU_ERR_OK;
 }
 
-void idcu_security_module_destroy(idcu_SecurityModule* sm) {
-    if (!sm) {
-        return;
-    }
+static void security_module_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Destroying security module");
 
-    if (sm->initialized) {
-        idcu_security_module_stop(sm);
+    SecurityModuleData* data = idcu_sdk_get_user_data(ctx);
+    if (data) {
+        free(data);
     }
-
-    memset(sm, 0, sizeof(idcu_SecurityModule));
 }
 
-int idcu_security_module_check_permission(idcu_SecurityModule* sm, const char* permission) {
-    if (!sm || !sm->initialized || !permission) {
-        return IDCU_ERR_INVALID_STATE;
-    }
-    (void)permission;
-    return IDCU_ERR_OK;
-}
-
-int idcu_security_module_encrypt(idcu_SecurityModule* sm, const void* input, size_t input_size, void* output, size_t* output_size) {
-    if (!sm || !sm->initialized || !input || !output || !output_size) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-    (void)input;
-    (void)input_size;
-    *output_size = 0;
-    return IDCU_ERR_OK;
-}
-
-int idcu_security_module_decrypt(idcu_SecurityModule* sm, const void* input, size_t input_size, void* output, size_t* output_size) {
-    if (!sm || !sm->initialized || !input || !output || !output_size) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-    (void)input;
-    (void)input_size;
-    *output_size = 0;
-    return IDCU_ERR_OK;
-}
-
-idcu_Sandbox* idcu_security_module_get_sandbox(idcu_SecurityModule* sm) {
-    if (!sm) {
-        return NULL;
-    }
-    return sm->sandbox;
-}
-
-idcu_PermissionManager* idcu_security_module_get_permission_manager(idcu_SecurityModule* sm) {
-    if (!sm) {
-        return NULL;
-    }
-    return sm->permission_manager;
-}
+IDCU_SDK_MODULE_DEFINE(
+    security_module,
+    "1.0.0",
+    "Security module",
+    security_module_init,
+    security_module_start,
+    security_module_stop,
+    security_module_destroy,
+    NULL
+);

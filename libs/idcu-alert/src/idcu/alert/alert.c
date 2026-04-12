@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <inttypes.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -88,7 +89,7 @@ int idcu_alert_manager_init(idcu_AlertManager* manager) {
         idcu_vector_destroy(&manager->alerts);
         return ret;
     }
-    ret = idcu_hash_map_init(&manager->alerts_by_id, 64);
+    ret = idcu_hash_map_init(&manager->alerts_by_id, 64, sizeof(idcu_Alert*));
     if (ret != IDCU_ERR_OK) {
         idcu_vector_destroy(&manager->channels);
         idcu_vector_destroy(&manager->alerts);
@@ -160,7 +161,7 @@ idcu_Alert* idcu_alert_manager_get_alert(idcu_AlertManager* manager, const char*
         return NULL;
     }
     idcu_mutex_lock(&manager->lock);
-    idcu_Alert* alert = (idcu_Alert*)idcu_hash_map_get(&manager->alerts_by_id, id);
+    idcu_Alert* alert = (idcu_Alert*)idcu_hash_map_get_ptr(&manager->alerts_by_id, id);
     idcu_mutex_unlock(&manager->lock);
     return alert;
 }
@@ -170,7 +171,7 @@ static int update_alert_status(idcu_AlertManager* manager, const char* id, idcu_
         return IDCU_ERR_INVALID_ARG;
     }
     idcu_mutex_lock(&manager->lock);
-    idcu_Alert* alert = (idcu_Alert*)idcu_hash_map_get(&manager->alerts_by_id, id);
+    idcu_Alert* alert = (idcu_Alert*)idcu_hash_map_get_ptr(&manager->alerts_by_id, id);
     if (alert) {
         alert->status = new_status;
         alert->updated_at = get_time_ms();

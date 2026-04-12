@@ -43,6 +43,33 @@ void idcu_test_register(const char* suite_name, const char* test_name, idcu_Test
         } \
     } while (0)
 
+#define IDCU_TEST_ASSERT_NOT_EQUAL(expected, actual) \
+    do { \
+        if ((expected) == (actual)) { \
+            fprintf(stderr, "ASSERT FAILED: %s:%d - %s == %s (expected not equal)\n", \
+                    __FILE__, __LINE__, #expected, #actual); \
+            idcu_test_fail_current(); \
+            return; \
+        } \
+    } while (0)
+
+#define IDCU_TEST_ASSERT_DOUBLE_EQUAL(expected, actual, epsilon) \
+    do { \
+        double _expected = (expected); \
+        double _actual = (actual); \
+        double _epsilon = (epsilon); \
+        if ((_actual < _expected - _epsilon) || (_actual > _expected + _epsilon)) { \
+            fprintf(stderr, "ASSERT FAILED: %s:%d - %g != %g (epsilon %g)\n", \
+                    __FILE__, __LINE__, _expected, _actual, _epsilon); \
+            idcu_test_fail_current(); \
+            return; \
+        } \
+    } while (0)
+
+#define IDCU_TEST_PASS() \
+    do { \
+    } while (0)
+
 #define IDCU_TEST_CASE(suite, name) \
     static void _test_##suite##_##name(void); \
     static void _register_test_##suite##_##name(void) __attribute__((constructor)); \

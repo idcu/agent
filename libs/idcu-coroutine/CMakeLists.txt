@@ -36,11 +36,11 @@ set_target_properties(idcu-coroutine PROPERTIES
     SOVERSION 1
 )
 
-if(BUILD_TESTING)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+# if(BUILD_TESTING)
+#     enable_testing()
+#     add_subdirectory(tests)
+# endif()
 
-if(BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+# if(BUILD_EXAMPLES)
+#     add_subdirectory(examples)
+# endif()

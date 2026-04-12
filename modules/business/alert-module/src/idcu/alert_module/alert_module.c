@@ -1,62 +1,58 @@
-#include <idcu/alert_module/alert_module.h>
+#include "idcu/sdk/sdk.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int idcu_alert_module_init(idcu_AlertModule* am) {
-    if (!am) {
-        return IDCU_ERR_INVALID_ARG;
+typedef struct {
+    bool initialized;
+} AlertModuleData;
+
+static int alert_module_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Initializing alert module");
+
+    AlertModuleData* data = malloc(sizeof(AlertModuleData));
+    if (!data) {
+        return IDCU_ERR_MEMORY;
     }
+    memset(data, 0, sizeof(AlertModuleData));
 
-    memset(am, 0, sizeof(idcu_AlertModule));
-    am->initialized = 0;
+    data->initialized = true;
+    idcu_sdk_set_user_data(ctx, data);
 
-    int ret = idcu_alert_manager_create(&am->alert_manager);
-    if (ret != IDCU_ERR_OK) {
-        return ret;
-    }
-
-    am->initialized = 1;
+    idcu_sdk_log_info(ctx, "Alert module initialized");
     return IDCU_ERR_OK;
 }
 
-int idcu_alert_module_start(idcu_AlertModule* am) {
-    if (!am || !am->initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
+static int alert_module_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Starting alert module");
     return IDCU_ERR_OK;
 }
 
-int idcu_alert_module_stop(idcu_AlertModule* am) {
-    if (!am || !am->initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
+static int alert_module_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Stopping alert module");
     return IDCU_ERR_OK;
 }
 
-void idcu_alert_module_destroy(idcu_AlertModule* am) {
-    if (!am) {
-        return;
-    }
+static void alert_module_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Destroying alert module");
 
-    if (am->alert_manager) {
-        idcu_alert_manager_destroy(am->alert_manager);
-        am->alert_manager = NULL;
+    AlertModuleData* data = idcu_sdk_get_user_data(ctx);
+    if (data) {
+        free(data);
     }
-
-    am->initialized = 0;
-    memset(am, 0, sizeof(idcu_AlertModule));
 }
 
-int idcu_alert_module_trigger(idcu_AlertModule* am, const char* event_name, void* data) {
-    if (!am || !am->alert_manager || !event_name) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-    (void)data;
-    return IDCU_ERR_OK;
-}
-
-idcu_AlertManager* idcu_alert_module_get_alert_manager(idcu_AlertModule* am) {
-    if (!am) {
-        return NULL;
-    }
-    return am->alert_manager;
-}
+IDCU_SDK_MODULE_DEFINE(
+    alert_module,
+    "1.0.0",
+    "Alert module",
+    alert_module_init,
+    alert_module_start,
+    alert_module_stop,
+    alert_module_destroy,
+    NULL
+);

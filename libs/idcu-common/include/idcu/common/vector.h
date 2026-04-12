@@ -40,6 +40,11 @@ void   idcu_vector_clear(idcu_Vector* vec);
 int idcu_vector_reserve(idcu_Vector* vec, size_t new_capacity);
 int idcu_vector_resize(idcu_Vector* vec, size_t new_size, const void* default_value);
 
+#define idcu_vector_at idcu_vector_get
+#define idcu_vector_erase idcu_vector_remove
+
+void* idcu_vector_back(const idcu_Vector* vec);
+
 #define IDCU_VECTOR_FOR_EACH(vec, type, var, index)                \
     for (size_t index = 0; index < idcu_vector_size(vec); ++index) \
         for (type* var = (type*)idcu_vector_get(vec, index); var; var = NULL)

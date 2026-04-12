@@ -411,7 +411,7 @@ int idcu_cache_get_int(idcu_Cache* cache, const char* key, int64_t* out_value) {
     size_t value_size;
     int ret = idcu_cache_get(cache, key, out_value, sizeof(*out_value), &value_size);
     if (ret == IDCU_ERR_OK && value_size != sizeof(*out_value)) {
-        return IDCU_ERR_INVALID_TYPE;
+        return IDCU_ERR_INVALID_ARG;
     }
     return ret;
 }

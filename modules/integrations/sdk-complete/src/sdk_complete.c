@@ -8,7 +8,8 @@ typedef struct {
     bool initialized;
 } SdkCompleteData;
 
-static int sdk_complete_init(idcu_SdkContext* ctx) {
+static int sdk_complete_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Initializing SDK complete integration");
 
     SdkCompleteData* data = malloc(sizeof(SdkCompleteData));
@@ -24,16 +25,20 @@ static int sdk_complete_init(idcu_SdkContext* ctx) {
     return IDCU_ERR_OK;
 }
 
-static int sdk_complete_start(idcu_SdkContext* ctx) {
+static int sdk_complete_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Starting SDK complete integration");
     return IDCU_ERR_OK;
 }
 
-static void sdk_complete_stop(idcu_SdkContext* ctx) {
+static int sdk_complete_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Stopping SDK complete integration");
+    return IDCU_ERR_OK;
 }
 
-static void sdk_complete_destroy(idcu_SdkContext* ctx) {
+static void sdk_complete_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Destroying SDK complete integration");
 
     SdkCompleteData* data = idcu_sdk_get_user_data(ctx);

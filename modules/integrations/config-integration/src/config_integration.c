@@ -8,12 +8,12 @@
 
 typedef struct {
     bool initialized;
-    idcu_ConfigManager* config_manager;
     char* config_path;
     bool hot_reload_enabled;
 } ConfigIntegrationData;
 
-static int config_integration_init(idcu_SdkContext* ctx) {
+static int config_integration_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Initializing config integration");
 
     ConfigIntegrationData* data = malloc(sizeof(ConfigIntegrationData));
@@ -30,7 +30,7 @@ static int config_integration_init(idcu_SdkContext* ctx) {
     idcu_sdk_get_config_bool(ctx, "config.hot_reload", &hot_reload);
     data->hot_reload_enabled = hot_reload;
 
-    idcu_ErrorCode err = idcu_config_init(&data->config_manager);
+    idcu_ErrorCode err = idcu_config_init(data->config_path);
     if (err != IDCU_ERR_OK) {
         free(data->config_path);
         free(data);
@@ -44,22 +44,26 @@ static int config_integration_init(idcu_SdkContext* ctx) {
     return IDCU_ERR_OK;
 }
 
-static int config_integration_start(idcu_SdkContext* ctx) {
+static int config_integration_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Starting config integration");
     return IDCU_ERR_OK;
 }
 
-static void config_integration_stop(idcu_SdkContext* ctx) {
+static int config_integration_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Stopping config integration");
+    return IDCU_ERR_OK;
 }
 
-static void config_integration_destroy(idcu_SdkContext* ctx) {
+static void config_integration_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Destroying config integration");
 
     ConfigIntegrationData* data = idcu_sdk_get_user_data(ctx);
     if (data) {
-        if (data->initialized && data->config_manager) {
-            idcu_config_shutdown(data->config_manager);
+        if (data->initialized) {
+            idcu_config_shutdown();
         }
         free(data->config_path);
         free(data);

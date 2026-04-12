@@ -258,3 +258,11 @@ int idcu_vector_resize(idcu_Vector* vec, size_t new_size, const void* default_va
 
     return IDCU_ERR_OK;
 }
+
+void* idcu_vector_back(const idcu_Vector* vec)
+{
+    if (!vec || vec->size == 0) {
+        return NULL;
+    }
+    return vec->data[vec->size - 1];
+}

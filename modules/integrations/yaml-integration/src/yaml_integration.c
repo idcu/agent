@@ -9,7 +9,8 @@ typedef struct {
     bool initialized;
 } YamlIntegrationData;
 
-static int yaml_integration_init(idcu_SdkContext* ctx) {
+static int yaml_integration_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Initializing YAML integration");
 
     YamlIntegrationData* data = malloc(sizeof(YamlIntegrationData));
@@ -25,16 +26,20 @@ static int yaml_integration_init(idcu_SdkContext* ctx) {
     return IDCU_ERR_OK;
 }
 
-static int yaml_integration_start(idcu_SdkContext* ctx) {
+static int yaml_integration_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Starting YAML integration");
     return IDCU_ERR_OK;
 }
 
-static void yaml_integration_stop(idcu_SdkContext* ctx) {
+static int yaml_integration_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Stopping YAML integration");
+    return IDCU_ERR_OK;
 }
 
-static void yaml_integration_destroy(idcu_SdkContext* ctx) {
+static void yaml_integration_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Destroying YAML integration");
 
     YamlIntegrationData* data = idcu_sdk_get_user_data(ctx);

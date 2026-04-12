@@ -10,7 +10,8 @@ typedef struct {
     bool initialized;
 } MetricsIntegrationData;
 
-static int metrics_integration_init(idcu_SdkContext* ctx) {
+static int metrics_integration_init(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Initializing metrics integration");
 
     MetricsIntegrationData* data = malloc(sizeof(MetricsIntegrationData));
@@ -26,16 +27,20 @@ static int metrics_integration_init(idcu_SdkContext* ctx) {
     return IDCU_ERR_OK;
 }
 
-static int metrics_integration_start(idcu_SdkContext* ctx) {
+static int metrics_integration_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Starting metrics integration");
     return IDCU_ERR_OK;
 }
 
-static void metrics_integration_stop(idcu_SdkContext* ctx) {
+static int metrics_integration_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Stopping metrics integration");
+    return IDCU_ERR_OK;
 }
 
-static void metrics_integration_destroy(idcu_SdkContext* ctx) {
+static void metrics_integration_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
     idcu_sdk_log_info(ctx, "Destroying metrics integration");
 
     MetricsIntegrationData* data = idcu_sdk_get_user_data(ctx);

@@ -1,58 +1,58 @@
-#include <idcu/task_queue/task_queue.h>
+#include "idcu/sdk/sdk.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int idcu_task_queue_module_init(idcu_TaskQueueModule* tqm) {
-    if (!tqm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
+typedef struct {
+    bool initialized;
+} TaskQueueData;
 
-    memset(tqm, 0, sizeof(idcu_TaskQueueModule));
-    tqm->initialized = 0;
-    return IDCU_ERR_OK;
-}
-
-int idcu_task_queue_module_start(idcu_TaskQueueModule* tqm) {
-    if (!tqm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    tqm->initialized = 1;
-    return IDCU_ERR_OK;
-}
-
-int idcu_task_queue_module_stop(idcu_TaskQueueModule* tqm) {
-    if (!tqm) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-
-    tqm->initialized = 0;
-    return IDCU_ERR_OK;
-}
-
-void idcu_task_queue_module_destroy(idcu_TaskQueueModule* tqm) {
-    if (!tqm) {
-        return;
-    }
-
-    if (tqm->initialized) {
-        idcu_task_queue_module_stop(tqm);
-    }
-
-    memset(tqm, 0, sizeof(idcu_TaskQueueModule));
-}
-
-uint64_t idcu_task_queue_module_add_task(idcu_TaskQueueModule* tqm, idcu_TaskFunc func, void* user_data) {
-    if (!tqm || !tqm->initialized || !func) {
-        return 0;
-    }
+static int task_queue_init(idcu_SdkContext* ctx, void* user_data) {
     (void)user_data;
-    return 1;
-}
+    idcu_sdk_log_info(ctx, "Initializing task queue module");
 
-int idcu_task_queue_module_cancel_task(idcu_TaskQueueModule* tqm, uint64_t task_id) {
-    if (!tqm || !tqm->initialized) {
-        return IDCU_ERR_INVALID_STATE;
+    TaskQueueData* data = malloc(sizeof(TaskQueueData));
+    if (!data) {
+        return IDCU_ERR_MEMORY;
     }
-    (void)task_id;
+    memset(data, 0, sizeof(TaskQueueData));
+
+    data->initialized = true;
+    idcu_sdk_set_user_data(ctx, data);
+
+    idcu_sdk_log_info(ctx, "Task queue module initialized");
     return IDCU_ERR_OK;
 }
+
+static int task_queue_start(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Starting task queue module");
+    return IDCU_ERR_OK;
+}
+
+static int task_queue_stop(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Stopping task queue module");
+    return IDCU_ERR_OK;
+}
+
+static void task_queue_destroy(idcu_SdkContext* ctx, void* user_data) {
+    (void)user_data;
+    idcu_sdk_log_info(ctx, "Destroying task queue module");
+
+    TaskQueueData* data = idcu_sdk_get_user_data(ctx);
+    if (data) {
+        free(data);
+    }
+}
+
+IDCU_SDK_MODULE_DEFINE(
+    task_queue,
+    "1.0.0",
+    "Task queue module",
+    task_queue_init,
+    task_queue_start,
+    task_queue_stop,
+    task_queue_destroy,
+    NULL
+);

@@ -20,6 +20,14 @@ typedef struct {
     uint64_t max_wait_time;
 #endif
 } idcu_Mutex;
+
+typedef struct {
+    CONDITION_VARIABLE cv;
+} idcu_Condition;
+
+typedef struct {
+    HANDLE thread;
+} idcu_Thread;
 #else
 #include <pthread.h>
 typedef struct {
@@ -36,6 +44,14 @@ typedef struct {
     uint64_t max_wait_time;
 #endif
 } idcu_Mutex;
+
+typedef struct {
+    pthread_cond_t pcond;
+} idcu_Condition;
+
+typedef struct {
+    pthread_t thread;
+} idcu_Thread;
 #endif
 
 #ifdef __cplusplus
@@ -48,6 +64,12 @@ int  idcu_mutex_lock(idcu_Mutex* mutex);
 int  idcu_mutex_unlock(idcu_Mutex* mutex);
 int  idcu_mutex_trylock(idcu_Mutex* mutex);
 int  idcu_mutex_timedlock(idcu_Mutex* mutex, uint32_t timeout_ms);
+
+int  idcu_cond_init(idcu_Condition* cond);
+void idcu_cond_destroy(idcu_Condition* cond);
+int  idcu_cond_wait(idcu_Condition* cond, idcu_Mutex* mutex);
+int  idcu_cond_signal(idcu_Condition* cond);
+int  idcu_cond_broadcast(idcu_Condition* cond);
 
 #ifdef IDCU_DEBUG
 uint64_t idcu_mutex_get_lock_count(idcu_Mutex* mutex);

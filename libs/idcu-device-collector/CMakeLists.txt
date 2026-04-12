@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(idcu-device-collector STATIC
-    src/idcu/device-collector/device-collector.c
+    src/idcu/device_collector/device_collector.c
 )
 
 target_include_directories(idcu-device-collector PUBLIC

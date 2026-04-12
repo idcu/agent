@@ -14,8 +14,6 @@ extern "C" {
 #define IDCU_CONFIG_MAX_KEYS_PER_SECTION 128
 #define IDCU_CONFIG_KEY_MAX              128
 #define IDCU_CONFIG_VALUE_MAX            512
-#define IDCU_CONFIG_SECTION_MAX          128
-#define IDCU_CONFIG_PATH_MAX             1024
 #define IDCU_CONFIG_MAX_CALLBACKS        16
 #define IDCU_CONFIG_LIST_MAX_ITEMS       32
 #define IDCU_CONFIG_LIST_ITEM_MAX        128

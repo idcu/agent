@@ -39,7 +39,7 @@ void idcu_sandbox_destroy(idcu_Sandbox* sandbox) {
 }
 
 int idcu_sandbox_add_policy(idcu_Sandbox* sandbox, const idcu_SandboxPolicy* policy) {
-    if (!sandbox || !sandbox->initialized || !policy || !policy->name) {
+    if (!sandbox || !sandbox->initialized || !policy) {
         return IDCU_ERR_INVALID_ARG;
     }
     idcu_mutex_lock(&sandbox->lock);
@@ -102,7 +102,7 @@ int idcu_sandbox_check_permission(idcu_Sandbox* sandbox, const char* policy_name
         }
     }
     idcu_mutex_unlock(&sandbox->lock);
-    return sandbox->enforcing ? IDCU_ERR_PERMISSION_DENIED : IDCU_ERR_OK;
+    return sandbox->enforcing ? IDCU_ERR_PERM_DENIED : IDCU_ERR_OK;
 }
 
 int idcu_sandbox_check_path_access(idcu_Sandbox* sandbox, const char* policy_name, const char* path) {
@@ -122,7 +122,7 @@ int idcu_sandbox_check_path_access(idcu_Sandbox* sandbox, const char* policy_nam
         }
     }
     idcu_mutex_unlock(&sandbox->lock);
-    return sandbox->enforcing ? IDCU_ERR_PERMISSION_DENIED : IDCU_ERR_OK;
+    return sandbox->enforcing ? IDCU_ERR_PERM_DENIED : IDCU_ERR_OK;
 }
 
 int idcu_sandbox_check_network_access(idcu_Sandbox* sandbox, const char* policy_name, const char* host) {
@@ -142,7 +142,7 @@ int idcu_sandbox_check_network_access(idcu_Sandbox* sandbox, const char* policy_
         }
     }
     idcu_mutex_unlock(&sandbox->lock);
-    return sandbox->enforcing ? IDCU_ERR_PERMISSION_DENIED : IDCU_ERR_OK;
+    return sandbox->enforcing ? IDCU_ERR_PERM_DENIED : IDCU_ERR_OK;
 }
 
 int idcu_sandbox_set_enforcing(idcu_Sandbox* sandbox, int enforcing) {

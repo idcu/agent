@@ -97,6 +97,7 @@ int idcu_conn_pool_init(idcu_ConnectionPool* pool, const idcu_ConnectionPoolConf
         }
     }
     
+    pool->cleanup_running = 0;
     pool->initialized = 1;
     return IDCU_ERR_OK;
 }

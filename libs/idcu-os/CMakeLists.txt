@@ -89,6 +89,6 @@ endif()
 
 add_library(idcu::os ALIAS idcu-os)
 
-if(BUILD_TESTS)
+if(BUILD_TESTS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_os.c)
     add_subdirectory(tests)
 endif()

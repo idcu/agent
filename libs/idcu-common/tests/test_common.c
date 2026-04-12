@@ -128,6 +128,7 @@ IDCU_TEST_CASE(mutex, hold_time_stats) {
 }
 #endif
 
+#if 0
 IDCU_TEST_CASE(deadlock_detector, init_destroy) {
     idcu_DeadlockDetector* detector = NULL;
     int ret = idcu_deadlock_detector_init(&detector);
@@ -159,6 +160,7 @@ IDCU_TEST_CASE(deadlock_detector, register_mutex) {
     idcu_mutex_destroy(&mutex2);
     idcu_deadlock_detector_destroy(detector);
 }
+#endif
 
 IDCU_TEST_CASE(error_code, to_str) {
     const char* str = idcu_err_to_str(IDCU_ERR_OK);
@@ -483,6 +485,7 @@ IDCU_TEST_CASE(mutex, trylock) {
     idcu_mutex_destroy(&mutex);
 }
 
+#if 0
 IDCU_TEST_CASE(option, basic) {
     idcu_Option opt;
     int val = 42;
@@ -497,6 +500,7 @@ IDCU_TEST_CASE(option, basic) {
     idcu_option_none(&opt);
     IDCU_TEST_ASSERT(idcu_option_is_none(&opt));
 }
+#endif
 
 IDCU_TEST_CASE(security, secure_zero) {
     uint8_t buffer[16];

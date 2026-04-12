@@ -27,6 +27,18 @@ typedef enum
     IDCU_METRIC_TYPE_SUMMARY
 } idcu_MetricType;
 
+typedef struct
+{
+    char name[IDCU_METRIC_LABEL_KEY_MAX];
+    char value[IDCU_METRIC_LABEL_VALUE_MAX];
+} idcu_MetricLabel;
+
+typedef struct
+{
+    idcu_MetricLabel labels[IDCU_METRIC_LABELS_MAX];
+    size_t label_count;
+} idcu_MetricLabels;
+
 // Summary metric (quantiles)
 typedef struct idcu_MetricSummary
 {
@@ -42,18 +54,6 @@ typedef struct idcu_MetricSummary
     double sample_sum;
     idcu_Mutex lock;
 } idcu_MetricSummary;
-
-typedef struct
-{
-    char name[IDCU_METRIC_LABEL_KEY_MAX];
-    char value[IDCU_METRIC_LABEL_VALUE_MAX];
-} idcu_MetricLabel;
-
-typedef struct
-{
-    idcu_MetricLabel labels[IDCU_METRIC_LABELS_MAX];
-    size_t label_count;
-} idcu_MetricLabels;
 
 typedef struct idcu_MetricCounter
 {

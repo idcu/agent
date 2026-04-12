@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <inttypes.h>
 
 static void metric_dtor(void* element) {
     idcu_Metric* metric = *(idcu_Metric**)element;
@@ -59,7 +60,7 @@ int idcu_metrics_registry_init(idcu_MetricsRegistry* registry) {
     if (ret != IDCU_ERR_OK) {
         return ret;
     }
-    ret = idcu_hash_map_init(&registry->metrics_by_name, 64);
+    ret = idcu_hash_map_init(&registry->metrics_by_name, 64, sizeof(idcu_Metric*));
     if (ret != IDCU_ERR_OK) {
         idcu_vector_destroy(&registry->metrics);
         return ret;

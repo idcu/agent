@@ -77,7 +77,6 @@ typedef struct idcu_ConnectionPool {
     int validate_on_return;
     int validate_periodically;
     
-    idcu_Thread cleanup_thread;
     int cleanup_running;
     uint64_t cleanup_interval_ms;
     

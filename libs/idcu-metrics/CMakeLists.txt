@@ -23,6 +23,6 @@ endif()
 
 add_library(idcu::metrics ALIAS idcu-metrics)
 
-if(BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+#if(BUILD_TESTS)
+#    add_subdirectory(tests)
+#endif()

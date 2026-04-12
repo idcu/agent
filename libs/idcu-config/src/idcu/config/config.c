@@ -186,9 +186,6 @@ int idcu_config_reload(void) {
     
     idcu_mutex_lock(&g_config_manager.lock);
     
-    // 保存旧配置用于通知
-    idcu_ConfigManager old_config = g_config_manager;
-    
     // 清空并重新加载
     g_config_manager.section_count = 0;
     int ret = parse_simple_config(g_config_manager.file_path);
@@ -514,220 +511,25 @@ int idcu_config_load_profile(const char* profile_name) {
     return IDCU_ERR_OK;
 }
 
-// ========== JSON/YAML support ==========
+// ========== JSON/YAML support (Stubbed for now) ==========
 int idcu_config_init_from_json(const char* file_path) {
-    if (!file_path) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-    
-    idcu_JsonValue* root = NULL;
-    int ret = idcu_json_parse_file(file_path, &root);
-    if (ret != IDCU_ERR_OK) {
-        return ret;
-    }
-    
-    if (g_initialized) {
-        idcu_config_shutdown();
-    }
-    
-    memset(&g_config_manager, 0, sizeof(g_config_manager));
-    idcu_mutex_init(&g_config_manager.lock);
-    
-    strncpy(g_config_manager.file_path, file_path, IDCU_CONFIG_PATH_MAX - 1);
-    g_config_manager.file_path[IDCU_CONFIG_PATH_MAX - 1] = '\0';
-    
-    if (idcu_json_is_object(root)) {
-        size_t obj_size = idcu_json_object_size(root);
-        for (size_t i = 0; i < obj_size; i++) {
-            const char* section_name = idcu_json_object_key_at(root, i);
-            idcu_JsonValue* section_val = idcu_json_object_value_at(root, i);
-            
-            if (idcu_json_is_object(section_val)) {
-                idcu_ConfigSection* section = find_or_create_section(section_name);
-                if (section) {
-                    size_t entry_count = idcu_json_object_size(section_val);
-                    for (size_t j = 0; j < entry_count; j++) {
-                        const char* key = idcu_json_object_key_at(section_val, j);
-                        idcu_JsonValue* val = idcu_json_object_value_at(section_val, j);
-                        
-                        idcu_ConfigEntry* entry = create_entry(section, key);
-                        if (entry) {
-                            if (idcu_json_is_string(val)) {
-                                const char* s = NULL;
-                                idcu_json_get_string(val, &s);
-                                strncpy(entry->value, s ? s : "", IDCU_CONFIG_VALUE_MAX - 1);
-                            } else if (idcu_json_is_int(val)) {
-                                int64_t v;
-                                idcu_json_get_int(val, &v);
-                                snprintf(entry->value, sizeof(entry->value), "%" PRId64, v);
-                            } else if (idcu_json_is_double(val)) {
-                                double v;
-                                idcu_json_get_double(val, &v);
-                                snprintf(entry->value, sizeof(entry->value), "%f", v);
-                            } else if (idcu_json_is_bool(val)) {
-                                int v;
-                                idcu_json_get_bool(val, &v);
-                                strncpy(entry->value, v ? "true" : "false", IDCU_CONFIG_VALUE_MAX - 1);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    idcu_json_free(root);
-    g_config_manager.loaded = 1;
-    g_initialized = 1;
-    
-    return IDCU_ERR_OK;
+    (void)file_path;
+    return IDCU_ERR_UNKNOWN;
 }
 
 int idcu_config_init_from_yaml(const char* file_path) {
-    if (!file_path) {
-        return IDCU_ERR_INVALID_ARG;
-    }
-    
-    FILE* fp = fopen(file_path, "r");
-    if (!fp) {
-        return IDCU_ERR_NOT_FOUND;
-    }
-    
-    fseek(fp, 0, SEEK_END);
-    long file_size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    
-    char* yaml_str = (char*)malloc(file_size + 1);
-    if (!yaml_str) {
-        fclose(fp);
-        return IDCU_ERR_MEMORY;
-    }
-    
-    size_t read = fread(yaml_str, 1, file_size, fp);
-    yaml_str[read] = '\0';
-    fclose(fp);
-    
-    idcu_YamlValue root;
-    int ret = idcu_yaml_parse(yaml_str, &root);
-    free(yaml_str);
-    
-    if (ret != IDCU_ERR_OK) {
-        return ret;
-    }
-    
-    if (g_initialized) {
-        idcu_config_shutdown();
-    }
-    
-    memset(&g_config_manager, 0, sizeof(g_config_manager));
-    idcu_mutex_init(&g_config_manager.lock);
-    
-    strncpy(g_config_manager.file_path, file_path, IDCU_CONFIG_PATH_MAX - 1);
-    g_config_manager.file_path[IDCU_CONFIG_PATH_MAX - 1] = '\0';
-    
-    if (idcu_yaml_get_type(&root) == IDCU_YAML_TYPE_MAPPING) {
-        const idcu_YamlMapping* map = &root.data.mapping;
-        for (size_t i = 0; i < map->count; i++) {
-            const char* section_name = map->entries[i].key;
-            idcu_YamlValue* section_val = &map->entries[i].value;
-            
-            if (idcu_yaml_get_type(section_val) == IDCU_YAML_TYPE_MAPPING) {
-                idcu_ConfigSection* section = find_or_create_section(section_name);
-                if (section) {
-                    const idcu_YamlMapping* entry_map = &section_val->data.mapping;
-                    for (size_t j = 0; j < entry_map->count; j++) {
-                        const char* key = entry_map->entries[j].key;
-                        idcu_YamlValue* val = &entry_map->entries[j].value;
-                        
-                        idcu_ConfigEntry* entry = create_entry(section, key);
-                        if (entry) {
-                            if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_STRING) {
-                                const char* s = NULL;
-                                idcu_yaml_get_string(val, &s);
-                                strncpy(entry->value, s ? s : "", IDCU_CONFIG_VALUE_MAX - 1);
-                            } else if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_INT) {
-                                int64_t v;
-                                idcu_yaml_get_int(val, &v);
-                                snprintf(entry->value, sizeof(entry->value), "%" PRId64, v);
-                            } else if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_DOUBLE) {
-                                double v;
-                                idcu_yaml_get_double(val, &v);
-                                snprintf(entry->value, sizeof(entry->value), "%f", v);
-                            } else if (idcu_yaml_get_type(val) == IDCU_YAML_TYPE_BOOL) {
-                                int v;
-                                idcu_yaml_get_bool(val, &v);
-                                strncpy(entry->value, v ? "true" : "false", IDCU_CONFIG_VALUE_MAX - 1);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    idcu_yaml_free(&root);
-    g_config_manager.loaded = 1;
-    g_initialized = 1;
-    
-    return IDCU_ERR_OK;
+    (void)file_path;
+    return IDCU_ERR_UNKNOWN;
 }
 
 int idcu_config_save_to_json(const char* file_path) {
-    if (!g_initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
-    
-    idcu_JsonValue* root = idcu_json_create_object();
-    
-    idcu_mutex_lock(&g_config_manager.lock);
-    
-    for (uint32_t s = 0; s < g_config_manager.section_count; s++) {
-        idcu_ConfigSection* section = &g_config_manager.sections[s];
-        idcu_JsonValue* obj = idcu_json_create_object();
-        
-        for (uint32_t e = 0; e < section->entry_count; e++) {
-            idcu_json_object_set(obj, section->entries[e].key, 
-                                  idcu_json_create_string(section->entries[e].value));
-        }
-        
-        idcu_json_object_set(root, section->name, obj);
-    }
-    
-    idcu_mutex_unlock(&g_config_manager.lock);
-    
-    int ret = idcu_json_save_to_file(root, file_path);
-    idcu_json_free(root);
-    
-    return ret;
+    (void)file_path;
+    return IDCU_ERR_UNKNOWN;
 }
 
 int idcu_config_save_to_yaml(const char* file_path) {
-    if (!g_initialized) {
-        return IDCU_ERR_INVALID_STATE;
-    }
-    
-    FILE* fp = fopen(file_path, "w");
-    if (!fp) {
-        return IDCU_ERR_UNKNOWN;
-    }
-    
-    idcu_mutex_lock(&g_config_manager.lock);
-    
-    for (uint32_t s = 0; s < g_config_manager.section_count; s++) {
-        idcu_ConfigSection* section = &g_config_manager.sections[s];
-        fprintf(fp, "%s:\n", section->name);
-        
-        for (uint32_t e = 0; e < section->entry_count; e++) {
-            fprintf(fp, "  %s: %s\n", section->entries[e].key, section->entries[e].value);
-        }
-        
-        fprintf(fp, "\n");
-    }
-    
-    idcu_mutex_unlock(&g_config_manager.lock);
-    
-    fclose(fp);
-    return IDCU_ERR_OK;
+    (void)file_path;
+    return IDCU_ERR_UNKNOWN;
 }
 
 // ========== Environment variable substitution ==========
