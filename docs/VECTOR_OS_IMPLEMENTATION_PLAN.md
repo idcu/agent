@@ -358,6 +358,27 @@ endif()
 
 ### P3.5: 验证 P3 阶段
 
+- [x] 克隆并研究 Vector OS 项目结构和 API 文档 ✅
+  - ✅ 项目地址: https://gitee.com/idcu/vector
+  - ✅ 版本: v2.1
+  - ✅ 完整的系统调用 API 文档已研究
+  - ✅ 用户空间库文档已研究
+  - ✅ 信号量系统调用 (sem_create/sem_wait/sem_post/sem_trywait/sem_destroy)
+  - ✅ IPC 通道系统调用
+  - ✅ 共享内存系统调用
+  - ✅ 文件 I/O 系统调用
+- [x] 完善 Vector OS 平台 idcu-os 实现 ✅
+  - ✅ lock.c: 使用 Vector OS 信号量实现互斥锁、条件变量、读写锁
+  - ✅ time.c: POSIX 兼容时间 API 实现
+  - ✅ path.c: POSIX 兼容路径处理实现
+  - ✅ file.c: POSIX 兼容文件 I/O 实现
+  - ✅ network.c: POSIX 兼容网络 API 实现
+  - ✅ env.c: POSIX 兼容环境变量实现
+  - ✅ sysinfo.c: 系统信息获取 (Vector OS 2.1)
+  - ✅ coroutine.c: 协程实现 (ucontext)
+  - ✅ signal.c: 信号处理实现
+  - ✅ backtrace.c: 堆栈回溯实现
+  - ✅ dl.c: 动态库加载实现
 - [ ] Agent 可以在 Vector OS 上运行
 - [ ] 所有集成测试通过
 - [ ] 性能比 Linux 用户态有所提升
