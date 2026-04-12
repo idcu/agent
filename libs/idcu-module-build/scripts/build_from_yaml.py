@@ -48,15 +48,27 @@ class ModuleInfo:
         import platform
         system = platform.system().lower()
         
-        # 平台目录映射
-        platform_dirs = {
+        # 所有平台目录列表
+        all_platform_dirs = {
+            'windows',
+            'linux',
+            'macos',
+            'freebsd',
+            'android',
+            'harmony',
+            'vector',
+            'rtthread',
+        }
+        
+        # 平台目录映射（系统名 -> 目录名）
+        platform_mapping = {
             'windows': 'windows',
             'linux': 'linux',
             'darwin': 'macos',
             'freebsd': 'freebsd',
         }
         
-        target_platform = platform_dirs.get(system, 'linux')
+        target_platform = platform_mapping.get(system, 'linux')
         
         # 查找所有源文件（递归）
         for ext in ['*.c', '*.cpp', '*.cc', '*.cxx']:
@@ -65,14 +77,18 @@ class ModuleInfo:
                 rel_path = file.relative_to(src_dir)
                 path_parts = list(rel_path.parts)
                 
-                # 检查是否在其他平台的目录
-                is_other_platform = False
+                # 检查是否在平台目录中
+                in_platform_dir = False
+                is_target_platform = False
                 for part in path_parts[:-1]:  # 不包括文件名
-                    if part in platform_dirs.values() and part != target_platform:
-                        is_other_platform = True
+                    if part in all_platform_dirs:
+                        in_platform_dir = True
+                        if part == target_platform:
+                            is_target_platform = True
                         break
                 
-                if not is_other_platform:
+                # 如果不在任何平台目录，或者在目标平台目录，则包含
+                if not in_platform_dir or is_target_platform:
                     sources.append(file)
         
         return sorted(sources)
