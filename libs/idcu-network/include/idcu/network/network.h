@@ -42,6 +42,9 @@ int  idcu_udp_socket_send(idcu_UdpSocket* sock, const idcu_NetAddress* dest, con
 int  idcu_udp_socket_recv(idcu_UdpSocket* sock, idcu_NetAddress* source, void* buffer, size_t len, size_t* received);
 int  idcu_udp_socket_set_timeout(idcu_UdpSocket* sock, int timeout_ms);
 
+int  idcu_net_poll(idcu_NetPollFd* fds, size_t nfds, int timeout_ms);
+int  idcu_net_select(idcu_Socket max_fd, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, int timeout_ms);
+
 #ifdef __cplusplus
 }
 #endif

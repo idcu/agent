@@ -17,6 +17,7 @@ typedef struct idcu_SubscriberList {
 
 struct idcu_MsgBus {
     idcu_Mutex mutex;
+    idcu_Mutex topic_mutexes[IDCU_MSG_MAX_TOPICS];
     idcu_Vector* topic_priority_queues[IDCU_MSG_MAX_TOPICS][IDCU_MSG_PRIORITY_COUNT];
     idcu_SubscriberList topic_subscribers[IDCU_MSG_MAX_TOPICS];
     idcu_Vector* all_subscribers;
@@ -47,6 +48,15 @@ int idcu_msgbus_init(idcu_MsgBus** bus) {
     }
 
     for (int i = 0; i < IDCU_MSG_MAX_TOPICS; i++) {
+        ret = idcu_mutex_init(&b->topic_mutexes[i]);
+        if (ret != IDCU_ERR_OK) {
+            for (int j = 0; j < i; j++) {
+                idcu_mutex_destroy(&b->topic_mutexes[j]);
+            }
+            idcu_mutex_destroy(&b->mutex);
+            free(b);
+            return ret;
+        }
         for (int p = 0; p < IDCU_MSG_PRIORITY_COUNT; p++) {
             b->topic_priority_queues[i][p] = NULL;
         }
@@ -55,6 +65,9 @@ int idcu_msgbus_init(idcu_MsgBus** bus) {
 
     b->all_subscribers = (idcu_Vector*)malloc(sizeof(idcu_Vector));
     if (!b->all_subscribers) {
+        for (int i = 0; i < IDCU_MSG_MAX_TOPICS; i++) {
+            idcu_mutex_destroy(&b->topic_mutexes[i]);
+        }
         idcu_mutex_destroy(&b->mutex);
         free(b);
         return IDCU_ERR_MEMORY;
@@ -63,6 +76,9 @@ int idcu_msgbus_init(idcu_MsgBus** bus) {
     ret = idcu_vector_init(b->all_subscribers, sizeof(idcu_MsgSubscriber*), 8);
     if (ret != IDCU_ERR_OK) {
         free(b->all_subscribers);
+        for (int i = 0; i < IDCU_MSG_MAX_TOPICS; i++) {
+            idcu_mutex_destroy(&b->topic_mutexes[i]);
+        }
         idcu_mutex_destroy(&b->mutex);
         free(b);
         return ret;
@@ -80,6 +96,7 @@ void idcu_msgbus_destroy(idcu_MsgBus* bus) {
     idcu_mutex_lock(&bus->mutex);
 
     for (int i = 0; i < IDCU_MSG_MAX_TOPICS; i++) {
+        idcu_mutex_lock(&bus->topic_mutexes[i]);
         for (int p = 0; p < IDCU_MSG_PRIORITY_COUNT; p++) {
             if (bus->topic_priority_queues[i][p]) {
                 for (size_t j = 0; j < idcu_vector_size(bus->topic_priority_queues[i][p]); j++) {
@@ -100,6 +117,8 @@ void idcu_msgbus_destroy(idcu_MsgBus* bus) {
             idcu_vector_destroy(bus->topic_subscribers[i].subscribers);
             free(bus->topic_subscribers[i].subscribers);
         }
+        idcu_mutex_unlock(&bus->topic_mutexes[i]);
+        idcu_mutex_destroy(&bus->topic_mutexes[i]);
     }
 
     for (size_t i = 0; i < idcu_vector_size(bus->all_subscribers); i++) {
@@ -157,12 +176,12 @@ int idcu_msgbus_publish(idcu_MsgBus* bus,
         msg->data = NULL;
     }
 
-    idcu_mutex_lock(&bus->mutex);
+    idcu_mutex_lock(&bus->topic_mutexes[topic]);
 
     if (!bus->topic_priority_queues[topic][priority]) {
         bus->topic_priority_queues[topic][priority] = (idcu_Vector*)malloc(sizeof(idcu_Vector));
         if (!bus->topic_priority_queues[topic][priority]) {
-            idcu_mutex_unlock(&bus->mutex);
+            idcu_mutex_unlock(&bus->topic_mutexes[topic]);
             if (msg->data) {
                 free(msg->data);
             }
@@ -171,7 +190,7 @@ int idcu_msgbus_publish(idcu_MsgBus* bus,
         }
         int ret = idcu_vector_init(bus->topic_priority_queues[topic][priority], sizeof(idcu_Msg*), 8);
         if (ret != IDCU_ERR_OK) {
-            idcu_mutex_unlock(&bus->mutex);
+            idcu_mutex_unlock(&bus->topic_mutexes[topic]);
             free(bus->topic_priority_queues[topic][priority]);
             if (msg->data) {
                 free(msg->data);
@@ -183,7 +202,7 @@ int idcu_msgbus_publish(idcu_MsgBus* bus,
 
     idcu_vector_push_back(bus->topic_priority_queues[topic][priority], &msg);
 
-    idcu_mutex_unlock(&bus->mutex);
+    idcu_mutex_unlock(&bus->topic_mutexes[topic]);
 
     return IDCU_ERR_OK;
 }
@@ -212,19 +231,19 @@ int idcu_msgbus_subscribe(idcu_MsgBus* bus,
     sub->user_data = user_data;
     sub->active = 1;
 
-    idcu_mutex_lock(&bus->mutex);
+    idcu_mutex_lock(&bus->topic_mutexes[topic]);
 
     if (!bus->topic_subscribers[topic].subscribers) {
         bus->topic_subscribers[topic].subscribers = (idcu_Vector*)malloc(sizeof(idcu_Vector));
         if (!bus->topic_subscribers[topic].subscribers) {
-            idcu_mutex_unlock(&bus->mutex);
+            idcu_mutex_unlock(&bus->topic_mutexes[topic]);
             free(sub);
             return IDCU_ERR_MEMORY;
         }
         int ret = idcu_vector_init(bus->topic_subscribers[topic].subscribers,
                                     sizeof(idcu_MsgSubscriber*), 8);
         if (ret != IDCU_ERR_OK) {
-            idcu_mutex_unlock(&bus->mutex);
+            idcu_mutex_unlock(&bus->topic_mutexes[topic]);
             free(bus->topic_subscribers[topic].subscribers);
             free(sub);
             return ret;
@@ -232,8 +251,11 @@ int idcu_msgbus_subscribe(idcu_MsgBus* bus,
     }
 
     idcu_vector_push_back(bus->topic_subscribers[topic].subscribers, &sub);
-    idcu_vector_push_back(bus->all_subscribers, &sub);
 
+    idcu_mutex_unlock(&bus->topic_mutexes[topic]);
+
+    idcu_mutex_lock(&bus->mutex);
+    idcu_vector_push_back(bus->all_subscribers, &sub);
     idcu_mutex_unlock(&bus->mutex);
 
     *subscriber = sub;
@@ -251,8 +273,7 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
         return IDCU_ERR_INVALID_ARG;
     }
 
-    idcu_mutex_lock(&bus->mutex);
-
+    idcu_mutex_lock(&bus->topic_mutexes[topic]);
     subscriber->active = 0;
 
     // Remove from topic subscribers list
@@ -266,7 +287,9 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
             }
         }
     }
+    idcu_mutex_unlock(&bus->topic_mutexes[topic]);
 
+    idcu_mutex_lock(&bus->mutex);
     // Remove from all subscribers list
     if (bus->all_subscribers) {
         idcu_Vector* all_subs = bus->all_subscribers;
@@ -278,7 +301,6 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
             }
         }
     }
-
     idcu_mutex_unlock(&bus->mutex);
 
     // Free the subscriber
@@ -287,88 +309,75 @@ int idcu_msgbus_unsubscribe(idcu_MsgBus* bus,
     return IDCU_ERR_OK;
 }
 
+#define IDCU_MSGBUS_BATCH_SIZE 16
+
 int idcu_msgbus_process(idcu_MsgBus* bus) {
     if (!bus) {
         return IDCU_ERR_INVALID_ARG;
     }
 
-    idcu_mutex_lock(&bus->mutex);
-
     for (int topic = 0; topic < IDCU_MSG_MAX_TOPICS; topic++) {
-        // Process priorities from highest to lowest (assuming higher number = higher priority)
+        idcu_mutex_lock(&bus->topic_mutexes[topic]);
+
         for (int p = IDCU_MSG_PRIORITY_COUNT - 1; p >= 0; p--) {
             if (!bus->topic_priority_queues[topic][p]) {
                 continue;
             }
 
             while (idcu_vector_size(bus->topic_priority_queues[topic][p]) > 0) {
-                idcu_Msg** msg_ptr = (idcu_Msg**)idcu_vector_get(bus->topic_priority_queues[topic][p], 0);
-                idcu_Msg* msg = NULL;
-                if (msg_ptr) {
-                    msg = *msg_ptr;
-                }
-                idcu_vector_remove(bus->topic_priority_queues[topic][p], 0);
+                idcu_Msg* batch[IDCU_MSGBUS_BATCH_SIZE];
+                size_t batch_size = 0;
 
-                if (!bus->topic_subscribers[topic].subscribers || !msg) {
-                    if (msg) {
-                        if (msg->data) {
-                            free(msg->data);
-                        }
-                        free(msg);
+                while (batch_size < IDCU_MSGBUS_BATCH_SIZE && 
+                       idcu_vector_size(bus->topic_priority_queues[topic][p]) > 0) {
+                    idcu_Msg** msg_ptr = (idcu_Msg**)idcu_vector_get(bus->topic_priority_queues[topic][p], 0);
+                    if (msg_ptr && *msg_ptr) {
+                        batch[batch_size++] = *msg_ptr;
                     }
-                    continue;
+                    idcu_vector_remove(bus->topic_priority_queues[topic][p], 0);
                 }
 
                 idcu_Vector* subs = bus->topic_subscribers[topic].subscribers;
-                size_t sub_count = idcu_vector_size(subs);
-                idcu_MsgSubscriber** local_subs = (idcu_MsgSubscriber**)malloc(sizeof(idcu_MsgSubscriber*) * sub_count);
-                if (!local_subs) {
-                    if (msg) {
-                        if (msg->data) {
-                            free(msg->data);
+                size_t sub_count = 0;
+                idcu_MsgSubscriber** local_subs = NULL;
+
+                if (subs) {
+                    sub_count = idcu_vector_size(subs);
+                    local_subs = (idcu_MsgSubscriber**)malloc(sizeof(idcu_MsgSubscriber*) * sub_count);
+                    if (local_subs) {
+                        for (size_t i = 0; i < sub_count; i++) {
+                            idcu_MsgSubscriber** sub_ptr = (idcu_MsgSubscriber**)idcu_vector_get(subs, i);
+                            local_subs[i] = sub_ptr ? *sub_ptr : NULL;
                         }
-                        free(msg);
-                    }
-                    continue;
-                }
-
-                for (size_t i = 0; i < sub_count; i++) {
-                    idcu_MsgSubscriber** sub_ptr = (idcu_MsgSubscriber**)idcu_vector_get(subs, i);
-                    if (sub_ptr) {
-                        local_subs[i] = *sub_ptr;
-                    } else {
-                        local_subs[i] = NULL;
                     }
                 }
 
-                idcu_MsgTopic msg_topic = msg->topic;
-                const void* msg_data = msg->data;
-                size_t msg_dsize = msg->data_size;
+                idcu_mutex_unlock(&bus->topic_mutexes[topic]);
 
-                idcu_mutex_unlock(&bus->mutex);
+                for (size_t b = 0; b < batch_size; b++) {
+                    idcu_Msg* msg = batch[b];
+                    if (!msg) continue;
 
-                for (size_t i = 0; i < sub_count; i++) {
-                    idcu_MsgSubscriber* sub = local_subs[i];
-                    if (sub && sub->active && sub->handler) {
-                        sub->handler(msg_topic, msg_data, msg_dsize, sub->user_data);
+                    for (size_t i = 0; i < sub_count; i++) {
+                        idcu_MsgSubscriber* sub = local_subs ? local_subs[i] : NULL;
+                        if (sub && sub->active && sub->handler) {
+                            sub->handler(msg->topic, msg->data, msg->data_size, sub->user_data);
+                        }
                     }
-                }
 
-                idcu_mutex_lock(&bus->mutex);
-
-                free(local_subs);
-
-                if (msg) {
                     if (msg->data) {
                         free(msg->data);
                     }
                     free(msg);
                 }
+
+                free(local_subs);
+                idcu_mutex_lock(&bus->topic_mutexes[topic]);
             }
         }
-    }
 
-    idcu_mutex_unlock(&bus->mutex);
+        idcu_mutex_unlock(&bus->topic_mutexes[topic]);
+    }
 
     return IDCU_ERR_OK;
 }

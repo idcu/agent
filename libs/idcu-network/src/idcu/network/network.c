@@ -622,3 +622,96 @@ int idcu_udp_socket_set_timeout(idcu_UdpSocket* sock, int timeout_ms) {
     }
     return IDCU_ERR_OK;
 }
+
+int idcu_net_poll(idcu_NetPollFd* fds, size_t nfds, int timeout_ms) {
+    if (!fds || nfds == 0) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+
+#ifdef _WIN32
+    WSAPOLLFD* wsa_fds = (WSAPOLLFD*)malloc(nfds * sizeof(WSAPOLLFD));
+    if (!wsa_fds) {
+        return IDCU_ERR_MEMORY;
+    }
+
+    for (size_t i = 0; i < nfds; i++) {
+        wsa_fds[i].fd = fds[i].socket;
+        wsa_fds[i].events = 0;
+        if (fds[i].events & IDCU_NET_POLL_IN) wsa_fds[i].events |= POLLIN;
+        if (fds[i].events & IDCU_NET_POLL_OUT) wsa_fds[i].events |= POLLOUT;
+        wsa_fds[i].revents = 0;
+    }
+
+    int result = WSAPoll(wsa_fds, (ULONG)nfds, timeout_ms);
+
+    for (size_t i = 0; i < nfds; i++) {
+        fds[i].revents = 0;
+        if (wsa_fds[i].revents & POLLIN) fds[i].revents |= IDCU_NET_POLL_IN;
+        if (wsa_fds[i].revents & POLLOUT) fds[i].revents |= IDCU_NET_POLL_OUT;
+        if (wsa_fds[i].revents & POLLERR) fds[i].revents |= IDCU_NET_POLL_ERR;
+        if (wsa_fds[i].revents & POLLHUP) fds[i].revents |= IDCU_NET_POLL_HUP;
+    }
+
+    free(wsa_fds);
+
+    if (result == SOCKET_ERROR) {
+        return IDCU_ERR_UNKNOWN;
+    }
+    return result;
+#else
+    struct pollfd* poll_fds = (struct pollfd*)malloc(nfds * sizeof(struct pollfd));
+    if (!poll_fds) {
+        return IDCU_ERR_MEMORY;
+    }
+
+    for (size_t i = 0; i < nfds; i++) {
+        poll_fds[i].fd = fds[i].socket;
+        poll_fds[i].events = 0;
+        if (fds[i].events & IDCU_NET_POLL_IN) poll_fds[i].events |= POLLIN;
+        if (fds[i].events & IDCU_NET_POLL_OUT) poll_fds[i].events |= POLLOUT;
+        poll_fds[i].revents = 0;
+    }
+
+    int result = poll(poll_fds, nfds, timeout_ms);
+
+    for (size_t i = 0; i < nfds; i++) {
+        fds[i].revents = 0;
+        if (poll_fds[i].revents & POLLIN) fds[i].revents |= IDCU_NET_POLL_IN;
+        if (poll_fds[i].revents & POLLOUT) fds[i].revents |= IDCU_NET_POLL_OUT;
+        if (poll_fds[i].revents & POLLERR) fds[i].revents |= IDCU_NET_POLL_ERR;
+        if (poll_fds[i].revents & POLLHUP) fds[i].revents |= IDCU_NET_POLL_HUP;
+    }
+
+    free(poll_fds);
+
+    if (result < 0) {
+        return IDCU_ERR_UNKNOWN;
+    }
+    return result;
+#endif
+}
+
+int idcu_net_select(idcu_Socket max_fd, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, int timeout_ms) {
+    struct timeval tv;
+    struct timeval* tv_ptr = NULL;
+
+    if (timeout_ms >= 0) {
+        tv.tv_sec = timeout_ms / 1000;
+        tv.tv_usec = (timeout_ms % 1000) * 1000;
+        tv_ptr = &tv;
+    }
+
+#ifdef _WIN32
+    int result = select((int)max_fd + 1, readfds, writefds, exceptfds, tv_ptr);
+    if (result == SOCKET_ERROR) {
+        return IDCU_ERR_UNKNOWN;
+    }
+#else
+    int result = select((int)max_fd + 1, readfds, writefds, exceptfds, tv_ptr);
+    if (result < 0) {
+        return IDCU_ERR_UNKNOWN;
+    }
+#endif
+
+    return result;
+}

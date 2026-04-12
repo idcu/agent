@@ -71,6 +71,19 @@ typedef struct {
     int backlog;
 } idcu_TcpServer;
 
+typedef enum {
+    IDCU_NET_POLL_IN  = 0x01,
+    IDCU_NET_POLL_OUT = 0x02,
+    IDCU_NET_POLL_ERR = 0x04,
+    IDCU_NET_POLL_HUP = 0x08
+} idcu_NetPollEvent;
+
+typedef struct {
+    idcu_Socket socket;
+    int events;
+    int revents;
+} idcu_NetPollFd;
+
 #ifdef __cplusplus
 }
 #endif

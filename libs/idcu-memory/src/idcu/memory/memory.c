@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <execinfo.h>
+#endif
 
 // 默认尺寸类别配置 (16, 32, 64, 128, 256, 512, 1024, 2048)
 static const uint32_t default_sizes[IDCU_MEM_POOL_MAX_SIZE_CLASSES] = {
@@ -12,13 +19,33 @@ static const uint32_t default_block_counts[IDCU_MEM_POOL_MAX_SIZE_CLASSES] = {
     256, 128, 64, 32, 16, 8, 4, 2
 };
 
-// 选择合适的尺寸类别
+// 获取当前时间戳
+static uint64_t get_timestamp(void) {
+    return (uint64_t)time(NULL);
+}
+
+// 捕获调用栈
+static int capture_stack_trace(void** frames, int max_frames) {
+#ifdef _WIN32
+    (void)frames;
+    (void)max_frames;
+    return 0;
+#else
+    return backtrace(frames, max_frames);
+#endif
+}
+
+// 选择合适的尺寸类别 - 优化版本，使用位查找
 static int select_size_class(uint32_t size) {
-    for (int i = 0; i < IDCU_MEM_POOL_MAX_SIZE_CLASSES; i++) {
-        if (size <= default_sizes[i]) {
-            return i;
-        }
-    }
+    if (size == 0) return -1;
+    if (size <= 16) return 0;
+    if (size <= 32) return 1;
+    if (size <= 64) return 2;
+    if (size <= 128) return 3;
+    if (size <= 256) return 4;
+    if (size <= 512) return 5;
+    if (size <= 1024) return 6;
+    if (size <= 2048) return 7;
     return -1; // 超过最大尺寸
 }
 
@@ -29,6 +56,7 @@ int idcu_mem_pool_init(idcu_MemoryPool* pool) {
     
     memset(pool, 0, sizeof(idcu_MemoryPool));
     pool->num_size_classes = IDCU_MEM_POOL_MAX_SIZE_CLASSES;
+    pool->debug_enabled = 1;
     
     // 初始化主锁
     idcu_mutex_init(&pool->lock);
@@ -40,6 +68,8 @@ int idcu_mem_pool_init(idcu_MemoryPool* pool) {
         sc->block_count = default_block_counts[i];
         sc->free_count = sc->block_count;
         sc->free_head = 0;
+        sc->alloc_count = 0;
+        sc->free_count_total = 0;
         
         // 初始化类锁
         idcu_mutex_init(&sc->class_lock);
@@ -63,6 +93,10 @@ int idcu_mem_pool_init(idcu_MemoryPool* pool) {
             sc->free_list[j] = j + 1;
             sc->blocks[j].size_class = (uint8_t)i;
             sc->blocks[j].in_use = 0;
+            sc->blocks[j].file = NULL;
+            sc->blocks[j].line = 0;
+            sc->blocks[j].timestamp = 0;
+            sc->blocks[j].stack_depth = 0;
             
             // 分配实际数据内存
             sc->blocks[j].data = calloc(1, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
@@ -79,6 +113,10 @@ int idcu_mem_pool_init(idcu_MemoryPool* pool) {
         sc->free_list[sc->block_count - 1] = UINT32_MAX;
         sc->blocks[sc->block_count - 1].size_class = (uint8_t)i;
         sc->blocks[sc->block_count - 1].in_use = 0;
+        sc->blocks[sc->block_count - 1].file = NULL;
+        sc->blocks[sc->block_count - 1].line = 0;
+        sc->blocks[sc->block_count - 1].timestamp = 0;
+        sc->blocks[sc->block_count - 1].stack_depth = 0;
         sc->blocks[sc->block_count - 1].data = calloc(1, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
         if (!sc->blocks[sc->block_count - 1].data) {
             idcu_mem_pool_destroy(pool);
@@ -94,6 +132,9 @@ void idcu_mem_pool_destroy(idcu_MemoryPool* pool) {
     if (!pool) {
         return;
     }
+    
+    // 报告内存泄漏
+    idcu_mem_pool_report_leaks(pool);
     
     // 销毁每个尺寸类别
     for (uint32_t i = 0; i < pool->num_size_classes; i++) {
@@ -137,32 +178,45 @@ static int expand_size_class(idcu_SizeClass* sc) {
     }
     sc->free_list = new_free_list;
 
-    // Initialize new blocks
+    const uint8_t size_class_idx = sc->blocks[0].size_class;
+    const size_t data_size = sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE;
+
+    // Initialize new blocks - 优化版本，减少循环内的条件判断
     for (uint32_t j = sc->block_count; j < new_block_count - 1; j++) {
         sc->free_list[j] = j + 1;
-        sc->blocks[j].size_class = sc->blocks[0].size_class;
-        sc->blocks[j].in_use = 0;
+        idcu_PoolBlock* block = &sc->blocks[j];
+        block->size_class = size_class_idx;
+        block->in_use = 0;
+        block->file = NULL;
+        block->line = 0;
+        block->timestamp = 0;
+        block->stack_depth = 0;
 
-        // Allocate actual data memory
-        sc->blocks[j].data = calloc(1, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
-        if (!sc->blocks[j].data) {
+        block->data = calloc(1, data_size);
+        if (!block->data) {
             return IDCU_ERR_MEMORY;
         }
 
-        // Initialize guard marks
-        memset(sc->blocks[j].guard, 0xAA, IDCU_MEM_GUARD_SIZE);
+        memset(block->guard, 0xAA, IDCU_MEM_GUARD_SIZE);
     }
 
     // Last new block
-    sc->free_list[new_block_count - 1] = sc->free_head;
+    uint32_t last_idx = new_block_count - 1;
+    sc->free_list[last_idx] = sc->free_head;
     sc->free_head = sc->block_count;
-    sc->blocks[new_block_count - 1].size_class = sc->blocks[0].size_class;
-    sc->blocks[new_block_count - 1].in_use = 0;
-    sc->blocks[new_block_count - 1].data = calloc(1, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
-    if (!sc->blocks[new_block_count - 1].data) {
+    
+    idcu_PoolBlock* last_block = &sc->blocks[last_idx];
+    last_block->size_class = size_class_idx;
+    last_block->in_use = 0;
+    last_block->file = NULL;
+    last_block->line = 0;
+    last_block->timestamp = 0;
+    last_block->stack_depth = 0;
+    last_block->data = calloc(1, data_size);
+    if (!last_block->data) {
         return IDCU_ERR_MEMORY;
     }
-    memset(sc->blocks[new_block_count - 1].guard, 0xAA, IDCU_MEM_GUARD_SIZE);
+    memset(last_block->guard, 0xAA, IDCU_MEM_GUARD_SIZE);
 
     sc->free_count += (new_block_count - sc->block_count);
     sc->block_count = new_block_count;
@@ -170,7 +224,7 @@ static int expand_size_class(idcu_SizeClass* sc) {
     return IDCU_ERR_OK;
 }
 
-void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size) {
+void* idcu_mem_pool_alloc_debug(idcu_MemoryPool* pool, uint32_t size, const char* file, int line) {
     if (!pool || size == 0) {
         return NULL;
     }
@@ -198,10 +252,19 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size) {
     // 更新空闲链表
     sc->free_head = sc->free_list[block_idx];
     sc->free_count--;
+    sc->alloc_count++;
     
     // 标记为使用中
     block->in_use = 1;
     block->alloc_size = size;
+    block->file = file;
+    block->line = line;
+    block->timestamp = get_timestamp();
+    
+    // 捕获调用栈
+    if (pool->debug_enabled) {
+        block->stack_depth = capture_stack_trace(block->stack_frames, IDCU_MEM_MAX_STACK_FRAMES);
+    }
     
     // 设置块头部
     idcu_PoolBlockHeader* header = (idcu_PoolBlockHeader*)block->data;
@@ -225,6 +288,10 @@ void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size) {
     idcu_mutex_unlock(&pool->lock);
     
     return data_ptr;
+}
+
+void* idcu_mem_pool_alloc(idcu_MemoryPool* pool, uint32_t size) {
+    return idcu_mem_pool_alloc_debug(pool, size, NULL, 0);
 }
 
 void idcu_mem_pool_free(idcu_MemoryPool* pool, void* ptr) {
@@ -271,6 +338,11 @@ void idcu_mem_pool_free(idcu_MemoryPool* pool, void* ptr) {
     // 标记为空闲
     block->in_use = 0;
     block->alloc_size = 0;
+    block->file = NULL;
+    block->line = 0;
+    block->timestamp = 0;
+    block->stack_depth = 0;
+    sc->free_count_total++;
     
     // 清空数据
     memset(block->data, 0, sc->block_size + sizeof(idcu_PoolBlockHeader) + IDCU_MEM_GUARD_SIZE);
@@ -410,6 +482,11 @@ void idcu_mem_pool_report_leaks(idcu_MemoryPool* pool) {
                 class_leaks++;
                 total_leaks++;
                 total_leaked_bytes += sc->block_size;
+                
+                fprintf(stderr, "  Leak at %s:%d: %u bytes\n", 
+                        sc->blocks[j].file ? sc->blocks[j].file : "unknown",
+                        sc->blocks[j].line,
+                        sc->block_size);
             }
         }
         
@@ -426,4 +503,103 @@ void idcu_mem_pool_report_leaks(idcu_MemoryPool* pool) {
     fprintf(stderr, "==========================\n");
     
     idcu_mutex_unlock(&pool->lock);
+}
+
+void idcu_mem_pool_set_debug(idcu_MemoryPool* pool, int enable) {
+    if (!pool) {
+        return;
+    }
+    pool->debug_enabled = enable;
+}
+
+int idcu_mem_pool_get_stats(idcu_MemoryPool* pool, idcu_MemoryStats* stats) {
+    if (!pool || !stats) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    
+    memset(stats, 0, sizeof(idcu_MemoryStats));
+    
+    idcu_mutex_lock(&pool->lock);
+    stats->total_allocated = pool->total_allocated;
+    stats->total_freed = pool->total_freed;
+    stats->current_usage = pool->current_usage;
+    stats->peak_usage = pool->peak_usage;
+    
+    for (uint32_t i = 0; i < pool->num_size_classes; i++) {
+        idcu_SizeClass* sc = &pool->size_classes[i];
+        idcu_mutex_lock(&sc->class_lock);
+        
+        for (uint32_t j = 0; j < sc->block_count; j++) {
+            if (sc->blocks[j].in_use) {
+                stats->active_allocations++;
+                stats->size_class_stats[i]++;
+            }
+        }
+        
+        idcu_mutex_unlock(&sc->class_lock);
+    }
+    
+    stats->leak_count = stats->active_allocations;
+    idcu_mutex_unlock(&pool->lock);
+    
+    return IDCU_ERR_OK;
+}
+
+void idcu_mem_pool_take_snapshot(idcu_MemoryPool* pool) {
+    if (!pool) {
+        return;
+    }
+    
+    idcu_mutex_lock(&pool->lock);
+    
+    uint32_t active_count = 0;
+    for (uint32_t i = 0; i < pool->num_size_classes; i++) {
+        idcu_SizeClass* sc = &pool->size_classes[i];
+        for (uint32_t j = 0; j < sc->block_count; j++) {
+            if (sc->blocks[j].in_use) {
+                active_count++;
+            }
+        }
+    }
+    
+    idcu_MemoryStatsSnapshot* snapshot = &pool->snapshots[pool->snapshot_index];
+    snapshot->timestamp = get_timestamp();
+    snapshot->current_usage = pool->current_usage;
+    snapshot->peak_usage = pool->peak_usage;
+    snapshot->alloc_count = active_count;
+    
+    pool->snapshot_index = (pool->snapshot_index + 1) % IDCU_MEM_MAX_SNAPSHOTS;
+    if (pool->snapshot_count < IDCU_MEM_MAX_SNAPSHOTS) {
+        pool->snapshot_count++;
+    }
+    
+    idcu_mutex_unlock(&pool->lock);
+}
+
+uint32_t idcu_mem_pool_get_snapshot_count(idcu_MemoryPool* pool) {
+    if (!pool) {
+        return 0;
+    }
+    return pool->snapshot_count;
+}
+
+int idcu_mem_pool_get_snapshot(idcu_MemoryPool* pool, uint32_t index, idcu_MemoryStatsSnapshot* snapshot) {
+    if (!pool || !snapshot || index >= pool->snapshot_count) {
+        return IDCU_ERR_INVALID_ARG;
+    }
+    
+    idcu_mutex_lock(&pool->lock);
+    
+    uint32_t actual_index;
+    if (pool->snapshot_count < IDCU_MEM_MAX_SNAPSHOTS) {
+        actual_index = index;
+    } else {
+        actual_index = (pool->snapshot_index + index) % IDCU_MEM_MAX_SNAPSHOTS;
+    }
+    
+    memcpy(snapshot, &pool->snapshots[actual_index], sizeof(idcu_MemoryStatsSnapshot));
+    
+    idcu_mutex_unlock(&pool->lock);
+    
+    return IDCU_ERR_OK;
 }
