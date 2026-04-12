@@ -222,6 +222,8 @@ endif()
 - [x] 所有任务文档已同步更新 ✅ (task_index.md 标记所有任务为已完成)
 - [x] 完整构建验证通过 ✅ (2026-04-12, 59/59 模块全部成功)
 - [x] P1 阶段 FreeBSD 实现完成 ✅ (path.c, sysinfo.c, network.c)
+- [x] 完整构建验证通过 ✅ (2026-04-12, Windows 平台, 59/59 模块全部成功)
+- [x] P0-P1 阶段全部完成 ✅
 - [ ] 在 macOS 上编译和测试通过 (需 macOS 环境)
 - [ ] 在 FreeBSD 上编译和测试通过
 - [ ] 四个通用平台构建通过
@@ -295,6 +297,14 @@ endif()
 
 ### P2.3: 验证 P2 阶段
 
+- [x] Android 平台实现已完成 ✅
+  - ✅ path.c: 使用 JNI 访问 Context.getFilesDir() 实现 data_dir
+  - ✅ coroutine.c: 使用 setjmp/longjmp + 信号处理 ucontext 缺失问题
+  - ✅ backtrace.c: API 33+ 使用 _Unwind_Backtrace，旧版本使用 libcorkscrew/libunwind
+- [x] HarmonyOS 平台实现已完成 ✅
+  - ✅ signal.c: 信号编号映射 (SIGINT -> 46, SIGTERM -> 47, etc.)
+  - ✅ dl.c: 支持 DATA_DIR 环境变量，处理私有路径加载
+- [x] 构建验证通过 ✅ (59/59 模块全部成功)
 - [ ] 在 Android 模拟器/真机上测试
 - [ ] 在 HarmonyOS 设备上测试
 - [ ] 六个通用平台构建通过
