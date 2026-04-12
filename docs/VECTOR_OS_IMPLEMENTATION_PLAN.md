@@ -409,6 +409,17 @@ endif()
   - ✅ 完整的 RT-Thread 平台实现
   - ✅ 无编译错误，仅有少量警告
   - ✅ 所有业务模块和集成模块构建通过
+- [x] **idcu-os 单元测试全部通过! ✅ (Windows 平台, 实时测试)
+  - ✅ 37/37 测试全部通过 (无失败)
+  - ✅ 时间测试 (time_ms/time_us/time_ns)
+  - ✅ 互斥锁测试 (mutex_create/mutex_lock/mutex_unlock/mutex_destroy)
+  - ✅ 文件 I/O 测试 (file_write/file_read/file_delete)
+  - ✅ 路径测试 (exe_path/data_dir/home_dir/path_join)
+  - ✅ 环境变量测试 (env_set/env_get/env_del)
+  - ✅ 系统信息测试 (sysinfo_get - 获取 Windows 10 系统信息)
+  - ✅ 堆栈回溯测试 (backtrace_capture/backtrace_format)
+  - ✅ 协程测试 (coro_create/coro_yield/coro_resume)
+  - ✅ 所有核心功能在 Windows 10 Pro 22H2 平台全部验证通过
 - [ ] Agent 可以在 Vector OS 上运行
 - [ ] 所有集成测试通过
 - [ ] 性能比 Linux 用户态有所提升
